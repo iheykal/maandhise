@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import AdminPaymentEntry from './AdminPaymentEntry.tsx';
 
 // Get API base URL
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'https://maandhise-backend.onrender.com/api';
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'https://maandhise252.onrender.com/api';
 
 interface PaymentSummary {
   totalUsers: number;

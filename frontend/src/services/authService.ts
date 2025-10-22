@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'https://maandhise-backend.onrender.com/api';
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'https://maandhise252.onrender.com/api';
 
 // Create axios instance
 const api = axios.create({
