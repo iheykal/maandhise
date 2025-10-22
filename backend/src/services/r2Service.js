@@ -144,6 +144,34 @@ class R2Service {
   }
 
   /**
+   * Generate a fresh signed URL for an existing file
+   * @param {string} fileUrl - Existing file URL
+   * @returns {Promise<string>} - Fresh signed URL
+   */
+  static async generateFreshSignedUrl(fileUrl) {
+    try {
+      // Extract key from URL
+      const urlParts = fileUrl.split('/');
+      const key = urlParts.slice(-2).join('/'); // Get 'uploads/filename'
+      
+      const getObjectCommand = new GetObjectCommand({
+        Bucket: BUCKET_NAME,
+        Key: key,
+      });
+      
+      // Generate fresh signed URL that expires in 7 days
+      const signedUrl = await getSignedUrl(s3Client, getObjectCommand, { 
+        expiresIn: 7 * 24 * 60 * 60 // 7 days
+      });
+      
+      return signedUrl;
+    } catch (error) {
+      console.error('Error generating fresh signed URL:', error);
+      throw new Error('Failed to generate fresh URL');
+    }
+  }
+
+  /**
    * Get multer middleware for file uploads
    * @param {string} fieldName - Form field name
    * @returns {Function} - Multer middleware

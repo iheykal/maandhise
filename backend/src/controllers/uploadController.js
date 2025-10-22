@@ -156,8 +156,44 @@ const deleteFile = async (req, res) => {
   }
 };
 
+/**
+ * Generate fresh signed URL for an existing file
+ */
+const refreshImageUrl = async (req, res) => {
+  try {
+    const { fileUrl } = req.body;
+
+    if (!fileUrl) {
+      return res.status(400).json({
+        success: false,
+        message: 'File URL is required'
+      });
+    }
+
+    const freshUrl = await R2Service.generateFreshSignedUrl(fileUrl);
+
+    res.status(200).json({
+      success: true,
+      message: 'Fresh URL generated successfully',
+      data: {
+        url: freshUrl,
+        expiresIn: 7 * 24 * 60 * 60 // 7 days
+      }
+    });
+
+  } catch (error) {
+    console.error('Refresh URL error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to generate fresh URL',
+      error: error.message
+    });
+  }
+};
+
 module.exports = {
   uploadFile,
   generateUploadUrl,
-  deleteFile
+  deleteFile,
+  refreshImageUrl
 };
