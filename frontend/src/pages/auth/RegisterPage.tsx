@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Eye, EyeOff, Mail, Lock, User, Phone, MapPin, CreditCard } from 'lucide-react';
+import { Eye, EyeOff, Lock, User, Phone } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext.tsx';
 import { useTheme } from '../../contexts/ThemeContext.tsx';
 import LoadingSpinner from '../../components/common/LoadingSpinner.tsx';
@@ -9,16 +9,9 @@ import LoadingSpinner from '../../components/common/LoadingSpinner.tsx';
 const RegisterPage: React.FC = () => {
   const [formData, setFormData] = useState({
     fullName: '',
-    email: '',
     phone: '',
-    idNumber: '',
-    password: '',
-    confirmPassword: '',
-    location: '',
     role: 'customer' as 'customer' | 'company',
   });
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
   const { register } = useAuth();
@@ -26,9 +19,16 @@ const RegisterPage: React.FC = () => {
   const navigate = useNavigate();
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    let value = e.target.value;
+    
+    // Auto-capitalize first letter for phone field
+    if (e.target.name === 'phone' && value.length > 0) {
+      value = value.charAt(0).toUpperCase() + value.slice(1);
+    }
+    
     setFormData({
       ...formData,
-      [e.target.name]: e.target.value,
+      [e.target.name]: value,
     });
   };
 
@@ -37,8 +37,20 @@ const RegisterPage: React.FC = () => {
     setIsLoading(true);
 
     try {
-      await register(formData);
-      navigate('/dashboard');
+      // Create account with default password
+      await register({
+        ...formData,
+        password: 'default123', // Default password for simple registration
+      });
+      
+      // Show different message based on role
+      if (formData.role === 'company') {
+        alert(language === 'en' 
+          ? 'Account created! Please wait for admin approval before logging in.'
+          : 'Akoonka waa la sameeyay! Fadlan sug oggolaanshaha maamulaha ka hor inta aadan gelin.');
+      }
+      
+      navigate('/');
     } catch (error) {
       // Error is handled by the auth context
     } finally {
@@ -64,7 +76,7 @@ const RegisterPage: React.FC = () => {
             </p>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-6">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 {language === 'en' ? 'Full Name' : 'Magaca Buuxa'}
@@ -85,74 +97,23 @@ const RegisterPage: React.FC = () => {
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                {language === 'en' ? 'Email Address' : 'Cinwaanka Email'}
-              </label>
-              <div className="relative">
-                <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-                <input
-                  type="email"
-                  name="email"
-                  value={formData.email}
-                  onChange={handleChange}
-                  required
-                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300"
-                  placeholder={language === 'en' ? 'Enter your email' : 'Geli emailkaaga'}
-                />
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                {language === 'en' ? 'Phone Number' : 'Lambarka Telefoonka'}
+                {language === 'en' ? 'Landline Number' : 'Lambarka Taleefanka'}
               </label>
               <div className="relative">
                 <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
                 <input
-                  type="tel"
+                  type="text"
                   name="phone"
                   value={formData.phone}
                   onChange={handleChange}
                   required
                   className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300"
-                  placeholder={language === 'en' ? 'Enter your phone number' : 'Geli lambarka telefoonkaaga'}
+                  placeholder={language === 'en' ? 'Enter your landline number' : 'Geli lambarka taleefankaaga'}
                 />
               </div>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                {language === 'en' ? 'ID Number' : 'Lambarka Aqoonsiga'}
-              </label>
-              <div className="relative">
-                <CreditCard className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-                <input
-                  type="text"
-                  name="idNumber"
-                  value={formData.idNumber}
-                  onChange={handleChange}
-                  required
-                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300"
-                  placeholder={language === 'en' ? 'Enter your ID number' : 'Geli lambarka aqoonsigaaga'}
-                />
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                {language === 'en' ? 'Location' : 'Goobta'}
-              </label>
-              <div className="relative">
-                <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-                <input
-                  type="text"
-                  name="location"
-                  value={formData.location}
-                  onChange={handleChange}
-                  required
-                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300"
-                  placeholder={language === 'en' ? 'Enter your location' : 'Geli goobtaada'}
-                />
-              </div>
+              <p className="mt-1 text-xs text-gray-500">
+                {language === 'en' ? 'First letter will be automatically capitalized' : 'Xarafka hore wuxuu noqon doonaa mid weyn'}
+              </p>
             </div>
 
             <div>
@@ -166,59 +127,20 @@ const RegisterPage: React.FC = () => {
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300"
               >
                 <option value="customer">{language === 'en' ? 'Customer' : 'Macaamiil'}</option>
-                <option value="company">{language === 'en' ? 'Business Partner' : 'La Shaqeeya Ganacsi'}</option>
+                <option value="company">{language === 'en' ? 'Business Partner (Requires Approval)' : 'La Shaqeeya Ganacsi (Waxay u baahan tahay ogolaansho)'}</option>
               </select>
+              {formData.role === 'company' && (
+                <p className="mt-2 text-xs text-amber-600 flex items-start gap-1">
+                  <span className="font-bold mt-0.5">⚠️</span>
+                  <span>
+                    {language === 'en' 
+                      ? 'Business partner accounts require admin approval before you can login.'
+                      : 'Akoonada la-shaqeeya ganacsigu waxay u baahan yihiin oggolaansho maamule ka hor inta aadan gelin.'}
+                  </span>
+                </p>
+              )}
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                {language === 'en' ? 'Password' : 'Furaha Sirta'}
-              </label>
-              <div className="relative">
-                <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-                <input
-                  type={showPassword ? 'text' : 'password'}
-                  name="password"
-                  value={formData.password}
-                  onChange={handleChange}
-                  required
-                  className="w-full pl-10 pr-12 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300"
-                  placeholder={language === 'en' ? 'Enter your password' : 'Geli furaha sirta'}
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors duration-300"
-                >
-                  {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                </button>
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                {language === 'en' ? 'Confirm Password' : 'Xaqiiji Furaha Sirta'}
-              </label>
-              <div className="relative">
-                <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-                <input
-                  type={showConfirmPassword ? 'text' : 'password'}
-                  name="confirmPassword"
-                  value={formData.confirmPassword}
-                  onChange={handleChange}
-                  required
-                  className="w-full pl-10 pr-12 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300"
-                  placeholder={language === 'en' ? 'Confirm your password' : 'Xaqiiji furaha sirta'}
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors duration-300"
-                >
-                  {showConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                </button>
-              </div>
-            </div>
 
             <button
               type="submit"

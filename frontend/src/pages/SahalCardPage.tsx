@@ -1,14 +1,42 @@
 import React from 'react';
 import { motion } from 'framer-motion';
+import { Helmet } from 'react-helmet-async';
 import { useTheme } from '../contexts/ThemeContext.tsx';
-import { CreditCard, Shield, MapPin, Star, Users, Zap } from 'lucide-react';
+import { CreditCard, Shield, Star, Users, Zap } from 'lucide-react';
+// import VirtualSahalCard from '../components/VirtualSahalCard.tsx';
 
 const SahalCardPage: React.FC = () => {
   const { language } = useTheme();
 
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-blue-100 to-indigo-200 relative z-10">
+    <>
+      <Helmet>
+        <title>Sahal Card - Exclusive Discounts & Savings | Maandhise Corporate</title>
+        <meta name="description" content="Get your Sahal Card today! Save money at 500+ partner businesses across Somalia. Exclusive discounts on groceries, restaurants, healthcare & more." />
+        <meta name="keywords" content="sahal card, discount card somalia, savings card, maandhise card, somalia discounts, mogadishu savings" />
+        <meta name="author" content="Maandhise Corporate" />
+        
+        {/* Open Graph / Facebook */}
+        <meta property="og:type" content="website" />
+        <meta property="og:url" content="https://maandhise.com/sahal-card" />
+        <meta property="og:title" content="Sahal Card - Exclusive Discounts & Savings" />
+        <meta property="og:description" content="Get your Sahal Card today! Save money at 500+ partner businesses across Somalia. Exclusive discounts on groceries, restaurants, healthcare & more." />
+        <meta property="og:image" content="https://maandhise.com/og-sahal-card.png" />
+        <meta property="og:site_name" content="Maandhise Corporate" />
+        
+        {/* Twitter */}
+        <meta property="twitter:card" content="summary_large_image" />
+        <meta property="twitter:url" content="https://maandhise.com/sahal-card" />
+        <meta property="twitter:title" content="Sahal Card - Exclusive Discounts & Savings" />
+        <meta property="twitter:description" content="Get your Sahal Card today! Save money at 500+ partner businesses across Somalia. Exclusive discounts on groceries, restaurants, healthcare & more." />
+        <meta property="twitter:image" content="https://maandhise.com/og-sahal-card.png" />
+        
+        {/* Canonical URL */}
+        <link rel="canonical" href="https://maandhise.com/sahal-card" />
+      </Helmet>
+      
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-blue-100 to-indigo-200 relative z-10">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 relative">
         {/* Hero Section */}
         <motion.div
@@ -31,39 +59,6 @@ const SahalCardPage: React.FC = () => {
           </p>
         </motion.div>
 
-        {/* What is Sahal Card Section */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.1, ease: "easeOut" }}
-          className="mb-12"
-        >
-          <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-white/80 to-blue-50/80 backdrop-blur-sm border border-white/50 shadow-2xl">
-            {/* Background Pattern */}
-            <div className="absolute inset-0 opacity-5">
-              <div className="absolute top-0 right-0 w-64 h-64 bg-blue-500 rounded-full -translate-y-32 translate-x-32"></div>
-              <div className="absolute bottom-0 left-0 w-48 h-48 bg-cyan-500 rounded-full translate-y-24 -translate-x-24"></div>
-            </div>
-            
-            <div className="relative p-6 md:p-8">
-              <div className="flex items-center mb-6">
-                <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-2xl flex items-center justify-center mr-4">
-                  <Users className="w-6 h-6 text-white" />
-                </div>
-                <h2 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent">
-            {language === 'en' ? 'What is Sahal Card?' : 'Waa Maxay Kaarka Sahal?'}
-          </h2>
-              </div>
-              
-              <p className="text-lg md:text-xl text-gray-600 leading-relaxed max-w-4xl">
-            {language === 'en' 
-              ? 'Sahal Card is our innovative savings card that provides exclusive discounts at partner businesses across Somalia. With just one card, you can save money on groceries, restaurants, healthcare, education, and more.'
-              : 'Kaarka Sahal waa kaarkayaga keydin cusub oo bixinaya qiimo dhimis gaar ah ganacsiga la shaqeeya Soomaaliya oo dhan. Kaarka hal ah oo keliya, waxaad keydin kartaa lacag cunto, maqaayadaha, caafimaadka, waxbarashada, iyo wax dheeraad ah.'
-            }
-          </p>
-            </div>
-          </div>
-        </motion.div>
 
         {/* Why Choose Sahal Card Section */}
         <motion.div
@@ -179,9 +174,37 @@ const SahalCardPage: React.FC = () => {
           </div>
         </motion.div>
 
+        {/* Interactive Card Showcase - HIDDEN */}
+        {/* <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.4, ease: "easeOut" }}
+          className="mb-20"
+        >
+          <div className="text-center mb-10">
+            <h2 className="text-3xl md:text-4xl font-bold gradient-text mb-4">
+              {language === 'en' ? 'Experience Your Card' : 'Khibrad Kaarkaaga'}
+            </h2>
+            <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+              {language === 'en' 
+                ? 'Interact with your virtual Sahal Card and see all its features'
+                : 'La shaqee Kaarkaaga Sahal virtual oo arag dhammaan sifooyinka'
+              }
+            </p>
+          </div>
+
+          <div className="flex justify-center">
+            <VirtualSahalCard 
+              cardNumber="ID.001"
+              expiryDate="2026/12/31"
+              className="transform transition-transform duration-300"
+            />
+          </div>
+        </motion.div> */}
 
       </div>
     </div>
+    </>
   );
 };
 

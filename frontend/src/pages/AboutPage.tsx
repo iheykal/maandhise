@@ -1,13 +1,14 @@
 import React from 'react';
 import { motion } from 'framer-motion';
+import { Helmet } from 'react-helmet-async';
 import { 
-  Target, 
-  Eye, 
+  // Target, 
+  // Eye, 
   Users, 
   Award, 
-  Heart, 
-  Globe, 
-  Shield, 
+  // Heart, 
+  // Globe, 
+  // Shield, 
   Zap,
   TrendingUp,
   Briefcase,
@@ -18,76 +19,100 @@ import { useTheme } from '../contexts/ThemeContext.tsx';
 const AboutPage: React.FC = () => {
   const { language } = useTheme();
 
-  const values = [
-    {
-      icon: Heart,
-      title: language === 'en' ? 'Community First' : 'Bulshada Hore',
-      description: language === 'en' 
-        ? 'We prioritize the needs and growth of our community above all else.'
-        : 'Waxaan u horaynaa baahida iyo koritaanka bulshadeena dhammaan waxyaabaha kale.',
-      color: 'from-red-500 to-pink-500'
-    },
-    {
-      icon: Shield,
-      title: language === 'en' ? 'Trust & Security' : 'Aamin & Ammaan',
-      description: language === 'en' 
-        ? 'Your data and transactions are protected with enterprise-grade security.'
-        : 'Xogtaada iyo dhaqdhaqaaqyada way aamisan yihiin iyadoo la adeegsanayo ammaanka heerka shirkadda.',
-      color: 'from-blue-500 to-cyan-500'
-    },
-    {
-      icon: Zap,
-      title: language === 'en' ? 'Innovation' : 'Cusboonaysi',
-      description: language === 'en' 
-        ? 'We continuously innovate to provide cutting-edge solutions for our users.'
-        : 'Waxaan si joogto ah u cusboonaysiinaynaa si aan u bixino xalalka ugu horreeya istcmaalayaashayada.',
-      color: 'from-yellow-500 to-orange-500'
-    },
-    {
-      icon: Globe,
-      title: language === 'en' ? 'Accessibility' : 'Helitaanka',
-      description: language === 'en' 
-        ? 'Making quality services accessible to everyone across Somalia.'
-        : 'Ka dhigista adeegyo tayo leh oo dhammaan dadka Soomaaliya oo dhan ay heli karaan.',
-      color: 'from-green-500 to-emerald-500'
-    }
-  ];
+  // const values = [
+  //   {
+  //     icon: Heart,
+  //     title: language === 'en' ? 'Community First' : 'Bulshada Hore',
+  //     description: language === 'en' 
+  //       ? 'We prioritize the needs and growth of our community above all else.'
+  //       : 'Waxaan u horaynaa baahida iyo koritaanka bulshadeena dhammaan waxyaabaha kale.',
+  //     color: 'from-red-500 to-pink-500'
+  //   },
+  //   {
+  //     icon: Shield,
+  //     title: language === 'en' ? 'Trust & Security' : 'Aamin & Ammaan',
+  //     description: language === 'en' 
+  //       ? 'Your data and transactions are protected with enterprise-grade security.'
+  //       : 'Xogtaada iyo dhaqdhaqaaqyada way aamisan yihiin iyadoo la adeegsanayo ammaanka heerka shirkadda.',
+  //     color: 'from-blue-500 to-cyan-500'
+  //   },
+  //   {
+  //     icon: Zap,
+  //     title: language === 'en' ? 'Innovation' : 'Cusboonaysi',
+  //     description: language === 'en' 
+  //       ? 'We continuously innovate to provide cutting-edge solutions for our users.'
+  //       : 'Waxaan si joogto ah u cusboonaysiinaynaa si aan u bixino xalalka ugu horreeya istcmaalayaashayada.',
+  //     color: 'from-yellow-500 to-orange-500'
+  //   },
+  //   {
+  //     icon: Globe,
+  //     title: language === 'en' ? 'Accessibility' : 'Helitaanka',
+  //     description: language === 'en' 
+  //       ? 'Making quality services accessible to everyone across Somalia.'
+  //       : 'Ka dhigista adeegyo tayo leh oo dhammaan dadka Soomaaliya oo dhan ay heli karaan.',
+  //     color: 'from-green-500 to-emerald-500'
+  //   }
+  // ];
 
 
-  const team = [
-    {
-      name: language === 'en' ? 'Leadership Team' : 'Kooxda Hogaanka',
-      role: language === 'en' ? 'Visionary Leaders' : 'Hogaamiya Aragti',
-      description: language === 'en' 
-        ? 'Experienced professionals driving innovation and growth.'
-        : 'Xirfadlayaal khibrad leh oo dhiirigelinaya cusboonaysi iyo koritaan.'
-    },
-    {
-      name: language === 'en' ? 'Development Team' : 'Kooxda Horumarinta',
-      role: language === 'en' ? 'Tech Innovators' : 'Cusboonaysiyeenka Teknoolojiga',
-      description: language === 'en' 
-        ? 'Skilled developers creating cutting-edge solutions.'
-        : 'Horumarayaal xirfad leh oo sameeya xalalka ugu horreeya.'
-    },
-    {
-      name: language === 'en' ? 'Support Team' : 'Kooxda Taageerada',
-      role: language === 'en' ? 'Customer Champions' : 'Garaadka Macaamiisha',
-      description: language === 'en' 
-        ? 'Dedicated professionals ensuring exceptional customer experience.'
-        : 'Xirfadlayaal u go\'an oo hubinaya khibrad macaamiil oo gaar ah.'
-    }
-  ];
+  // const team = [
+  //   {
+  //     name: language === 'en' ? 'Leadership Team' : 'Kooxda Hogaanka',
+  //     role: language === 'en' ? 'Visionary Leaders' : 'Hogaamiya Aragti',
+  //     description: language === 'en' 
+  //       ? 'Experienced professionals driving innovation and growth.'
+  //       : 'Xirfadlayaal khibrad leh oo dhiirigelinaya cusboonaysi iyo koritaan.'
+  //   },
+  //   {
+  //     name: language === 'en' ? 'Development Team' : 'Kooxda Horumarinta',
+  //     role: language === 'en' ? 'Tech Innovators' : 'Cusboonaysiyeenka Teknoolojiga',
+  //     description: language === 'en' 
+  //       ? 'Skilled developers creating cutting-edge solutions.'
+  //       : 'Horumarayaal xirfad leh oo sameeya xalalka ugu horreeya.'
+  //   },
+  //   {
+  //     name: language === 'en' ? 'Support Team' : 'Kooxda Taageerada',
+  //     role: language === 'en' ? 'Customer Champions' : 'Garaadka Macaamiisha',
+  //     description: language === 'en' 
+  //       ? 'Dedicated professionals ensuring exceptional customer experience.'
+  //       : 'Xirfadlayaal u go\'an oo hubinaya khibrad macaamiil oo gaar ah.'
+  //   }
+  // ];
 
   return (
-    <div className="h-screen bg-gradient-to-br from-blue-50 via-blue-100 to-indigo-200 overflow-y-auto">
-      {/* Hero Section */}
-      <section className="relative py-20 overflow-hidden">
-        {/* Background Elements */}
+    <>
+      <Helmet>
+        <title>About Maandhise Corporate - Our Story, Mission & Vision | Somalia</title>
+        <meta name="description" content="Learn about Maandhise Corporate's journey since 2021. Founded by Abdullahi Abdi Elmi, we unite education, consulting & savings for Somalia's future." />
+        <meta name="keywords" content="about maandhise, company story, somalia business, abdullahi abdi elmi, founder, mission, vision, education somalia" />
+        <meta name="author" content="Maandhise Corporate" />
+        
+        {/* Open Graph / Facebook */}
+        <meta property="og:type" content="website" />
+        <meta property="og:url" content="https://maandhise.com/about" />
+        <meta property="og:title" content="About Maandhise Corporate - Our Story, Mission & Vision" />
+        <meta property="og:description" content="Learn about Maandhise Corporate's journey since 2021. Founded by Abdullahi Abdi Elmi, we unite education, consulting & savings for Somalia's future." />
+        <meta property="og:image" content="https://maandhise.com/og-about.png" />
+        <meta property="og:site_name" content="Maandhise Corporate" />
+        
+        {/* Twitter */}
+        <meta property="twitter:card" content="summary_large_image" />
+        <meta property="twitter:url" content="https://maandhise.com/about" />
+        <meta property="twitter:title" content="About Maandhise Corporate - Our Story, Mission & Vision" />
+        <meta property="twitter:description" content="Learn about Maandhise Corporate's journey since 2021. Founded by Abdullahi Abdi Elmi, we unite education, consulting & savings for Somalia's future." />
+        <meta property="twitter:image" content="https://maandhise.com/og-about.png" />
+        
+        {/* Canonical URL */}
+        <link rel="canonical" href="https://maandhise.com/about" />
+      </Helmet>
+      
+      <div className="h-screen bg-gradient-to-br from-blue-50 via-blue-100 to-indigo-200 overflow-y-auto">
+      {/* Hero Section - HIDDEN */}
+      {/* <section className="relative py-20 overflow-hidden">
         <div className="absolute inset-0">
           <div className="absolute top-20 left-10 w-72 h-72 bg-blue-300 rounded-full mix-blend-multiply filter blur-xl opacity-70"></div>
           <div className="absolute top-40 right-10 w-72 h-72 bg-cyan-300 rounded-full mix-blend-multiply filter blur-xl opacity-70"></div>
           <div className="absolute -bottom-8 left-20 w-72 h-72 bg-indigo-300 rounded-full mix-blend-multiply filter blur-xl opacity-70"></div>
-          
         </div>
 
         <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -101,13 +126,12 @@ const AboutPage: React.FC = () => {
               {language === 'en' ? 'About Maandhise Corporate' : 'Ku Saabsan Maandhise Corporate'}
             </h1>
             
-            {/* Founder Image */}
             <div className="flex justify-center items-center mb-8">
               <div className="text-center">
                 <div className="w-48 h-48 rounded-full overflow-hidden border-4 border-cyan-500 shadow-lg mb-4">
                   <img 
                     src="/icons/abdalla.jpeg" 
-                    alt={language === 'en' ? 'Abdalla - Co-founder' : 'Abdalla - La Aasaasaha'}
+                    alt={language === 'en' ? 'Abdalla - Co-founder of Maandhise Corporate' : 'Abdalla - La Aasaasaha Maandhise Corporate'}
                     className="w-full h-full object-cover"
                   />
                 </div>
@@ -125,10 +149,10 @@ const AboutPage: React.FC = () => {
             </p>
           </motion.div>
         </div>
-      </section>
+      </section> */}
 
-      {/* Mission & Vision Section */}
-      <section className="py-20">
+      {/* Mission & Vision Section - HIDDEN */}
+      {/* <section className="py-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
             <motion.div
@@ -178,7 +202,7 @@ const AboutPage: React.FC = () => {
             </motion.div>
           </div>
         </div>
-      </section>
+      </section> */}
 
       {/* Founder & Story Section */}
       <section className="py-20 bg-white/50">
@@ -213,7 +237,7 @@ const AboutPage: React.FC = () => {
                 <div className="w-24 h-24 rounded-full overflow-hidden mr-6 border-4 border-blue-500">
                   <img 
                     src="/icons/founder.jpeg" 
-                    alt={language === 'en' ? 'Abdullahi Abdi Elmi - Founder & CEO' : 'Abdullahi Abdi Elmi - Aasaasaha & CEO'}
+                    alt={language === 'en' ? 'Abdullahi Abdi Elmi - Founder & CEO of Maandhise Corporate' : 'Abdullahi Abdi Elmi - Aasaasaha & CEO Maandhise Corporate'}
                     className="w-full h-full object-cover"
                   />
                 </div>
@@ -372,6 +396,7 @@ const AboutPage: React.FC = () => {
 
 
     </div>
+    </>
   );
 };
 

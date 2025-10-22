@@ -7,6 +7,8 @@ import { HelmetProvider } from 'react-helmet-async';
 // Components
 import Navbar from './components/layout/Navbar.tsx';
 import ScrollNavigator from './components/ScrollNavigator.tsx';
+import GlobalLoginButton from './components/GlobalLoginButton.tsx';
+import ProtectedRoute from './components/ProtectedRoute.tsx';
 
 // Pages
 import HomePage from './pages/HomePage.tsx';
@@ -15,6 +17,9 @@ import ServicesPage from './pages/ServicesPage.tsx';
 import SahalCardPage from './pages/SahalCardPage.tsx';
 import ContactPage from './pages/ContactPage.tsx';
 import GetSahalCardPage from './pages/GetSahalCardPage.tsx';
+import LoginPage from './pages/auth/LoginPage.tsx';
+import DashboardPage from './pages/dashboard/DashboardPage.tsx';
+import ProfilePage from './pages/dashboard/ProfilePage.tsx';
 
 // Context
 import { AuthProvider } from './contexts/AuthContext.tsx';
@@ -40,8 +45,20 @@ function App() {
             <Router>
               <div className="min-h-screen">
                 <Navbar />
+                <GlobalLoginButton />
                 
                 <Routes>
+                  <Route path="/login" element={<LoginPage />} />
+                  <Route path="/dashboard" element={
+                    <ProtectedRoute requireAdmin={true}>
+                      <DashboardPage />
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/profile" element={
+                    <ProtectedRoute>
+                      <ProfilePage />
+                    </ProtectedRoute>
+                  } />
                   <Route path="/get-sahal-card" element={<GetSahalCardPage />} />
                   <Route path="/*" element={
                     <ScrollNavigator>
@@ -78,24 +95,55 @@ function App() {
                 <Toaster
                   position="top-right"
                   toastOptions={{
-                    duration: 4000,
+                    duration: 5000,
                     style: {
-                      background: 'rgba(255, 255, 255, 0.95)',
-                      backdropFilter: 'blur(10px)',
-                      border: '1px solid rgba(59, 130, 246, 0.2)',
+                      background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                      color: '#ffffff',
+                      fontWeight: '600',
+                      fontSize: '15px',
                       borderRadius: '12px',
-                      boxShadow: '0 8px 32px 0 rgba(31, 38, 135, 0.37)',
+                      padding: '16px 20px',
+                      boxShadow: '0 10px 25px rgba(16, 185, 129, 0.3), 0 4px 10px rgba(0, 0, 0, 0.1)',
+                      border: '1px solid rgba(255, 255, 255, 0.2)',
+                      backdropFilter: 'blur(10px)',
+                      transform: 'translateY(0)',
+                      opacity: '1',
+                      transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                     },
                     success: {
                       iconTheme: {
-                        primary: '#10b981',
-                        secondary: '#ffffff',
+                        primary: '#ffffff',
+                        secondary: '#10b981',
+                      },
+                      style: {
+                        background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                        color: '#ffffff',
+                        fontWeight: '600',
+                        fontSize: '15px',
+                        borderRadius: '12px',
+                        padding: '16px 20px',
+                        boxShadow: '0 10px 25px rgba(16, 185, 129, 0.3), 0 4px 10px rgba(0, 0, 0, 0.1)',
+                        border: '1px solid rgba(255, 255, 255, 0.2)',
+                        backdropFilter: 'blur(10px)',
+                        position: 'relative',
+                        overflow: 'hidden',
                       },
                     },
                     error: {
                       iconTheme: {
-                        primary: '#ef4444',
-                        secondary: '#ffffff',
+                        primary: '#ffffff',
+                        secondary: '#ef4444',
+                      },
+                      style: {
+                        background: 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)',
+                        color: '#ffffff',
+                        fontWeight: '600',
+                        fontSize: '15px',
+                        borderRadius: '12px',
+                        padding: '16px 20px',
+                        boxShadow: '0 10px 25px rgba(239, 68, 68, 0.3), 0 4px 10px rgba(0, 0, 0, 0.1)',
+                        border: '1px solid rgba(255, 255, 255, 0.2)',
+                        backdropFilter: 'blur(10px)',
                       },
                     },
                   }}

@@ -26,12 +26,8 @@ const authenticateToken = async (req, res, next) => {
       });
     }
 
-    if (!user.isActive) {
-      return res.status(401).json({
-        success: false,
-        message: 'Account is deactivated'
-      });
-    }
+    // Note: isActive field was removed from User model
+    // All users are considered active by default
 
     req.user = user;
     next();
@@ -89,8 +85,8 @@ const authorizeOwnerOrAdmin = (resourceUserIdField = 'userId') => {
       });
     }
 
-    // Admin can access everything
-    if (req.user.role === 'admin') {
+    // Admin and superadmin can access everything
+    if (req.user.role === 'admin' || req.user.role === 'superadmin') {
       return next();
     }
 

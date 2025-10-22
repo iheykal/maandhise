@@ -66,6 +66,29 @@ const sahacardSchema = new mongoose.Schema({
   suspensionReason: {
     type: String,
     default: null
+  },
+  // Simple payment tracking
+  monthlyFee: {
+    type: Number,
+    default: 1.00,
+    min: [0, 'Monthly fee cannot be negative']
+  },
+  nextPaymentDue: {
+    type: Date,
+    required: true
+  },
+  paymentStatus: {
+    type: String,
+    enum: ['valid', 'invalid'],
+    default: 'valid'
+  },
+  lastPaymentDate: {
+    type: Date,
+    default: Date.now
+  },
+  paymentNotes: {
+    type: String,
+    default: ''
   }
 }, {
   timestamps: true,
@@ -81,7 +104,11 @@ sahacardSchema.index({ status: 1 });
 
 // Virtual for card validity
 sahacardSchema.virtual('isValid').get(function() {
-  return this.isActive && this.validUntil > new Date() && this.status === 'active';
+  const now = new Date();
+  return this.isActive && 
+         this.validUntil > now && 
+         this.status === 'active' && 
+         this.paymentStatus === 'valid';
 });
 
 // Virtual for days remaining
@@ -101,26 +128,62 @@ sahacardSchema.virtual('statusText').get(function() {
   return 'Active';
 });
 
-// Generate unique card number
-sahacardSchema.statics.generateCardNumber = function() {
-  const prefix = 'SAHAL';
-  const timestamp = Date.now().toString().slice(-6);
-  const random = Math.random().toString(36).substring(2, 8).toUpperCase();
-  return `${prefix}${timestamp}${random}`;
+// Generate unique card number from user ID
+sahacardSchema.statics.generateCardNumber = function(userIdentifier) {
+  console.log('Generating card number from identifier:', userIdentifier);
+  
+  // Extract only numbers from the identifier
+  const numbers = userIdentifier.replace(/\D/g, '');
+  console.log('Extracted numbers:', numbers);
+  
+  // Take the last 8 digits, pad with zeros if needed
+  let cardNumber = numbers.slice(-8);
+  if (cardNumber.length < 8) {
+    cardNumber = cardNumber.padStart(8, '0');
+  }
+  
+  console.log('Final card number:', cardNumber);
+  return cardNumber;
 };
 
 // Create new Sahal Card
 sahacardSchema.statics.createCard = async function(userId, membershipFee = 1.00) {
-  const cardNumber = this.generateCardNumber();
+  // Get user's ID number for card number generation
+  const User = require('./User');
+  const user = await User.findById(userId);
+  
+  console.log('Creating card for user:', {
+    userId,
+    userFullName: user?.fullName,
+    userPhone: user?.phone,
+    useridNumber: user?.idNumber,
+    hasIdNumber: !!user?.idNumber
+  });
+  
+  // Use ID number if available, otherwise use user ID
+  const userIdentifier = user?.idNumber || userId;
+  console.log('Using identifier for card number:', userIdentifier);
+  console.log('User has ID number:', !!user?.idNumber);
+  console.log('User ID number value:', user?.idNumber);
+  
+  const cardNumber = this.generateCardNumber(userIdentifier);
+  console.log('Generated card number:', cardNumber);
   const validUntil = new Date();
-  validUntil.setFullYear(validUntil.getFullYear() + 1); // Valid for 1 year
+  validUntil.setMonth(validUntil.getMonth() + 1); // Valid for 1 month
+  
+  const nextPaymentDue = new Date();
+  nextPaymentDue.setMonth(nextPaymentDue.getMonth() + 1);
   
   const card = new this({
     userId,
     cardNumber,
-    qrCode: `SAHAL:${cardNumber}:${userId}`,
+    qrCode: `${cardNumber}:${userId}`,
     validUntil,
     membershipFee,
+    monthlyFee: membershipFee,
+    nextPaymentDue,
+    paymentStatus: 'valid', // New cards start as valid
+    lastPaymentDate: new Date(),
     renewalHistory: [{
       renewedAt: new Date(),
       fee: membershipFee,
@@ -147,6 +210,36 @@ sahacardSchema.methods.renew = async function(renewalFee = 0.50) {
   return await this.save();
 };
 
+// Simple method to mark as valid
+sahacardSchema.methods.markAsValid = async function(notes = '') {
+  const newValidUntil = new Date();
+  newValidUntil.setMonth(newValidUntil.getMonth() + 1);
+  
+  const nextPaymentDue = new Date();
+  nextPaymentDue.setMonth(nextPaymentDue.getMonth() + 1);
+  
+  this.validUntil = newValidUntil;
+  this.nextPaymentDue = nextPaymentDue;
+  this.paymentStatus = 'valid';
+  this.lastPaymentDate = new Date();
+  this.paymentNotes = notes;
+  this.status = 'active';
+  this.isActive = true;
+  
+  return await this.save();
+};
+
+// Simple method to mark as invalid
+sahacardSchema.methods.markAsInvalid = async function(notes = '') {
+  this.paymentStatus = 'invalid';
+  this.paymentNotes = notes;
+  this.status = 'suspended';
+  this.isActive = false;
+  this.suspensionReason = 'Payment not received';
+  
+  return await this.save();
+};
+
 // Update savings
 sahacardSchema.methods.addSavings = async function(amount) {
   this.totalSavings += amount;
@@ -169,6 +262,51 @@ sahacardSchema.methods.reactivate = async function() {
   this.status = 'active';
   this.suspensionReason = null;
   return await this.save();
+};
+
+// Renew card for flexible duration ($1 = 1 month)
+sahacardSchema.methods.renewForDuration = async function(amount, paymentMethod, transactionId) {
+  const monthsToAdd = Math.floor(amount); // $1 = 1 month
+  const currentDate = new Date();
+  
+  // If card is currently valid, extend from current validUntil date
+  // If card is expired, start from current date
+  const baseDate = this.validUntil > currentDate ? this.validUntil : currentDate;
+  
+  // Calculate new expiration date
+  const newValidUntil = new Date(baseDate);
+  newValidUntil.setMonth(newValidUntil.getMonth() + monthsToAdd);
+  
+  // Update next payment due to be 1 month before expiration
+  const nextPaymentDue = new Date(newValidUntil);
+  nextPaymentDue.setMonth(nextPaymentDue.getMonth() - 1);
+  
+  // Update card properties
+  this.validUntil = newValidUntil;
+  this.nextPaymentDue = nextPaymentDue;
+  this.paymentStatus = 'valid';
+  this.lastPaymentDate = currentDate;
+  this.status = 'active';
+  this.isActive = true;
+  this.suspensionReason = null;
+  
+  // Add to renewal history
+  this.renewalHistory.push({
+    renewedAt: currentDate,
+    fee: amount,
+    validUntil: newValidUntil,
+    monthsAdded: monthsToAdd,
+    paymentMethod,
+    transactionId
+  });
+  
+  return await this.save();
+};
+
+// Simple monthly renewal method (for backward compatibility)
+sahacardSchema.methods.renewMonthly = async function(paymentData) {
+  const { paymentMethod, transactionId } = paymentData;
+  return await this.renewForDuration(this.monthlyFee, paymentMethod, transactionId);
 };
 
 // Get card statistics

@@ -1,6 +1,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Mail, Phone, MapPin, MessageCircle } from 'lucide-react';
+import { Helmet } from 'react-helmet-async';
+import { Mail, Phone, MapPin } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext.tsx';
 
 const ContactPage: React.FC = () => {
@@ -31,7 +32,33 @@ const ContactPage: React.FC = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-blue-100 to-indigo-200">
+    <>
+      <Helmet>
+        <title>Contact Maandhise Corporate - Get in Touch | Mogadishu, Somalia</title>
+        <meta name="description" content="Contact Maandhise Corporate for Sahal Card orders, business inquiries, or support. Phone: +252 613 273 911, Email: Maandhisecorporate@gmail.com" />
+        <meta name="keywords" content="contact maandhise, somalia business contact, mogadishu office, sahacard support, business inquiries" />
+        <meta name="author" content="Maandhise Corporate" />
+        
+        {/* Open Graph / Facebook */}
+        <meta property="og:type" content="website" />
+        <meta property="og:url" content="https://maandhise.com/contact" />
+        <meta property="og:title" content="Contact Maandhise Corporate - Get in Touch" />
+        <meta property="og:description" content="Contact Maandhise Corporate for Sahal Card orders, business inquiries, or support. Phone: +252 613 273 911, Email: Maandhisecorporate@gmail.com" />
+        <meta property="og:image" content="https://maandhise.com/og-contact.png" />
+        <meta property="og:site_name" content="Maandhise Corporate" />
+        
+        {/* Twitter */}
+        <meta property="twitter:card" content="summary_large_image" />
+        <meta property="twitter:url" content="https://maandhise.com/contact" />
+        <meta property="twitter:title" content="Contact Maandhise Corporate - Get in Touch" />
+        <meta property="twitter:description" content="Contact Maandhise Corporate for Sahal Card orders, business inquiries, or support. Phone: +252 613 273 911, Email: Maandhisecorporate@gmail.com" />
+        <meta property="twitter:image" content="https://maandhise.com/og-contact.png" />
+        
+        {/* Canonical URL */}
+        <link rel="canonical" href="https://maandhise.com/contact" />
+      </Helmet>
+      
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-blue-100 to-indigo-200">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
         {/* Header */}
         <motion.div
@@ -94,6 +121,7 @@ const ContactPage: React.FC = () => {
 
       </div>
     </div>
+    </>
   );
 };
 

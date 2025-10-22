@@ -8,53 +8,53 @@ const userSchema = new mongoose.Schema({
     trim: true,
     maxlength: [100, 'Full name cannot exceed 100 characters']
   },
-  email: {
-    type: String,
-    required: [true, 'Email is required'],
-    unique: true,
-    lowercase: true,
-    trim: true,
-    match: [/^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/, 'Please enter a valid email']
-  },
   phone: {
     type: String,
     required: [true, 'Phone number is required'],
+    unique: true,
     trim: true,
     match: [/^[\+]?[1-9][\d]{0,15}$/, 'Please enter a valid phone number']
   },
   idNumber: {
     type: String,
-    required: [true, 'ID number is required'],
-    unique: true,
-    trim: true
-  },
-  photo: {
-    type: String,
-    default: null
+    trim: true,
+    minlength: [1, 'ID number must be at least 1 character'],
+    maxlength: [20, 'ID number cannot exceed 20 characters']
   },
   location: {
     type: String,
-    required: [true, 'Location is required'],
+    trim: true,
+    maxlength: [100, 'Location cannot exceed 100 characters']
+  },
+  // Number of paid months (each $ equals 1 month)
+  membershipMonths: {
+    type: Number,
+    default: 0,
+    min: 0
+  },
+  // Calculated date when membership becomes invalid
+  validUntil: {
+    type: Date,
+    default: null
+  },
+  profilePicUrl: {
+    type: String,
     trim: true
   },
   role: {
     type: String,
-    enum: ['customer', 'company', 'admin'],
+    enum: ['customer', 'company', 'admin', 'superadmin'],
     default: 'customer'
+  },
+  canLogin: {
+    type: Boolean,
+    default: true
   },
   password: {
     type: String,
     required: [true, 'Password is required'],
     minlength: [6, 'Password must be at least 6 characters'],
     select: false
-  },
-  isActive: {
-    type: Boolean,
-    default: true
-  },
-  emailVerified: {
-    type: Boolean,
-    default: false
   },
   lastLogin: {
     type: Date,
@@ -75,8 +75,7 @@ const userSchema = new mongoose.Schema({
 });
 
 // Index for better query performance
-userSchema.index({ email: 1 });
-userSchema.index({ idNumber: 1 });
+userSchema.index({ phone: 1 });
 userSchema.index({ role: 1 });
 
 // Virtual for user's full profile
@@ -84,14 +83,14 @@ userSchema.virtual('profile').get(function() {
   return {
     _id: this._id,
     fullName: this.fullName,
-    email: this.email,
     phone: this.phone,
     idNumber: this.idNumber,
-    photo: this.photo,
     location: this.location,
+    membershipMonths: this.membershipMonths,
+    validUntil: this.validUntil,
+    profilePicUrl: this.profilePicUrl,
     role: this.role,
-    isActive: this.isActive,
-    emailVerified: this.emailVerified,
+    canLogin: this.canLogin,
     createdAt: this.createdAt
   };
 });
@@ -132,14 +131,9 @@ userSchema.methods.removeRefreshToken = function(token) {
   return this.save({ validateBeforeSave: false });
 };
 
-// Static method to find by email or idNumber
-userSchema.statics.findByEmailOrIdNumber = function(identifier) {
-  return this.findOne({
-    $or: [
-      { email: identifier },
-      { idNumber: identifier }
-    ]
-  });
+// Static method to find by phone
+userSchema.statics.findByPhone = function(phone) {
+  return this.findOne({ phone });
 };
 
 module.exports = mongoose.model('User', userSchema);

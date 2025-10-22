@@ -15,6 +15,8 @@ import { useTheme } from '../../contexts/ThemeContext.tsx';
 const Navbar: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
+  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+  const [userMenuTimeout, setUserMenuTimeout] = useState<NodeJS.Timeout | null>(null);
   const { user, isAuthenticated, logout } = useAuth();
   const { language } = useTheme();
   const location = useLocation();
@@ -35,18 +37,48 @@ const Navbar: React.FC = () => {
     setIsOpen(false);
   }, [location]);
 
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (userMenuTimeout) {
+        clearTimeout(userMenuTimeout);
+      }
+    };
+  }, [userMenuTimeout]);
+
   const handleLogout = async () => {
     await logout();
     navigate('/');
   };
 
   const navItems = [
-    { name: language === 'en' ? 'Home' : 'Guriga', href: '#home' },
-    { name: language === 'en' ? 'About' : 'Ku Saabsan', href: '#about' },
-    { name: language === 'en' ? 'Services' : 'Adeegaha', href: '#services' },
-    { name: language === 'en' ? 'Sahal Card' : 'Kaarka Sahal', href: '#sahal-card' },
-    { name: language === 'en' ? 'Contact' : 'La Xidhiidh', href: '#contact' },
+    { name: language === 'en' ? 'Home' : 'Guriga', href: '#home', id: 'home' },
+    { name: language === 'en' ? 'About' : 'Ku Saabsan', href: '#about', id: 'about' },
+    { name: language === 'en' ? 'Services' : 'Adeegaha', href: '#services', id: 'services' },
+    { name: language === 'en' ? 'Sahal Card' : 'Kaarka Sahal', href: '#sahal-card', id: 'sahal-card' },
+    { name: language === 'en' ? 'Contact' : 'La Xidhiidh', href: '#contact', id: 'contact' },
   ];
+
+  // Handle navigation click
+  const handleNavClick = (item: any) => {
+    // If we're on the main page (home route), scroll to section
+    if (location.pathname === '/' || location.pathname === '') {
+      const element = document.getElementById(item.id);
+      if (element) {
+        element.scrollIntoView({ behavior: 'smooth' });
+      }
+    } else {
+      // If we're on another page (like dashboard), navigate to home first
+      navigate('/');
+      // Then scroll to the section after a short delay
+      setTimeout(() => {
+        const element = document.getElementById(item.id);
+        if (element) {
+          element.scrollIntoView({ behavior: 'smooth' });
+        }
+      }, 100);
+    }
+  };
 
   return (
     <motion.nav
@@ -62,8 +94,8 @@ const Navbar: React.FC = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-20">
           {/* Logo */}
-          <a
-            href="#home"
+          <button
+            onClick={() => navigate('/')}
             className="flex items-center space-x-2 sm:space-x-3 text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold gradient-text hover:scale-105 transition-transform duration-300"
           >
             <img 
@@ -72,18 +104,18 @@ const Navbar: React.FC = () => {
               className="w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 lg:w-18 lg:h-18 object-contain bg-transparent pb-1"
             />
             <span className="whitespace-nowrap font-extrabold tracking-wide">Maandhise</span>
-          </a>
+          </button>
 
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center space-x-8">
             {navItems.map((item) => (
-              <a
+              <button
                 key={item.href}
-                href={item.href}
+                onClick={() => handleNavClick(item)}
                 className="nav-link"
               >
                 {item.name}
-              </a>
+              </button>
             ))}
           </div>
 
@@ -94,18 +126,45 @@ const Navbar: React.FC = () => {
             {isAuthenticated && (
               <div className="flex items-center space-x-2">
                 {/* User Menu */}
-                <div className="relative group">
+                <div 
+                  className="relative"
+                  onMouseEnter={() => {
+                    if (userMenuTimeout) {
+                      clearTimeout(userMenuTimeout);
+                      setUserMenuTimeout(null);
+                    }
+                    setIsUserMenuOpen(true);
+                  }}
+                  onMouseLeave={() => {
+                    const timeout = setTimeout(() => {
+                      setIsUserMenuOpen(false);
+                    }, 150); // 150ms delay before closing
+                    setUserMenuTimeout(timeout);
+                  }}
+                >
                   <button className="flex items-center space-x-2 p-2 rounded-lg glass-button hover:bg-white/30 transition-all duration-300">
-                    <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-full flex items-center justify-center">
-                      <User className="w-4 h-4 text-white" />
-                    </div>
+                    {user?.role === 'superadmin' ? (
+                      <div className="w-8 h-8 rounded-full overflow-hidden ring-2 ring-white shadow-lg">
+                        <img
+                          src="/icons/founder.jpeg"
+                          alt="Founder"
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                    ) : (
+                      <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-full flex items-center justify-center">
+                        <User className="w-4 h-4 text-white" />
+                      </div>
+                    )}
                     <span className="hidden sm:block text-sm font-medium text-gray-700">
                       {user?.fullName}
                     </span>
                   </button>
 
                   {/* Dropdown Menu */}
-                  <div className="absolute right-0 mt-2 w-48 bg-white/90 backdrop-blur-lg rounded-xl shadow-lg border border-white/20 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300">
+                  <div className={`absolute right-0 mt-2 w-48 bg-white/90 backdrop-blur-lg rounded-xl shadow-lg border border-white/20 transition-all duration-300 ${
+                    isUserMenuOpen ? 'opacity-100 visible' : 'opacity-0 invisible'
+                  }`}>
                     <div className="py-2">
                       <Link
                         to="/dashboard"
@@ -163,13 +222,16 @@ const Navbar: React.FC = () => {
           >
             <div className="px-4 py-4 space-y-2">
               {navItems.map((item) => (
-                <a
+                <button
                   key={item.href}
-                  href={item.href}
-                  className="block px-4 py-2 rounded-lg text-gray-700 hover:bg-blue-50 transition-colors duration-200"
+                  onClick={() => {
+                    handleNavClick(item);
+                    setIsOpen(false); // Close mobile menu after click
+                  }}
+                  className="block w-full text-left px-4 py-2 rounded-lg text-gray-700 hover:bg-blue-50 transition-colors duration-200"
                 >
                   {item.name}
-                </a>
+                </button>
               ))}
               
               {!isAuthenticated && (
@@ -180,12 +242,6 @@ const Navbar: React.FC = () => {
                     className="block px-4 py-2 rounded-lg text-gray-700 hover:bg-blue-50 transition-colors duration-200"
                   >
                     {language === 'en' ? 'Login' : 'Gali'}
-                  </Link>
-                  <Link
-                    to="/register"
-                    className="block px-4 py-2 rounded-lg bg-gradient-to-r from-blue-600 to-cyan-600 text-white hover:from-blue-700 hover:to-cyan-700 transition-all duration-300"
-                  >
-                    {language === 'en' ? 'Register' : 'Diiwaan'}
                   </Link>
                 </>
               )}

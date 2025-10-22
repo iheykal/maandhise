@@ -24,26 +24,27 @@ const generateTokens = (userId) => {
 // Register new user
 const register = async (req, res) => {
   try {
-    const { fullName, email, phone, idNumber, password, location, role = 'customer' } = req.body;
+    const { fullName, phone, password, role = 'customer' } = req.body;
 
     // Check if user already exists
-    const existingUser = await User.findByEmailOrIdNumber(email);
+    const existingUser = await User.findByPhone(phone);
     if (existingUser) {
       return res.status(400).json({
         success: false,
-        message: 'User with this email or ID number already exists'
+        message: 'User with this phone number already exists'
       });
     }
 
     // Create new user
+    // Business partners (company) need admin approval before they can login
+    const canLogin = role !== 'company';
+    
     const user = new User({
       fullName,
-      email,
       phone,
-      idNumber,
       password,
-      location,
-      role
+      role,
+      canLogin
     });
 
     await user.save();
@@ -110,23 +111,23 @@ const register = async (req, res) => {
 // Login user
 const login = async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const { phone, password } = req.body;
 
     // Find user and include password for comparison
-    const user = await User.findOne({ email }).select('+password');
+    const user = await User.findOne({ phone }).select('+password');
     
     if (!user) {
       return res.status(401).json({
         success: false,
-        message: 'Invalid email or password'
+        message: 'Invalid phone number or password'
       });
     }
 
-    // Check if account is active
-    if (!user.isActive) {
-      return res.status(401).json({
+    // Check if user can login
+    if (!user.canLogin) {
+      return res.status(403).json({
         success: false,
-        message: 'Account is deactivated. Please contact support.'
+        message: 'Login is disabled for this account. Please contact an administrator.'
       });
     }
 
@@ -135,7 +136,7 @@ const login = async (req, res) => {
     if (!isPasswordValid) {
       return res.status(401).json({
         success: false,
-        message: 'Invalid email or password'
+        message: 'Invalid phone number or password'
       });
     }
 
@@ -299,12 +300,11 @@ const getProfile = async (req, res) => {
 const updateProfile = async (req, res) => {
   try {
     const user = req.user;
-    const { fullName, phone, location } = req.body;
+    const { fullName, phone } = req.body;
 
     // Update allowed fields
     if (fullName) user.fullName = fullName;
     if (phone) user.phone = phone;
-    if (location) user.location = location;
 
     await user.save();
 
@@ -369,14 +369,14 @@ const changePassword = async (req, res) => {
 // Forgot password
 const forgotPassword = async (req, res) => {
   try {
-    const { email } = req.body;
+    const { phone } = req.body;
 
-    const user = await User.findOne({ email });
+    const user = await User.findOne({ phone });
     if (!user) {
-      // Don't reveal if email exists or not
+      // Don't reveal if phone exists or not
       return res.json({
         success: true,
-        message: 'If the email exists, a password reset link has been sent.'
+        message: 'If the phone number exists, a password reset link has been sent.'
       });
     }
 
@@ -387,13 +387,13 @@ const forgotPassword = async (req, res) => {
       { expiresIn: '1h' }
     );
 
-    // TODO: Send email with reset link
+    // TODO: Send SMS with reset link
     // For now, just return success
-    console.log(`Password reset token for ${email}: ${resetToken}`);
+    console.log(`Password reset token for ${phone}: ${resetToken}`);
 
     res.json({
       success: true,
-      message: 'If the email exists, a password reset link has been sent.'
+      message: 'If the phone number exists, a password reset link has been sent.'
     });
 
   } catch (error) {
@@ -459,14 +459,340 @@ const resetPassword = async (req, res) => {
   }
 };
 
+// Create user (Admin only)
+const createUser = async (req, res) => {
+  try {
+    const { fullName, phone, role = 'customer', idNumber, profilePicUrl, registrationDate, amount } = req.body;
+
+    // Check if user already exists
+    const existingUser = await User.findByPhone(phone);
+    if (existingUser) {
+      return res.status(400).json({
+        success: false,
+        message: 'User with this phone number already exists'
+      });
+    }
+
+    // Generate a default password
+    const defaultPassword = 'maandhise123';
+
+    // Create new user (admin-created users cannot login)
+    // Compute membership months and validUntil
+    let membershipMonths = 0;
+    let validUntil = null;
+    if (amount && Number.isInteger(amount) && amount > 0) {
+      membershipMonths = amount;
+      const start = registrationDate ? new Date(registrationDate) : new Date();
+      const end = new Date(start);
+      end.setMonth(end.getMonth() + membershipMonths);
+      validUntil = end;
+    }
+
+    const user = new User({
+      fullName,
+      phone,
+      password: defaultPassword,
+      role,
+      idNumber,
+      profilePicUrl,
+      membershipMonths,
+      validUntil,
+      canLogin: false
+    });
+
+    await user.save();
+
+    // Create welcome notification
+    await Notification.createNotification({
+      userId: user._id,
+      title: 'Welcome to Maandhise Corporate!',
+      message: `Welcome ${fullName}! Your account has been created by an administrator. Get your Sahal Card to start saving!`,
+      type: 'success',
+      category: 'system',
+      actionUrl: '/sahal-card/register',
+      actionText: 'Get Sahal Card'
+    });
+
+    // If customer, create Sahal Card automatically
+    if (role === 'customer') {
+      try {
+        await SahalCard.createCard(user._id, 1.00);
+        
+        await Notification.createNotification({
+          userId: user._id,
+          title: 'Sahal Card Created!',
+          message: 'Your Sahal Card has been created automatically. Start saving with our partner businesses!',
+          type: 'success',
+          category: 'card_expiry',
+          actionUrl: '/dashboard/sahal-card',
+          actionText: 'View Card'
+        });
+      } catch (cardError) {
+        console.error('Error creating Sahal Card:', cardError);
+        // Don't fail user creation if card creation fails
+      }
+    }
+
+    res.status(201).json({
+      success: true,
+      message: 'User created successfully',
+      data: {
+        user: user.profile
+      }
+    });
+
+  } catch (error) {
+    console.error('User creation error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'User creation failed',
+      error: error.message
+    });
+  }
+};
+
+// Get all users (Admin only) - excludes superadmin users from the list
+const getAllUsers = async (req, res) => {
+  try {
+    const { page = 1, limit = 10, role, search } = req.query;
+    
+    // Build query - ALWAYS exclude superadmin users from the list for security
+    const baseQuery = { role: { $ne: 'superadmin' } };
+    
+    // Add role filter if specified (but never allow superadmin)
+    if (role && role !== 'superadmin') {
+      baseQuery.role = role;
+    }
+    
+    // Add search filter if specified
+    if (search) {
+      baseQuery.$or = [
+        { fullName: { $regex: search, $options: 'i' } },
+        { phone: { $regex: search, $options: 'i' } }
+      ];
+    }
+    
+    const query = baseQuery;
+
+    console.log('🔍 getAllUsers query:', JSON.stringify(query, null, 2));
+
+    // Get users with pagination
+    let users = await User.find(query)
+      .select('-password -refreshTokens')
+      .sort({ createdAt: -1 })
+      .limit(limit * 1)
+      .skip((page - 1) * limit);
+
+    // Double-check: Filter out any superadmin users that might have slipped through
+    users = users.filter(user => user.role !== 'superadmin');
+
+    // Get total count
+    const total = await User.countDocuments(query);
+
+    console.log('👥 Found users:', users.length, 'Total:', total);
+    console.log('📋 User roles:', users.map(u => ({ name: u.fullName, role: u.role })));
+
+    res.json({
+      success: true,
+      data: {
+        users,
+        pagination: {
+          current: parseInt(page),
+          pages: Math.ceil(total / limit),
+          total
+        }
+      }
+    });
+
+  } catch (error) {
+    console.error('Get users error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to get users',
+      error: error.message
+    });
+  }
+};
+
+// Update user (Admin only)
+const updateUser = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const updateData = req.body;
+    const currentUser = req.user;
+
+    // Find the user to update
+    const userToUpdate = await User.findById(userId);
+    if (!userToUpdate) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+
+    // Prevent updating superadmin accounts (unless current user is superadmin)
+    if (userToUpdate.role === 'superadmin' && currentUser.role !== 'superadmin') {
+      return res.status(403).json({
+        success: false,
+        message: 'Only superadmin can update superadmin accounts'
+      });
+    }
+
+    // Update allowed fields
+    const allowedFields = ['fullName', 'phone', 'idNumber', 'location', 'profilePicUrl', 'validUntil', 'membershipMonths', 'canLogin'];
+    allowedFields.forEach(field => {
+      if (updateData[field] !== undefined) {
+        userToUpdate[field] = updateData[field];
+      }
+    });
+
+    // If role is being updated, validate it
+    if (updateData.role && currentUser.role === 'superadmin') {
+      userToUpdate.role = updateData.role;
+    }
+
+    await userToUpdate.save();
+
+    res.json({
+      success: true,
+      message: 'User updated successfully',
+      data: {
+        user: userToUpdate.profile
+      }
+    });
+
+  } catch (error) {
+    console.error('Update user error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to update user',
+      error: error.message
+    });
+  }
+};
+
+// Delete user (Admin only)
+const deleteUser = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const currentUser = req.user;
+
+    // Prevent self-deletion
+    if (currentUser._id.toString() === userId) {
+      return res.status(400).json({
+        success: false,
+        message: 'You cannot delete your own account'
+      });
+    }
+
+    // Find the user to delete
+    const userToDelete = await User.findById(userId);
+    if (!userToDelete) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+
+    // Prevent deletion of superadmin accounts (unless current user is superadmin)
+    if (userToDelete.role === 'superadmin' && currentUser.role !== 'superadmin') {
+      return res.status(403).json({
+        success: false,
+        message: 'Only superadmin can delete superadmin accounts'
+      });
+    }
+
+    // Delete related data first
+    try {
+      // Delete user's Sahal Card
+      await SahalCard.deleteMany({ userId: userId });
+      
+      // Delete user's notifications
+      await Notification.deleteMany({ userId: userId });
+      
+      // Delete user's transactions (if any)
+      await Transaction.deleteMany({ customerId: userId });
+      
+      // Delete user's company (if any)
+      await Company.deleteMany({ userId: userId });
+      
+      console.log(`Deleted related data for user: ${userToDelete.fullName}`);
+    } catch (relatedDataError) {
+      console.error('Error deleting related data:', relatedDataError);
+      // Continue with user deletion even if related data deletion fails
+    }
+
+    // Delete the user
+    await User.findByIdAndDelete(userId);
+
+    res.json({
+      success: true,
+      message: `User ${userToDelete.fullName} deleted successfully`
+    });
+
+  } catch (error) {
+    console.error('Delete user error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to delete user',
+      error: error.message
+    });
+  }
+};
+
+// Search user by ID number (Admin only)
+const searchUserById = async (req, res) => {
+  try {
+    const { idNumber } = req.body;
+    
+    if (!idNumber || !idNumber.trim()) {
+      return res.status(400).json({
+        success: false,
+        message: 'ID number is required'
+      });
+    }
+
+    // Find user by ID number
+    const user = await User.findOne({ 
+      idNumber: idNumber.trim() 
+    }).select('-password -refreshTokens');
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found with this ID number'
+      });
+    }
+
+    res.json({
+      success: true,
+      message: 'User found',
+      user: user
+    });
+
+  } catch (error) {
+    console.error('Search user by ID error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to search user',
+      error: error.message
+    });
+  }
+};
+
 module.exports = {
   register,
   login,
   refreshToken,
   logout,
   getProfile,
+  searchUserById,
   updateProfile,
   changePassword,
   forgotPassword,
-  resetPassword
+  resetPassword,
+  createUser,
+  getAllUsers,
+  updateUser,
+  deleteUser
 };

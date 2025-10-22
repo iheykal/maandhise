@@ -1,17 +1,19 @@
-import React, { createContext, useContext, useReducer, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useReducer, useEffect, ReactNode, useState, useCallback } from 'react';
 import { authService } from '../services/authService.ts';
 import toast from 'react-hot-toast';
+import { motion, AnimatePresence } from 'framer-motion';
 
 interface User {
   _id: string;
   fullName: string;
-  email: string;
   phone: string;
-  idNumber: string;
-  photo?: string;
-  location: string;
-  role: 'customer' | 'company' | 'admin';
-  isActive: boolean;
+  idNumber?: string;
+  location?: string;
+  profilePicUrl?: string;
+  role: 'customer' | 'company' | 'admin' | 'superadmin';
+  canLogin: boolean;
+  membershipMonths?: number;
+  validUntil?: string;
   createdAt: string;
 }
 
@@ -25,22 +27,36 @@ interface AuthState {
 }
 
 interface AuthContextType extends AuthState {
-  login: (email: string, password: string) => Promise<void>;
+  login: (phone: string, password: string) => Promise<void>;
   register: (userData: RegisterData) => Promise<void>;
   logout: () => void;
   updateProfile: (userData: Partial<User>) => Promise<void>;
   changePassword: (currentPassword: string, newPassword: string) => Promise<void>;
+  createUser: (userData: {
+    fullName: string;
+    phone: string;
+    role?: 'customer' | 'company' | 'admin' | 'superadmin';
+    idNumber?: string;
+    profilePicUrl?: string;
+    registrationDate?: string;
+    amount?: number;
+    validUntil?: string;
+  }) => Promise<User>;
+  getAllUsers: (params?: {
+    page?: number;
+    limit?: number;
+    role?: string;
+    search?: string;
+  }) => Promise<{ users: User[]; pagination: any }>;
+  deleteUser: (userId: string) => Promise<void>;
+  updateUser: (userId: string, userData: Partial<User>) => Promise<User>;
   clearError: () => void;
 }
 
 interface RegisterData {
   fullName: string;
-  email: string;
   phone: string;
-  idNumber: string;
   password: string;
-  confirmPassword: string;
-  location: string;
   role?: 'customer' | 'company';
 }
 
@@ -56,7 +72,7 @@ const initialState: AuthState = {
   user: null,
   token: localStorage.getItem('token'),
   refreshToken: localStorage.getItem('refreshToken'),
-  isAuthenticated: false,
+  isAuthenticated: !!localStorage.getItem('token'), // Set to true if token exists
   isLoading: true,
   error: null,
 };
@@ -128,8 +144,137 @@ interface AuthProviderProps {
   children: ReactNode;
 }
 
+// Animated Toast Component
+const AnimatedSuccessToast: React.FC<{ message: string; onClose: () => void }> = ({ message, onClose }) => {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: -50, scale: 0.8 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      exit={{ opacity: 0, y: -50, scale: 0.8 }}
+      transition={{
+        type: "spring",
+        stiffness: 300,
+        damping: 25,
+        duration: 0.3
+      }}
+      className="fixed top-4 right-4 z-50 max-w-sm"
+    >
+      <div className="relative bg-gradient-to-r from-green-500 to-green-600 text-white rounded-xl shadow-2xl border border-green-400/20 backdrop-blur-sm overflow-hidden">
+        {/* Animated background shimmer */}
+        <motion.div
+          className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent"
+          initial={{ x: '-100%' }}
+          animate={{ x: '100%' }}
+          transition={{
+            duration: 1.5,
+            repeat: Infinity,
+            repeatDelay: 2,
+            ease: "easeInOut"
+          }}
+        />
+        
+        {/* Content */}
+        <div className="relative flex items-center p-4 space-x-3">
+          {/* Animated Checkmark */}
+          <div className="flex-shrink-0">
+            <motion.div
+              className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center"
+              initial={{ scale: 0 }}
+              animate={{ scale: 1 }}
+              transition={{
+                delay: 0.2,
+                type: "spring",
+                stiffness: 200,
+                damping: 15
+              }}
+            >
+              <motion.svg
+                className="w-5 h-5 text-white"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+                initial={{ pathLength: 0, scale: 0 }}
+                animate={{ pathLength: 1, scale: 1 }}
+                transition={{
+                  delay: 0.4,
+                  duration: 0.8,
+                  ease: "easeInOut"
+                }}
+              >
+                <motion.path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={3}
+                  d="M5 13l4 4L19 7"
+                  initial={{ pathLength: 0 }}
+                  animate={{ pathLength: 1 }}
+                  transition={{
+                    delay: 0.4,
+                    duration: 0.8,
+                    ease: "easeInOut"
+                  }}
+                />
+              </motion.svg>
+            </motion.div>
+          </div>
+          
+          {/* Message */}
+          <div className="flex-1">
+            <motion.p
+              className="text-sm font-semibold"
+              initial={{ opacity: 0, x: -10 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.6, duration: 0.3 }}
+            >
+              {message}
+            </motion.p>
+          </div>
+          
+          {/* Close button */}
+          <motion.button
+            onClick={onClose}
+            className="flex-shrink-0 p-1 rounded-full hover:bg-white/20 transition-colors"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.8 }}
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.9 }}
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </motion.button>
+        </div>
+        
+        {/* Progress bar */}
+        <motion.div
+          className="absolute bottom-0 left-0 h-1 bg-white/30"
+          initial={{ width: '100%' }}
+          animate={{ width: '0%' }}
+          transition={{ duration: 5, ease: "linear" }}
+        />
+      </div>
+    </motion.div>
+  );
+};
+
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [state, dispatch] = useReducer(authReducer, initialState);
+  const [toasts, setToasts] = useState<Array<{ id: string; message: string }>>([]);
+
+  const showAnimatedToast = useCallback((message: string) => {
+    const id = Math.random().toString(36).substr(2, 9);
+    setToasts(prev => [...prev, { id, message }]);
+    
+    // Auto remove after 5 seconds
+    setTimeout(() => {
+      setToasts(prev => prev.filter(toast => toast.id !== id));
+    }, 5000);
+  }, []);
+
+  const removeToast = useCallback((id: string) => {
+    setToasts(prev => prev.filter(toast => toast.id !== id));
+  }, []);
 
   // Check if user is authenticated on app load
   useEffect(() => {
@@ -147,6 +292,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             },
           });
         } catch (error) {
+          console.error('Auth check failed:', error);
           localStorage.removeItem('token');
           localStorage.removeItem('refreshToken');
           dispatch({ type: 'AUTH_LOGOUT' });
@@ -159,11 +305,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     checkAuth();
   }, []);
 
-  const login = async (email: string, password: string) => {
+  const login = async (phone: string, password: string) => {
     try {
       dispatch({ type: 'AUTH_START' });
       
-      const response = await authService.login(email, password);
+      const response = await authService.login(phone, password);
       
       localStorage.setItem('token', response.tokens.accessToken);
       localStorage.setItem('refreshToken', response.tokens.refreshToken);
@@ -225,7 +371,35 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       localStorage.removeItem('token');
       localStorage.removeItem('refreshToken');
       dispatch({ type: 'AUTH_LOGOUT' });
-      toast.success('Logged out successfully');
+      toast.success('👋 Logged out successfully!', {
+        duration: 1000, // Show for 1 second only
+        style: {
+          background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
+          color: '#ffffff',
+          fontWeight: '700',
+          fontSize: '16px',
+          borderRadius: '20px',
+          padding: '20px 28px',
+          boxShadow: '0 25px 50px rgba(245, 158, 11, 0.5), 0 10px 20px rgba(0, 0, 0, 0.15)',
+          border: '3px solid rgba(255, 255, 255, 0.4)',
+          backdropFilter: 'blur(20px)',
+          transform: 'scale(1.05)',
+          transition: 'all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)',
+          position: 'relative',
+          overflow: 'hidden',
+          textShadow: '0 2px 4px rgba(0, 0, 0, 0.3)',
+          letterSpacing: '0.5px',
+        },
+        iconTheme: {
+          primary: '#ffffff',
+          secondary: '#f59e0b',
+        },
+        className: 'logout-toast',
+        ariaProps: {
+          role: 'status',
+          'aria-live': 'polite',
+        },
+      });
     }
   };
 
@@ -252,6 +426,68 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
+  const createUser = async (userData: {
+    fullName: string;
+    phone: string;
+    role?: 'customer' | 'company' | 'admin' | 'superadmin';
+    idNumber?: string;
+    profilePicUrl?: string;
+  }) => {
+    try {
+      const newUser = await authService.createUser(userData);
+      toast.success(`User ${newUser.fullName} created successfully!`);
+      return newUser;
+    } catch (error: any) {
+      console.error('Create user error details:', error.response?.data);
+      const errorMessage = error.response?.data?.message || 'Failed to create user';
+      const validationErrors = error.response?.data?.errors;
+      if (validationErrors && validationErrors.length > 0) {
+        console.error('Validation errors:', validationErrors);
+        toast.error(`Validation failed: ${validationErrors.map((e: any) => e.message).join(', ')}`);
+      } else {
+        toast.error(errorMessage);
+      }
+      throw error;
+    }
+  };
+
+  const getAllUsers = async (params?: {
+    page?: number;
+    limit?: number;
+    role?: string;
+    search?: string;
+  }) => {
+    try {
+      return await authService.getAllUsers(params);
+    } catch (error: any) {
+      const errorMessage = error.response?.data?.message || 'Failed to get users';
+      toast.error(errorMessage);
+      throw error;
+    }
+  };
+
+  const deleteUser = async (userId: string) => {
+    try {
+      await authService.deleteUser(userId);
+      showAnimatedToast('User deleted successfully!');
+    } catch (error: any) {
+      const errorMessage = error.response?.data?.message || 'Failed to delete user';
+      toast.error(errorMessage);
+      throw error;
+    }
+  };
+
+  const updateUser = async (userId: string, userData: Partial<User>) => {
+    try {
+      const updatedUser = await authService.updateUser(userId, userData);
+      return updatedUser;
+    } catch (error: any) {
+      const errorMessage = error.response?.data?.message || 'Failed to update user';
+      toast.error(errorMessage);
+      throw error;
+    }
+  };
+
   const clearError = () => {
     dispatch({ type: 'AUTH_CLEAR_ERROR' });
   };
@@ -263,12 +499,27 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     logout,
     updateProfile,
     changePassword,
+    createUser,
+    getAllUsers,
+    deleteUser,
+    updateUser,
     clearError,
   };
 
   return (
     <AuthContext.Provider value={value}>
       {children}
+      <div className="fixed top-4 right-4 z-50 space-y-2">
+        <AnimatePresence>
+          {toasts.map((toast) => (
+            <AnimatedSuccessToast
+              key={toast.id}
+              message={toast.message}
+              onClose={() => removeToast(toast.id)}
+            />
+          ))}
+        </AnimatePresence>
+      </div>
     </AuthContext.Provider>
   );
 };

@@ -24,38 +24,13 @@ const validateUserRegistration = [
     .isLength({ min: 2, max: 100 })
     .withMessage('Full name must be between 2 and 100 characters'),
   
-  body('email')
-    .isEmail()
-    .normalizeEmail()
-    .withMessage('Please provide a valid email address'),
-  
   body('phone')
     .matches(/^[\+]?[1-9][\d]{0,15}$/)
     .withMessage('Please provide a valid phone number'),
   
-  body('idNumber')
-    .trim()
-    .isLength({ min: 5, max: 20 })
-    .withMessage('ID number must be between 5 and 20 characters'),
-  
   body('password')
     .isLength({ min: 6 })
-    .withMessage('Password must be at least 6 characters long')
-    .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/)
-    .withMessage('Password must contain at least one lowercase letter, one uppercase letter, and one number'),
-  
-  body('confirmPassword')
-    .custom((value, { req }) => {
-      if (value !== req.body.password) {
-        throw new Error('Password confirmation does not match password');
-      }
-      return true;
-    }),
-  
-  body('location')
-    .trim()
-    .isLength({ min: 2, max: 100 })
-    .withMessage('Location must be between 2 and 100 characters'),
+    .withMessage('Password must be at least 6 characters long'),
   
   body('role')
     .optional()
@@ -67,14 +42,48 @@ const validateUserRegistration = [
 
 // User login validation
 const validateUserLogin = [
-  body('email')
-    .isEmail()
-    .normalizeEmail()
-    .withMessage('Please provide a valid email address'),
+  body('phone')
+    .matches(/^[\+]?[1-9][\d]{0,15}$/)
+    .withMessage('Please provide a valid phone number'),
   
   body('password')
     .notEmpty()
     .withMessage('Password is required'),
+  
+  handleValidationErrors
+];
+
+// Admin user creation validation
+const validateAdminUserCreation = [
+  body('fullName')
+    .trim()
+    .isLength({ min: 2, max: 100 })
+    .withMessage('Full name must be between 2 and 100 characters'),
+  
+  body('phone')
+    .matches(/^\+252\d{9}$/)
+    .withMessage('Please provide a valid Somali phone number (+252XXXXXXXXX)'),
+  
+  body('idNumber')
+    .optional()
+    .trim()
+    .isLength({ min: 1, max: 20 })
+    .withMessage('ID number must be between 1 and 20 characters'),
+
+  body('registrationDate')
+    .optional()
+    .isISO8601()
+    .withMessage('registrationDate must be a valid date (ISO8601)'),
+
+  body('amount')
+    .optional()
+    .isInt({ min: 1, max: 120 })
+    .withMessage('amount must be an integer between 1 and 120 (months)'),
+  
+  body('role')
+    .optional()
+    .isIn(['customer', 'company', 'admin', 'superadmin'])
+    .withMessage('Role must be customer, company, admin, or superadmin'),
   
   handleValidationErrors
 ];
@@ -299,10 +308,82 @@ const validatePasswordChange = [
   handleValidationErrors
 ];
 
+// Payment validation
+const validatePayment = [
+  body('cardNumber')
+    .trim()
+    .isLength({ min: 10, max: 20 })
+    .withMessage('Card number is required'),
+  
+  body('paymentMethod')
+    .isIn(['mobile_money', 'bank_transfer', 'cash'])
+    .withMessage('Payment method must be mobile_money, bank_transfer, or cash'),
+  
+  body('transactionId')
+    .optional()
+    .trim()
+    .isLength({ min: 1, max: 100 })
+    .withMessage('Transaction ID must be between 1 and 100 characters'),
+  
+  handleValidationErrors
+];
+
+// Manual payment validation
+const validateManualPayment = [
+  body('cardNumber')
+    .trim()
+    .isLength({ min: 10, max: 20 })
+    .withMessage('Card number is required'),
+  
+  body('paymentMethod')
+    .optional()
+    .isIn(['mobile_money', 'bank_transfer', 'cash'])
+    .withMessage('Payment method must be mobile_money, bank_transfer, or cash'),
+  
+  body('transactionId')
+    .optional()
+    .trim()
+    .isLength({ min: 1, max: 100 })
+    .withMessage('Transaction ID must be between 1 and 100 characters'),
+  
+  body('amount')
+    .optional()
+    .isFloat({ min: 0.01 })
+    .withMessage('Amount must be greater than 0'),
+  
+  handleValidationErrors
+];
+
+// Flexible payment validation
+const validateFlexiblePayment = [
+  body('cardNumber')
+    .trim()
+    .isLength({ min: 10, max: 20 })
+    .withMessage('Card number is required'),
+  
+  body('amount')
+    .isFloat({ min: 0.01, max: 120 })
+    .withMessage('Amount must be between $0.01 and $120 (maximum 120 months)'),
+  
+  body('paymentMethod')
+    .optional()
+    .isIn(['mobile_money', 'bank_transfer', 'cash'])
+    .withMessage('Payment method must be mobile_money, bank_transfer, or cash'),
+  
+  body('transactionId')
+    .optional()
+    .trim()
+    .isLength({ min: 1, max: 100 })
+    .withMessage('Transaction ID must be between 1 and 100 characters'),
+  
+  handleValidationErrors
+];
+
 module.exports = {
   handleValidationErrors,
   validateUserRegistration,
   validateUserLogin,
+  validateAdminUserCreation,
   validateSahalCardRegistration,
   validateCompanyRegistration,
   validateTransaction,
@@ -310,5 +391,8 @@ module.exports = {
   validatePagination,
   validateFileUpload,
   validateProfileUpdate,
-  validatePasswordChange
+  validatePasswordChange,
+  validatePayment,
+  validateManualPayment,
+  validateFlexiblePayment
 };

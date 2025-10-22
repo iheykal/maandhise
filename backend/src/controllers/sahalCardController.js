@@ -233,11 +233,21 @@ const validateCard = async (req, res) => {
     }
 
     if (!card.isValid) {
+      let message = 'Card is not valid';
+      if (card.paymentStatus === 'invalid') {
+        message = 'Card suspended - payment not received. Please contact admin to reactivate.';
+      } else if (card.status === 'suspended') {
+        message = `Card suspended: ${card.suspensionReason}`;
+      }
+
       return res.status(400).json({
         success: false,
-        message: 'Card is not valid',
+        message,
         data: {
           status: card.statusText,
+          paymentStatus: card.paymentStatus,
+          nextPaymentDue: card.nextPaymentDue,
+          monthlyFee: card.monthlyFee,
           daysRemaining: card.daysRemaining
         }
       });
@@ -257,6 +267,9 @@ const validateCard = async (req, res) => {
         cardNumber: card.cardNumber,
         customerName: card.userId.fullName,
         isValid: card.isValid,
+        paymentStatus: card.paymentStatus,
+        nextPaymentDue: card.nextPaymentDue,
+        monthlyFee: card.monthlyFee,
         daysRemaining: card.daysRemaining
       }
     });
@@ -281,9 +294,21 @@ const processTransaction = async (req, res) => {
       .populate('userId', 'fullName email phone isActive');
 
     if (!card || !card.isValid || !card.userId.isActive) {
+      let message = 'Invalid or expired card';
+      if (card && card.paymentStatus === 'invalid') {
+        message = 'Card suspended - payment not received. Please contact admin to reactivate.';
+      } else if (card && card.status === 'suspended') {
+        message = `Card suspended: ${card.suspensionReason}`;
+      }
+
       return res.status(400).json({
         success: false,
-        message: 'Invalid or expired card'
+        message,
+        data: card ? {
+          paymentStatus: card.paymentStatus,
+          nextPaymentDue: card.nextPaymentDue,
+          monthlyFee: card.monthlyFee
+        } : null
       });
     }
 
@@ -485,9 +510,100 @@ const reactivateCard = async (req, res) => {
   }
 };
 
+// Admin function to get a user's card by user ID
+const getCardByUserId = async (req, res) => {
+  try {
+    const { userId } = req.params;
+
+    const card = await SahalCard.findOne({ userId }).populate('userId', 'fullName email phone');
+
+    if (!card) {
+      return res.status(404).json({
+        success: false,
+        message: 'No card found for this user'
+      });
+    }
+
+    res.json({
+      success: true,
+      data: card
+    });
+
+  } catch (error) {
+    console.error('Error getting card by user ID:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to get card',
+      error: error.message
+    });
+  }
+};
+
+// Admin function to create a card for a user
+const createCard = async (req, res) => {
+  try {
+    const { userId, membershipFee = 1.00 } = req.body;
+
+    if (!userId) {
+      return res.status(400).json({
+        success: false,
+        message: 'User ID is required'
+      });
+    }
+
+    // Check if user exists
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+
+    // Check if user already has a card
+    const existingCard = await SahalCard.findOne({ userId });
+    if (existingCard) {
+      return res.status(400).json({
+        success: false,
+        message: 'User already has a Sahal Card',
+        data: {
+          cardNumber: existingCard.cardNumber,
+          status: existingCard.status
+        }
+      });
+    }
+
+    // Create new card using the static method
+    const card = await SahalCard.createCard(userId, membershipFee);
+
+    res.status(201).json({
+      success: true,
+      message: 'Sahal Card created successfully',
+      data: {
+        cardNumber: card.cardNumber,
+        userId: card.userId,
+        status: card.status,
+        validUntil: card.validUntil,
+        monthlyFee: card.monthlyFee,
+        nextPaymentDue: card.nextPaymentDue
+      }
+    });
+
+  } catch (error) {
+    console.error('Error creating card:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to create Sahal Card',
+      error: error.message
+    });
+  }
+};
+
 module.exports = {
   registerCard,
+  createCard,
   getCard,
+  getCardByUserId,
   renewCard,
   getCardStats,
   validateCard,

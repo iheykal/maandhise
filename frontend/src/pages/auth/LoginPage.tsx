@@ -1,22 +1,33 @@
-import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Eye, EyeOff, Mail, Lock } from 'lucide-react';
+import { Eye, EyeOff, Phone, Lock } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext.tsx';
 import { useTheme } from '../../contexts/ThemeContext.tsx';
 import LoadingSpinner from '../../components/common/LoadingSpinner.tsx';
 
 const LoginPage: React.FC = () => {
   const [formData, setFormData] = useState({
-    email: '',
+    phone: '',
     password: '',
   });
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
-  const { login } = useAuth();
+  const { login, isAuthenticated, isLoading: authLoading } = useAuth();
   const { language } = useTheme();
   const navigate = useNavigate();
+  const location = useLocation();
+
+  // Get the redirect path from location state, default to dashboard
+  const from = (location.state as any)?.from?.pathname || '/dashboard';
+
+  // Redirect if already authenticated
+  useEffect(() => {
+    if (!authLoading && isAuthenticated) {
+      navigate(from, { replace: true });
+    }
+  }, [isAuthenticated, authLoading, navigate, from]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({
@@ -30,14 +41,39 @@ const LoginPage: React.FC = () => {
     setIsLoading(true);
 
     try {
-      await login(formData.email, formData.password);
-      navigate('/dashboard');
+      await login(formData.phone, formData.password);
+      // Redirect to the intended page or dashboard
+      navigate(from, { replace: true });
     } catch (error) {
       // Error is handled by the auth context
     } finally {
       setIsLoading(false);
     }
   };
+
+  // Show loading while checking authentication
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-blue-100 to-indigo-200 flex items-center justify-center px-4">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.8 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.5 }}
+          className="text-center"
+        >
+          <div className="w-16 h-16 mx-auto mb-4 bg-white rounded-full flex items-center justify-center shadow-lg">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+          </div>
+          <h3 className="text-lg font-medium text-gray-900 mb-2">
+            Checking authentication...
+          </h3>
+          <p className="text-gray-600">
+            Please wait while we verify your login status
+          </p>
+        </motion.div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-blue-100 to-indigo-200 flex items-center justify-center px-4">
@@ -60,18 +96,18 @@ const LoginPage: React.FC = () => {
           <form onSubmit={handleSubmit} className="space-y-6">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                {language === 'en' ? 'Email Address' : 'Cinwaanka Email'}
+                {language === 'en' ? 'Phone Number' : 'Lambarka Telefoonka'}
               </label>
               <div className="relative">
-                <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
                 <input
-                  type="email"
-                  name="email"
-                  value={formData.email}
+                  type="tel"
+                  name="phone"
+                  value={formData.phone}
                   onChange={handleChange}
                   required
                   className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300"
-                  placeholder={language === 'en' ? 'Enter your email' : 'Geli emailkaaga'}
+                  placeholder={language === 'en' ? 'Enter your phone number' : 'Geli lambarka telefoonkaaga'}
                 />
               </div>
             </div>
@@ -114,17 +150,6 @@ const LoginPage: React.FC = () => {
             </button>
           </form>
 
-          <div className="mt-6 text-center">
-            <p className="text-gray-600">
-              {language === 'en' ? "Don't have an account?" : 'Ma haysid akoon?'}{' '}
-              <Link
-                to="/register"
-                className="text-blue-600 hover:text-blue-700 font-medium transition-colors duration-300"
-              >
-                {language === 'en' ? 'Sign up' : 'Diiwaan'}
-              </Link>
-            </p>
-          </div>
         </div>
       </motion.div>
     </div>

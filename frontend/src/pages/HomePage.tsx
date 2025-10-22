@@ -1,17 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
+import { Helmet } from 'react-helmet-async';
 import { 
-  CreditCard, 
-  GraduationCap, 
-  Users, 
-  TrendingUp,
+  // CreditCard, 
+  // GraduationCap, 
+  // Users, 
+  // TrendingUp,
   ArrowRight,
-  Star,
-  CheckCircle,
-  Globe,
-  Shield,
-  Zap
+  // Star,
+  // CheckCircle,
+  // Globe,
+  // Shield
 } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext.tsx';
 
@@ -51,6 +51,7 @@ const HomePage: React.FC = () => {
     return () => clearInterval(interval);
   }, [galleryImages.length]);
 
+
   const stats = [
     { number: '10,000+', label: language === 'en' ? 'Our Clients' : 'Macamiisha' },
     { number: '500+', label: language === 'en' ? 'Partner Businesses' : 'Ganacsi La Shaqeeya' },
@@ -59,7 +60,65 @@ const HomePage: React.FC = () => {
   ];
 
   return (
-    <div className="h-screen bg-gradient-to-br from-blue-50 via-blue-100 to-indigo-200 overflow-y-auto">
+    <>
+      <Helmet>
+        <title>Maandhise Corporate - Save More, Spend Less | Somalia's Leading Discount Card</title>
+        <meta name="description" content="Join 10,000+ Somalis saving with Sahal Card. Get exclusive discounts at 500+ partner businesses across Somalia. Education, consulting & savings solutions." />
+        <meta name="keywords" content="maandhise, sahacard, discount card, somalia, mogadishu, savings, education, consulting, business" />
+        <meta name="author" content="Maandhise Corporate" />
+        
+        {/* Open Graph / Facebook */}
+        <meta property="og:type" content="website" />
+        <meta property="og:url" content="https://maandhise.com/" />
+        <meta property="og:title" content="Maandhise Corporate - Save More, Spend Less" />
+        <meta property="og:description" content="Join 10,000+ Somalis saving with Sahal Card. Get exclusive discounts at 500+ partner businesses across Somalia." />
+        <meta property="og:image" content="https://maandhise.com/og-home.png" />
+        <meta property="og:site_name" content="Maandhise Corporate" />
+        <meta property="og:locale" content="en_US" />
+        
+        {/* Twitter */}
+        <meta property="twitter:card" content="summary_large_image" />
+        <meta property="twitter:url" content="https://maandhise.com/" />
+        <meta property="twitter:title" content="Maandhise Corporate - Save More, Spend Less" />
+        <meta property="twitter:description" content="Join 10,000+ Somalis saving with Sahal Card. Get exclusive discounts at 500+ partner businesses across Somalia." />
+        <meta property="twitter:image" content="https://maandhise.com/og-home.png" />
+        
+        {/* Canonical URL */}
+        <link rel="canonical" href="https://maandhise.com/" />
+        
+        {/* Structured Data */}
+        <script type="application/ld+json">
+          {JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "Organization",
+            "name": "Maandhise Corporate",
+            "description": "Uniting Education, Consulting & Savings for a better future in Somalia",
+            "url": "https://maandhise.com",
+            "logo": "https://maandhise.com/logo.png",
+            "contactPoint": {
+              "@type": "ContactPoint",
+              "telephone": "+252-613-273-911",
+              "contactType": "customer service",
+              "availableLanguage": ["English", "Somali"]
+            },
+            "address": {
+              "@type": "PostalAddress",
+              "addressLocality": "Mogadishu",
+              "addressCountry": "Somalia"
+            },
+            "sameAs": [
+              "https://wa.me/252613273911"
+            ],
+            "foundingDate": "2021",
+            "founder": {
+              "@type": "Person",
+              "name": "Abdullahi Abdi Elmi"
+            }
+          })}
+        </script>
+      </Helmet>
+      
+      <div className="h-screen bg-gradient-to-br from-blue-50 via-blue-100 to-indigo-200 overflow-y-auto">
       {/* Hero Section */}
       <div className="h-screen flex items-center justify-center">
         <div className="relative w-full h-full flex items-center justify-center">
@@ -69,6 +128,7 @@ const HomePage: React.FC = () => {
             <div className="absolute top-40 right-10 w-72 h-72 bg-cyan-300 rounded-full mix-blend-multiply filter blur-xl opacity-70"></div>
             <div className="absolute -bottom-8 left-20 w-72 h-72 bg-indigo-300 rounded-full mix-blend-multiply filter blur-xl opacity-70"></div>
           </div>
+
 
           <div className="relative z-10 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 text-center py-16">
             <motion.div
@@ -119,7 +179,7 @@ const HomePage: React.FC = () => {
                 </button>
                 
                 <a
-                  href="#about"
+                  href="#sahal-card"
                   className="btn-secondary text-base px-6 py-3 flex items-center space-x-2 group"
                 >
                   <span>{language === 'en' ? 'Learn More' : 'Wax Dheeraad ah'}</span>
@@ -185,7 +245,7 @@ const HomePage: React.FC = () => {
                   >
                     <img
                       src={`/icons/${galleryImages[currentImageIndex]}`}
-                      alt={`Gallery image ${currentImageIndex + 1}`}
+                      alt={`Maandhise Corporate gallery ${currentImageIndex + 1} - showcasing our achievements and community events`}
                       className="w-full h-full object-cover"
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent"></div>
@@ -212,7 +272,9 @@ const HomePage: React.FC = () => {
         </div>
       </div>
 
+
     </div>
+    </>
   );
 };
 

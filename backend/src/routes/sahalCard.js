@@ -26,8 +26,10 @@ router.get('/validate/:cardNumber', sahacardController.validateCard);
 router.post('/process-transaction', validateTransaction, sahacardController.processTransaction);
 
 // Admin routes
-router.use(authorize('admin'));
+router.use(authorize('admin', 'superadmin'));
 
+router.post('/create', sahacardController.createCard);
+router.get('/user/:userId', sahacardController.getCardByUserId);
 router.put('/suspend/:cardId', validateObjectId('cardId'), sahacardController.suspendCard);
 router.put('/reactivate/:cardId', validateObjectId('cardId'), sahacardController.reactivateCard);
 

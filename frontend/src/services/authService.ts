@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:5000/api';
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://192.168.100.32:5000/api';
 
 // Create axios instance
 const api = axios.create({
@@ -63,24 +63,21 @@ api.interceptors.response.use(
 export interface User {
   _id: string;
   fullName: string;
-  email: string;
   phone: string;
-  idNumber: string;
-  photo?: string;
-  location: string;
-  role: 'customer' | 'company' | 'admin';
-  isActive: boolean;
+  idNumber?: string;
+  location?: string;
+  profilePicUrl?: string;
+  role: 'customer' | 'company' | 'admin' | 'superadmin';
+  canLogin: boolean;
+  membershipMonths?: number;
+  validUntil?: string;
   createdAt: string;
 }
 
 export interface RegisterData {
   fullName: string;
-  email: string;
   phone: string;
-  idNumber: string;
   password: string;
-  confirmPassword: string;
-  location: string;
   role?: 'customer' | 'company';
 }
 
@@ -102,15 +99,15 @@ export interface RegisterResponse {
 
 export const authService = {
   // Login user
-  login: async (email: string, password: string): Promise<LoginResponse> => {
-    const response = await api.post('/auth/login', { email, password });
-    return response.data;
+  login: async (phone: string, password: string): Promise<LoginResponse> => {
+    const response = await api.post('/auth/login', { phone, password });
+    return response.data.data; // Extract data from the nested structure
   },
 
   // Register user
   register: async (userData: RegisterData): Promise<RegisterResponse> => {
     const response = await api.post('/auth/register', userData);
-    return response.data;
+    return response.data.data; // Extract data from the nested structure
   },
 
   // Logout user
@@ -121,7 +118,7 @@ export const authService = {
   // Get user profile
   getProfile: async (): Promise<User> => {
     const response = await api.get('/auth/profile');
-    return response.data;
+    return response.data.data.user;
   },
 
   // Update user profile
@@ -162,6 +159,41 @@ export const authService = {
   // Resend verification email
   resendVerification: async (email: string): Promise<void> => {
     await api.post('/auth/resend-verification', { email });
+  },
+
+  // Admin functions
+  createUser: async (userData: {
+    fullName: string;
+    phone: string;
+    role?: 'customer' | 'company' | 'admin' | 'superadmin';
+    idNumber?: string;
+    profilePicUrl?: string;
+    registrationDate?: string;
+    amount?: number;
+    validUntil?: string;
+  }): Promise<User> => {
+    const response = await api.post('/auth/create-user', userData);
+    return response.data.data.user;
+  },
+
+  getAllUsers: async (params?: {
+    page?: number;
+    limit?: number;
+    role?: string;
+    search?: string;
+  }): Promise<{ users: User[]; pagination: any }> => {
+    const response = await api.get('/auth/users', { params });
+    return response.data.data;
+  },
+
+  deleteUser: async (userId: string): Promise<void> => {
+    const response = await api.delete(`/auth/users/${userId}`);
+    return response.data;
+  },
+
+  updateUser: async (userId: string, userData: Partial<User>): Promise<User> => {
+    const response = await api.put(`/auth/users/${userId}`, userData);
+    return response.data.data.user || response.data.data || response.data;
   },
 };
 
