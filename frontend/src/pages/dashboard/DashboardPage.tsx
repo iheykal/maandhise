@@ -408,6 +408,9 @@ const DashboardPage: React.FC = () => {
       
     } catch (error) {
       console.error('Error creating user:', error);
+      // Show error message to user
+      const errorMessage = error instanceof Error ? error.message : 'Failed to create user';
+      alert(`Error: ${errorMessage}`);
     } finally {
       setIsLoading(false);
     }

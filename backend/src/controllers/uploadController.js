@@ -44,6 +44,17 @@ const uploadFile = async (req, res) => {
 
   } catch (error) {
     console.error('Upload error:', error);
+    
+    // Check for specific R2 credential errors
+    if (error.message.includes('credential') || error.message.includes('credentials')) {
+      return res.status(500).json({
+        success: false,
+        message: 'Cloudflare R2 credentials are not properly configured. Please check your environment variables.',
+        error: 'R2 credentials not configured',
+        details: 'Set CLOUDFLARE_ACCOUNT_ID, CLOUDFLARE_ACCESS_KEY_ID, CLOUDFLARE_SECRET_ACCESS_KEY, and CLOUDFLARE_ENDPOINT in your .env file'
+      });
+    }
+    
     res.status(500).json({
       success: false,
       message: 'Failed to upload file',
