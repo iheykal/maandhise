@@ -290,11 +290,39 @@ const GetSahalCardPage: React.FC = () => {
                     <div className="relative -mt-16 px-6 pb-6">
                       <div className="w-full flex items-center justify-center">
                         {searchedUser.profilePicUrl || searchedUser.profilePic ? (
-                          <div className="relative cursor-pointer group/avatar" onClick={() => {
-                            setSelectedUserImage({ 
-                              user: searchedUser, 
-                              imageUrl: searchedUser.profilePicUrl || searchedUser.profilePic 
-                            });
+                          <div className="relative cursor-pointer group/avatar" onClick={async () => {
+                            const imageUrl = searchedUser.profilePicUrl || searchedUser.profilePic;
+                            // Try to refresh the image URL first
+                            try {
+                              const response = await fetch('/api/upload/refresh-url', {
+                                method: 'POST',
+                                headers: {
+                                  'Content-Type': 'application/json',
+                                  'Authorization': `Bearer ${localStorage.getItem('token')}`
+                                },
+                                body: JSON.stringify({ fileUrl: imageUrl })
+                              });
+                              
+                              if (response.ok) {
+                                const data = await response.json();
+                                setSelectedUserImage({ 
+                                  user: searchedUser, 
+                                  imageUrl: data.data.url 
+                                });
+                              } else {
+                                // Fallback to original URL if refresh fails
+                                setSelectedUserImage({ 
+                                  user: searchedUser, 
+                                  imageUrl: imageUrl 
+                                });
+                              }
+                            } catch (error) {
+                              console.log('Failed to refresh image URL, using original:', error);
+                              setSelectedUserImage({ 
+                                user: searchedUser, 
+                                imageUrl: imageUrl 
+                              });
+                            }
                           }}>
                             <img
                               src={searchedUser.profilePicUrl || searchedUser.profilePic}
@@ -773,37 +801,6 @@ const GetSahalCardPage: React.FC = () => {
               />
             </div>
             
-            {/* Refresh Image Button */}
-            <div className="flex justify-center">
-              <button
-                onClick={async () => {
-                  try {
-                    // Try to refresh the image URL
-                    const response = await fetch('/api/upload/refresh-url', {
-                      method: 'POST',
-                      headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${localStorage.getItem('token')}`
-                      },
-                      body: JSON.stringify({ fileUrl: selectedUserImage.imageUrl })
-                    });
-                    
-                    if (response.ok) {
-                      const data = await response.json();
-                      setSelectedUserImage({
-                        ...selectedUserImage,
-                        imageUrl: data.data.url
-                      });
-                    }
-                  } catch (error) {
-                    console.log('Failed to refresh image URL:', error);
-                  }
-                }}
-                className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors text-sm"
-              >
-                🔄 Refresh Image
-              </button>
-            </div>
           </div>
         </div>
       </div>

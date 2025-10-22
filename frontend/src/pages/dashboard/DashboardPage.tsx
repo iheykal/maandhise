@@ -422,10 +422,31 @@ const DashboardPage: React.FC = () => {
   };
 
   // Handle user actions - Memoized to prevent recreation
-  const handleImageClick = useCallback((user: any) => {
+  const handleImageClick = useCallback(async (user: any) => {
     const imageUrl = user.profilePicUrl || user.profilePic;
     if (imageUrl) {
-      setSelectedUserImage({ user, imageUrl });
+      // Try to refresh the image URL first
+      try {
+        const response = await fetch('/api/upload/refresh-url', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
+          },
+          body: JSON.stringify({ fileUrl: imageUrl })
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          setSelectedUserImage({ user, imageUrl: data.data.url });
+        } else {
+          // Fallback to original URL if refresh fails
+          setSelectedUserImage({ user, imageUrl });
+        }
+      } catch (error) {
+        console.log('Failed to refresh image URL, using original:', error);
+        setSelectedUserImage({ user, imageUrl });
+      }
     } else {
       console.warn('No image available for user:', user.fullName);
       alert('No profile picture available.');
@@ -443,9 +464,30 @@ const DashboardPage: React.FC = () => {
   }, []);
 
   // Handle profile picture click
-  const handleProfilePicClick = useCallback((user: any) => {
+  const handleProfilePicClick = useCallback(async (user: any) => {
     if (user.profilePicUrl) {
-      setSelectedUserImage({ user, imageUrl: user.profilePicUrl });
+      // Try to refresh the image URL first
+      try {
+        const response = await fetch('/api/upload/refresh-url', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
+          },
+          body: JSON.stringify({ fileUrl: user.profilePicUrl })
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          setSelectedUserImage({ user, imageUrl: data.data.url });
+        } else {
+          // Fallback to original URL if refresh fails
+          setSelectedUserImage({ user, imageUrl: user.profilePicUrl });
+        }
+      } catch (error) {
+        console.log('Failed to refresh image URL, using original:', error);
+        setSelectedUserImage({ user, imageUrl: user.profilePicUrl });
+      }
     }
   }, []);
 
@@ -1793,37 +1835,6 @@ const DashboardPage: React.FC = () => {
                   />
                 </div>
                 
-                {/* Refresh Image Button */}
-                <div className="flex justify-center">
-                  <button
-                    onClick={async () => {
-                      try {
-                        // Try to refresh the image URL
-                        const response = await fetch('/api/upload/refresh-url', {
-                          method: 'POST',
-                          headers: {
-                            'Content-Type': 'application/json',
-                            'Authorization': `Bearer ${localStorage.getItem('token')}`
-                          },
-                          body: JSON.stringify({ fileUrl: selectedUserImage.imageUrl })
-                        });
-                        
-                        if (response.ok) {
-                          const data = await response.json();
-                          setSelectedUserImage({
-                            ...selectedUserImage,
-                            imageUrl: data.data.url
-                          });
-                        }
-                      } catch (error) {
-                        console.log('Failed to refresh image URL:', error);
-                      }
-                    }}
-                    className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors text-sm"
-                  >
-                    🔄 Refresh Image
-                  </button>
-                </div>
 
                 {/* Balance Display - Compact */}
                 {(() => {
