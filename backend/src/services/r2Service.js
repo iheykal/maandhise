@@ -1,3 +1,4 @@
+require('dotenv').config();
 const { S3Client, PutObjectCommand, DeleteObjectCommand, GetObjectCommand } = require('@aws-sdk/client-s3');
 const { getSignedUrl } = require('@aws-sdk/s3-request-presigner');
 const multer = require('multer');
@@ -5,15 +6,17 @@ const path = require('path');
 
 // Configure S3 client for Cloudflare R2
 const s3Client = new S3Client({
-  region: process.env.CLOUDFLARE_REGION || 'auto',
-  endpoint: process.env.CLOUDFLARE_ENDPOINT || `https://${process.env.CLOUDFLARE_ACCOUNT_ID}.r2.cloudflarestorage.com`,
+  region: 'auto',
+  endpoint: process.env.CLOUDFLARE_ENDPOINT,
   credentials: {
     accessKeyId: process.env.CLOUDFLARE_ACCESS_KEY_ID,
     secretAccessKey: process.env.CLOUDFLARE_SECRET_ACCESS_KEY,
   },
+  forcePathStyle: true, // Required for R2
 });
 
 const BUCKET_NAME = process.env.CLOUDFLARE_BUCKET_NAME || 'maandhise';
+
 
 // Configure multer for memory storage
 const storage = multer.memoryStorage();
@@ -42,15 +45,7 @@ class R2Service {
    */
   static async uploadFile(fileBuffer, fileName, contentType) {
     try {
-      console.log('=== R2 UPLOAD DEBUG ===');
-      console.log('File name:', fileName);
-      console.log('Content type:', contentType);
-      console.log('File buffer size:', fileBuffer.length);
-      console.log('Bucket name:', BUCKET_NAME);
-      console.log('R2 endpoint:', process.env.CLOUDFLARE_ENDPOINT || `https://${process.env.CLOUDFLARE_ACCOUNT_ID}.r2.cloudflarestorage.com`);
-      
       const key = `uploads/${Date.now()}-${fileName}`;
-      console.log('Generated key:', key);
       
       const command = new PutObjectCommand({
         Bucket: BUCKET_NAME,
@@ -60,12 +55,9 @@ class R2Service {
         ACL: 'public-read', // Make file publicly accessible
       });
 
-      console.log('Sending command to R2...');
       const result = await s3Client.send(command);
-      console.log('R2 upload result:', result);
       
       // Generate signed URL for private bucket access
-      // This works with the upload account and provides secure access
       const getObjectCommand = new GetObjectCommand({
         Bucket: BUCKET_NAME,
         Key: key,
@@ -76,16 +68,9 @@ class R2Service {
         expiresIn: 7 * 24 * 60 * 60 // 7 days (maximum allowed)
       });
       
-      console.log('Generated signed URL:', signedUrl);
-      console.log('=== R2 UPLOAD SUCCESS ===');
-      
       return signedUrl;
     } catch (error) {
-      console.error('=== R2 UPLOAD ERROR ===');
-      console.error('Error details:', error);
-      console.error('Error message:', error.message);
-      console.error('Error code:', error.code);
-      console.error('Error statusCode:', error.statusCode);
+      console.error('R2 upload error:', error);
       throw new Error(`Failed to upload file: ${error.message}`);
     }
   }

@@ -5,13 +5,7 @@ const R2Service = require('../services/r2Service');
  */
 const uploadFile = async (req, res) => {
   try {
-    console.log('=== UPLOAD CONTROLLER DEBUG ===');
-    console.log('Request body:', req.body);
-    console.log('Request file:', req.file);
-    console.log('Request headers:', req.headers);
-    
     if (!req.file) {
-      console.log('No file in request');
       return res.status(400).json({
         success: false,
         message: 'No file uploaded'
@@ -19,17 +13,9 @@ const uploadFile = async (req, res) => {
     }
 
     const { buffer, originalname, mimetype } = req.file;
-    console.log('File details:', {
-      originalname,
-      mimetype,
-      size: buffer.length,
-      bufferType: typeof buffer,
-      bufferIsBuffer: Buffer.isBuffer(buffer)
-    });
     
     // Validate file type
     if (!R2Service.isValidImageType(mimetype)) {
-      console.log('Invalid file type:', mimetype);
       return res.status(400).json({
         success: false,
         message: 'Invalid file type. Only images are allowed.'
@@ -38,12 +24,9 @@ const uploadFile = async (req, res) => {
 
     // Generate unique filename
     const uniqueFileName = R2Service.generateUniqueFileName(originalname);
-    console.log('Generated unique filename:', uniqueFileName);
     
     // Upload to R2
-    console.log('Starting R2 upload...');
     const publicUrl = await R2Service.uploadFile(buffer, uniqueFileName, mimetype);
-    console.log('R2 upload completed, public URL:', publicUrl);
 
     const responseData = {
       url: publicUrl,
@@ -52,9 +35,6 @@ const uploadFile = async (req, res) => {
       size: buffer.length,
       type: mimetype
     };
-    
-    console.log('Sending response:', responseData);
-    console.log('=== UPLOAD CONTROLLER SUCCESS ===');
 
     res.status(200).json({
       success: true,
@@ -63,9 +43,7 @@ const uploadFile = async (req, res) => {
     });
 
   } catch (error) {
-    console.error('=== UPLOAD CONTROLLER ERROR ===');
     console.error('Upload error:', error);
-    console.error('Error stack:', error.stack);
     res.status(500).json({
       success: false,
       message: 'Failed to upload file',
