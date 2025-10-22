@@ -42,6 +42,7 @@ const allowedOrigins = [
   'http://192.168.0.100:3000', // Add common home network IP
   'https://maandhise.onrender.com', // Production frontend URL
   'https://maandhise-frontend.onrender.com', // Alternative frontend URL
+  'https://maandhise252.onrender.com', // Current deployment URL
   process.env.APP_URL
 ].filter(Boolean);
 
@@ -52,6 +53,12 @@ app.use(cors({
     console.log('CORS request from origin:', origin);
     // Allow requests with no origin (like mobile apps or curl requests)
     if (!origin) return callback(null, true);
+    
+    // Allow same-origin requests (frontend and backend on same domain)
+    if (origin === 'https://maandhise252.onrender.com') {
+      console.log('CORS allowed for same-origin:', origin);
+      return callback(null, true);
+    }
     
     if (allowedOrigins.indexOf(origin) !== -1) {
       console.log('CORS allowed for origin:', origin);
