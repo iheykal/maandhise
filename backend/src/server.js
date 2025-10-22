@@ -81,15 +81,13 @@ if (process.env.NODE_ENV === 'development') {
   app.use(morgan('combined'));
 }
 
-// Root endpoint
+// Serve static files from React build
+const path = require('path');
+app.use(express.static(path.join(__dirname, '../../frontend/build')));
+
+// Root endpoint - serve React app
 app.get('/', (req, res) => {
-  res.json({
-    success: true,
-    message: 'Maandhise Corporate API is running',
-    timestamp: new Date().toISOString(),
-    environment: process.env.NODE_ENV || 'development',
-    version: '1.0.0'
-  });
+  res.sendFile(path.join(__dirname, '../../frontend/build', 'index.html'));
 });
 
 // Health check endpoint
@@ -109,12 +107,17 @@ app.use('/api/upload', uploadRoutes);
 app.use('/api/payments', paymentRoutes);
 app.use('/api/simple-payments', simplePaymentRoutes);
 
-// 404 handler
+// 404 handler - serve React app for client-side routing
 app.use('*', (req, res) => {
-  res.status(404).json({
-    success: false,
-    message: 'API endpoint not found'
-  });
+  // If it's an API route, return 404 JSON
+  if (req.originalUrl.startsWith('/api/')) {
+    return res.status(404).json({
+      success: false,
+      message: 'API endpoint not found'
+    });
+  }
+  // Otherwise serve React app for client-side routing
+  res.sendFile(path.join(__dirname, '../../frontend/build', 'index.html'));
 });
 
 // Global error handler

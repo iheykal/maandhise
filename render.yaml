@@ -1,0 +1,62 @@
+services:
+  - type: web
+    name: maandhise-corporate
+    env: node
+    plan: free
+    buildCommand: cd backend && npm install && cd ../frontend && npm install && npm run build
+    startCommand: cd backend && npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: MONGODB_URI
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: JWT_EXPIRE
+        value: 7d
+      - key: JWT_REFRESH_SECRET
+        sync: false
+      - key: JWT_REFRESH_EXPIRE
+        value: 30d
+      - key: CLOUDFLARE_ACCOUNT_ID
+        sync: false
+      - key: CLOUDFLARE_ACCESS_KEY_ID
+        sync: false
+      - key: CLOUDFLARE_SECRET_ACCESS_KEY
+        sync: false
+      - key: CLOUDFLARE_BUCKET_NAME
+        sync: false
+      - key: CLOUDFLARE_PUBLIC_URL
+        sync: false
+      - key: SMTP_HOST
+        value: smtp.gmail.com
+      - key: SMTP_PORT
+        value: 587
+      - key: SMTP_USER
+        sync: false
+      - key: SMTP_PASS
+        sync: false
+      - key: FROM_EMAIL
+        value: noreply@maandhise.com
+      - key: FROM_NAME
+        value: Maandhise Corporate
+      - key: APP_NAME
+        value: Maandhise Corporate
+      - key: APP_URL
+        fromService:
+          type: web
+          name: maandhise-corporate
+          property: host
+      - key: API_URL
+        fromService:
+          type: web
+          name: maandhise-corporate
+          property: host
+      - key: SAHAL_CARD_YEARLY_FEE
+        value: 1
+      - key: SAHAL_CARD_RENEWAL_FEE
+        value: 0.5
+      - key: SAHAL_CARD_VALIDITY_DAYS
+        value: 365
