@@ -6,7 +6,7 @@
   "scripts": {
     "start": "node src/server.js",
     "dev": "nodemon src/server.js",
-    "build": "cd ../frontend && npm install && npm run build && cp -r build ../backend/frontend/",
+    "build": "cd ../frontend && npm install && npm run build && cd ../backend && node scripts/copy-frontend.js",
     "build:start": "npm run build && npm start",
     "prestart": "npm run build",
     "test": "jest",
