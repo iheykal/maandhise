@@ -300,6 +300,10 @@ const GetSahalCardPage: React.FC = () => {
                               src={searchedUser.profilePicUrl || searchedUser.profilePic}
                               alt={searchedUser.fullName}
                               className="w-28 h-28 rounded-full object-cover ring-4 ring-white shadow-2xl transition-all duration-300 group-hover/avatar:scale-110 group-hover/avatar:shadow-3xl"
+                              onError={(e) => {
+                                console.log('Profile picture failed to load:', searchedUser.profilePicUrl || searchedUser.profilePic);
+                                e.currentTarget.src = '/icons/founder.jpeg';
+                              }}
                             />
                             <div className={`absolute -bottom-1 -right-1 w-8 h-8 rounded-full border-4 border-white flex items-center justify-center ${
                               searchedUser.validUntil && new Date() > new Date(searchedUser.validUntil)
