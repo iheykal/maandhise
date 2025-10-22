@@ -18,7 +18,7 @@ COPY frontend/ .
 RUN npm run build
 
 # Backend stage
-FROM node:18-alpine as backend
+FROM node:18-alpine
 
 # Set working directory
 WORKDIR /app
