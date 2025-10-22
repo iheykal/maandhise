@@ -6,7 +6,7 @@
   "scripts": {
     "start": "node src/server.js",
     "dev": "nodemon src/server.js",
-    "build": "echo 'Frontend build skipped - using pre-built files'",
+    "build": "cd ../frontend && npm install && npm run build && cp -r build ../backend/frontend/",
     "build:start": "npm run build && npm start",
     "prestart": "npm run build",
     "test": "jest",
