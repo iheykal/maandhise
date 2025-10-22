@@ -423,8 +423,8 @@ const DashboardPage: React.FC = () => {
 
   // Handle user actions - Memoized to prevent recreation
   const handleImageClick = useCallback(async (user: any) => {
-    const imageUrl = user.profilePicUrl || user.profilePic;
-    if (imageUrl) {
+    const imageUrl = user.profilePicUrl;
+    if (imageUrl && imageUrl.trim() !== '') {
       // Try to refresh the image URL first
       try {
         const response = await fetch('/api/upload/refresh-url', {
@@ -465,7 +465,7 @@ const DashboardPage: React.FC = () => {
 
   // Handle profile picture click
   const handleProfilePicClick = useCallback(async (user: any) => {
-    if (user.profilePicUrl) {
+    if (user.profilePicUrl && user.profilePicUrl.trim() !== '') {
       // Try to refresh the image URL first
       try {
         const response = await fetch('/api/upload/refresh-url', {
@@ -746,10 +746,10 @@ const DashboardPage: React.FC = () => {
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.3, delay: index * 0.1 }}
             >
-              {user.profilePicUrl || user.profilePic ? (
+              {user.profilePicUrl && user.profilePicUrl.trim() !== '' ? (
                 <div className="relative">
                   <img
-                    src={user.profilePicUrl || user.profilePic}
+                    src={user.profilePicUrl}
                     alt={user.fullName}
                     className="w-10 h-10 rounded-full object-cover ring-2 ring-white shadow-lg"
                   />
@@ -1017,14 +1017,14 @@ const DashboardPage: React.FC = () => {
                   {/* Avatar with enhanced styling */}
                   <div className="relative -mt-16 px-6 pb-6">
                     <div className="w-full flex items-center justify-center">
-                      {user.profilePicUrl || user.profilePic ? (
+                      {user.profilePicUrl && user.profilePicUrl.trim() !== '' ? (
                         <div className="relative cursor-pointer group/avatar" onClick={() => handleProfilePicClick(user)}>
                           <img
-                            src={user.profilePicUrl || user.profilePic}
+                            src={user.profilePicUrl}
                             alt={user.fullName}
                             className="w-28 h-28 rounded-full object-cover ring-4 ring-white shadow-2xl transition-all duration-300 group-hover/avatar:scale-110 group-hover/avatar:shadow-3xl"
                             onError={(e) => {
-                              console.log('Profile picture failed to load:', user.profilePicUrl || user.profilePic);
+                              console.log('Profile picture failed to load:', user.profilePicUrl);
                               e.currentTarget.src = '/icons/founder.jpeg';
                             }}
                           />
@@ -1336,14 +1336,14 @@ const DashboardPage: React.FC = () => {
                   {/* Avatar with enhanced styling */}
                   <div className="relative -mt-16 px-6 pb-6">
                     <div className="w-full flex items-center justify-center">
-                      {user.profilePicUrl || user.profilePic ? (
+                      {user.profilePicUrl && user.profilePicUrl.trim() !== '' ? (
                         <div className="relative cursor-pointer group/avatar" onClick={() => handleImageClick(user)}>
                           <img
-                            src={user.profilePicUrl || user.profilePic}
+                            src={user.profilePicUrl}
                             alt={user.fullName}
                             className="w-28 h-28 rounded-full object-cover ring-4 ring-white shadow-2xl transition-all duration-300 group-hover/avatar:scale-110 group-hover/avatar:shadow-3xl"
                             onError={(e) => {
-                              console.log('Profile picture failed to load:', user.profilePicUrl || user.profilePic);
+                              console.log('Profile picture failed to load:', user.profilePicUrl);
                               e.currentTarget.src = '/icons/founder.jpeg';
                             }}
                           />
@@ -1975,9 +1975,9 @@ const DashboardPage: React.FC = () => {
                 {/* User Info */}
                 <div className="flex items-center gap-4 mb-6 p-4 bg-gray-50 rounded-lg">
                   <div className="relative">
-                    {paymentModal.user.profilePicUrl || paymentModal.user.profilePic ? (
+                    {paymentModal.user.profilePicUrl && paymentModal.user.profilePicUrl.trim() !== '' ? (
                       <img
-                        src={paymentModal.user.profilePicUrl || paymentModal.user.profilePic}
+                        src={paymentModal.user.profilePicUrl}
                         alt={paymentModal.user.fullName}
                         className="w-16 h-16 rounded-full object-cover ring-4 ring-gray-100"
                       />
@@ -2150,9 +2150,9 @@ const DashboardPage: React.FC = () => {
                 <div className="text-center mb-6">
                   {/* User Profile Picture */}
                   <div className="w-20 h-20 mx-auto mb-4">
-                    {deleteConfirmation.user.profilePicUrl || deleteConfirmation.user.profilePic ? (
+                    {deleteConfirmation.user.profilePicUrl && deleteConfirmation.user.profilePicUrl.trim() !== '' ? (
                       <img
-                        src={deleteConfirmation.user.profilePicUrl || deleteConfirmation.user.profilePic}
+                        src={deleteConfirmation.user.profilePicUrl}
                         alt={deleteConfirmation.user.fullName}
                         className="w-20 h-20 rounded-full object-cover ring-4 ring-red-200 shadow-lg"
                       />

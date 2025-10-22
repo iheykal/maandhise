@@ -5,15 +5,15 @@ const path = require('path');
 
 // Configure S3 client for Cloudflare R2
 const s3Client = new S3Client({
-  region: process.env.R2_REGION || 'auto',
-  endpoint: process.env.R2_ENDPOINT || 'https://744f24f8a5918e0d996c5ff4009a7adb.r2.cloudflarestorage.com',
+  region: process.env.CLOUDFLARE_REGION || 'auto',
+  endpoint: process.env.CLOUDFLARE_ENDPOINT || `https://${process.env.CLOUDFLARE_ACCOUNT_ID}.r2.cloudflarestorage.com`,
   credentials: {
-    accessKeyId: process.env.R2_ACCESS_KEY_ID || 'd5f5609cf0ae7decc387491e78805cd3',
-    secretAccessKey: process.env.R2_SECRET_ACCESS_KEY || '4977e0721817ca67c68fb17ba2398142fa74070e2eec1e4d05804d8e7994348f',
+    accessKeyId: process.env.CLOUDFLARE_ACCESS_KEY_ID,
+    secretAccessKey: process.env.CLOUDFLARE_SECRET_ACCESS_KEY,
   },
 });
 
-const BUCKET_NAME = process.env.R2_BUCKET_NAME || 'maandhise';
+const BUCKET_NAME = process.env.CLOUDFLARE_BUCKET_NAME || 'maandhise';
 
 // Configure multer for memory storage
 const storage = multer.memoryStorage();
@@ -47,7 +47,7 @@ class R2Service {
       console.log('Content type:', contentType);
       console.log('File buffer size:', fileBuffer.length);
       console.log('Bucket name:', BUCKET_NAME);
-      console.log('R2 endpoint:', process.env.R2_ENDPOINT);
+      console.log('R2 endpoint:', process.env.CLOUDFLARE_ENDPOINT || `https://${process.env.CLOUDFLARE_ACCOUNT_ID}.r2.cloudflarestorage.com`);
       
       const key = `uploads/${Date.now()}-${fileName}`;
       console.log('Generated key:', key);
@@ -132,8 +132,8 @@ class R2Service {
       });
 
       const uploadUrl = await getSignedUrl(s3Client, command, { expiresIn: 3600 }); // 1 hour
-      const accountId = '744f24f8a5918e0d996c5ff4009a7adb';
-      const bucketName = BUCKET_NAME || 'maandhise';
+      const accountId = process.env.CLOUDFLARE_ACCOUNT_ID;
+      const bucketName = BUCKET_NAME;
       const publicUrl = `https://pub-${accountId}.r2.dev/${bucketName}/${key}`;
       
       return { uploadUrl, publicUrl };

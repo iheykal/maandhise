@@ -289,9 +289,9 @@ const GetSahalCardPage: React.FC = () => {
                     {/* Avatar with enhanced styling */}
                     <div className="relative -mt-16 px-6 pb-6">
                       <div className="w-full flex items-center justify-center">
-                        {searchedUser.profilePicUrl || searchedUser.profilePic ? (
+                        {searchedUser.profilePicUrl && searchedUser.profilePicUrl.trim() !== '' ? (
                           <div className="relative cursor-pointer group/avatar" onClick={async () => {
-                            const imageUrl = searchedUser.profilePicUrl || searchedUser.profilePic;
+                            const imageUrl = searchedUser.profilePicUrl;
                             // Try to refresh the image URL first
                             try {
                               const response = await fetch('/api/upload/refresh-url', {
@@ -325,11 +325,11 @@ const GetSahalCardPage: React.FC = () => {
                             }
                           }}>
                             <img
-                              src={searchedUser.profilePicUrl || searchedUser.profilePic}
+                              src={searchedUser.profilePicUrl}
                               alt={searchedUser.fullName}
                               className="w-28 h-28 rounded-full object-cover ring-4 ring-white shadow-2xl transition-all duration-300 group-hover/avatar:scale-110 group-hover/avatar:shadow-3xl"
                               onError={(e) => {
-                                console.log('Profile picture failed to load:', searchedUser.profilePicUrl || searchedUser.profilePic);
+                                console.log('Profile picture failed to load:', searchedUser.profilePicUrl);
                                 e.currentTarget.src = '/icons/founder.jpeg';
                               }}
                             />
