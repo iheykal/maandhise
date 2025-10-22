@@ -1,18 +1,17 @@
 # Multi-stage build for full-stack application
 FROM node:18-alpine as frontend-build
 
-# Set working directory
-WORKDIR /app
+# Set working directory for frontend
+WORKDIR /app/frontend
 
 # Copy frontend package files
-COPY frontend/package*.json ./frontend/
-WORKDIR /app/frontend
+COPY frontend/package*.json ./
 
 # Install frontend dependencies
 RUN npm ci
 
 # Copy frontend source
-COPY frontend/ .
+COPY frontend/ ./
 
 # Build frontend
 RUN npm run build
@@ -20,7 +19,7 @@ RUN npm run build
 # Backend stage
 FROM node:18-alpine
 
-# Set working directory
+# Set working directory for backend
 WORKDIR /app
 
 # Copy backend package files
@@ -28,7 +27,7 @@ COPY backend/package*.json ./
 RUN npm ci --only=production
 
 # Copy backend source
-COPY backend/ .
+COPY backend/ ./
 
 # Copy built frontend from previous stage
 COPY --from=frontend-build /app/frontend/build ./frontend/build
