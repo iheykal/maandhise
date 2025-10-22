@@ -17,7 +17,7 @@ const GetSahalCardPage: React.FC = () => {
   const [searchError, setSearchError] = React.useState<string | null>(null);
   const [selectedUserImage, setSelectedUserImage] = React.useState<{user: any, imageUrl: string} | null>(null);
   
-  const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://192.168.100.32:5000/api';
+  const API_BASE_URL = process.env.REACT_APP_API_URL || 'https://maandhise-backend.onrender.com/api';
 
   // Helper function to extract only numbers from a string
   const extractNumbers = (str: string): string => {
