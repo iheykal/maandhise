@@ -761,12 +761,48 @@ const GetSahalCardPage: React.FC = () => {
 
           {/* Image Display */}
           <div className="p-6 bg-gray-50">
-            <div className="flex justify-center">
+            <div className="flex justify-center mb-4">
               <img
                 src={selectedUserImage.imageUrl}
                 alt={selectedUserImage.user.fullName}
                 className="max-w-full max-h-[50vh] object-contain rounded-lg shadow-lg"
+                onError={(e) => {
+                  console.log('Profile picture failed to load in modal:', selectedUserImage.imageUrl);
+                  e.currentTarget.src = '/icons/founder.jpeg';
+                }}
               />
+            </div>
+            
+            {/* Refresh Image Button */}
+            <div className="flex justify-center">
+              <button
+                onClick={async () => {
+                  try {
+                    // Try to refresh the image URL
+                    const response = await fetch('/api/upload/refresh-url', {
+                      method: 'POST',
+                      headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${localStorage.getItem('token')}`
+                      },
+                      body: JSON.stringify({ fileUrl: selectedUserImage.imageUrl })
+                    });
+                    
+                    if (response.ok) {
+                      const data = await response.json();
+                      setSelectedUserImage({
+                        ...selectedUserImage,
+                        imageUrl: data.data.url
+                      });
+                    }
+                  } catch (error) {
+                    console.log('Failed to refresh image URL:', error);
+                  }
+                }}
+                className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors text-sm"
+              >
+                🔄 Refresh Image
+              </button>
             </div>
           </div>
         </div>
