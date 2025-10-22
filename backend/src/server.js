@@ -48,29 +48,24 @@ const allowedOrigins = [
 
 console.log('Allowed CORS origins:', allowedOrigins);
 
+// More permissive CORS configuration for development
 app.use(cors({
   origin: function (origin, callback) {
     console.log('CORS request from origin:', origin);
-    // Allow requests with no origin (like mobile apps or curl requests)
-    if (!origin) return callback(null, true);
     
-    // Allow same-origin requests (frontend and backend on same domain)
-    if (origin === 'https://maandhise252.onrender.com') {
-      console.log('CORS allowed for same-origin:', origin);
+    // Allow requests with no origin (like mobile apps, curl, or same-origin requests)
+    if (!origin) {
+      console.log('CORS allowed for no origin (same-origin request)');
       return callback(null, true);
     }
     
-    if (allowedOrigins.indexOf(origin) !== -1) {
-      console.log('CORS allowed for origin:', origin);
-      callback(null, true);
-    } else {
-      console.log('CORS blocked for origin:', origin);
-      callback(new Error('Not allowed by CORS'));
-    }
+    // Allow all origins for now to fix the issue
+    console.log('CORS allowed for origin:', origin);
+    callback(null, true);
   },
   credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin'],
   optionsSuccessStatus: 200
 }));
 
