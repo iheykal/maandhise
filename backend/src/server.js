@@ -35,18 +35,36 @@ const limiter = rateLimit({
 app.use(limiter);
 
 // CORS configuration
+const allowedOrigins = [
+  'http://localhost:3000',
+  'http://192.168.100.32:3000',
+  'http://192.168.1.100:3000', // Add common home network IP
+  'http://192.168.0.100:3000', // Add common home network IP
+  'https://maandhise.onrender.com', // Production frontend URL
+  'https://maandhise-frontend.onrender.com', // Alternative frontend URL
+  process.env.APP_URL
+].filter(Boolean);
+
+console.log('Allowed CORS origins:', allowedOrigins);
+
 app.use(cors({
-  origin: [
-    'http://localhost:3000',
-    'http://192.168.100.32:3000',
-    'http://192.168.1.100:3000', // Add common home network IP
-    'http://192.168.0.100:3000', // Add common home network IP
-    'https://maandhise.onrender.com', // Production frontend URL
-    process.env.APP_URL
-  ].filter(Boolean),
+  origin: function (origin, callback) {
+    console.log('CORS request from origin:', origin);
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+    
+    if (allowedOrigins.indexOf(origin) !== -1) {
+      console.log('CORS allowed for origin:', origin);
+      callback(null, true);
+    } else {
+      console.log('CORS blocked for origin:', origin);
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization']
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+  optionsSuccessStatus: 200
 }));
 
 // Body parsing middleware
@@ -62,6 +80,17 @@ if (process.env.NODE_ENV === 'development') {
 } else {
   app.use(morgan('combined'));
 }
+
+// Root endpoint
+app.get('/', (req, res) => {
+  res.json({
+    success: true,
+    message: 'Maandhise Corporate API is running',
+    timestamp: new Date().toISOString(),
+    environment: process.env.NODE_ENV || 'development',
+    version: '1.0.0'
+  });
+});
 
 // Health check endpoint
 app.get('/health', (req, res) => {

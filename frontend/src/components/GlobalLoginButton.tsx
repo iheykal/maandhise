@@ -84,14 +84,14 @@ const GlobalLoginButton: React.FC = () => {
       console.log('Input length:', loginData.phone.length);
       console.log('Input characters:', loginData.phone.split('').map(c => `'${c}' (${c.charCodeAt(0)})`));
       console.log('Cleaned phone:', `"${cleanPhone}"`);
-      console.log('Final phone number:', `"${fullPhoneNumber}"`);
-      console.log('Expected format: +252613273911');
+      console.log('Final phone number:', `"${fullPhoneNumber.replace(/\d(?=\d{3})/g, '*')}"`);
+      console.log('Expected format: +252*******');
       console.log('Match check:', fullPhoneNumber === '+252613273911');
       console.log('Login attempt:', { phone: fullPhoneNumber, password: loginData.password });
       
       // Test backend connectivity
       try {
-        const healthCheck = await fetch('https://maandhise-backend.onrender.com/health');
+        const healthCheck = await fetch('https://maandhise-backend.onrender.com/api');
         console.log('Backend health check:', healthCheck.status, healthCheck.statusText);
       } catch (healthError) {
         console.error('Backend connectivity issue:', healthError);
@@ -235,7 +235,7 @@ const GlobalLoginButton: React.FC = () => {
                         onChange={handleLoginChange}
                         required
                         className="flex-1 px-3 py-3 border-0 outline-none text-base bg-transparent"
-                        placeholder={language === 'en' ? '613273911' : '613273911'}
+                        placeholder={language === 'en' ? 'Enter phone number' : 'Geli lambarka telefoonka'}
                         inputMode="numeric"
                         pattern="[0-9]*"
                         autoComplete="tel"
