@@ -91,7 +91,7 @@ const GlobalLoginButton: React.FC = () => {
       
       // Test backend connectivity
       try {
-        const healthCheck = await fetch('http://192.168.100.32:5000/health');
+        const healthCheck = await fetch('https://maandhise-backend.onrender.com/health');
         console.log('Backend health check:', healthCheck.status, healthCheck.statusText);
       } catch (healthError) {
         console.error('Backend connectivity issue:', healthError);
