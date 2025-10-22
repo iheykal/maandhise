@@ -41,6 +41,7 @@ app.use(cors({
     'http://192.168.100.32:3000',
     'http://192.168.1.100:3000', // Add common home network IP
     'http://192.168.0.100:3000', // Add common home network IP
+    'https://maandhise.onrender.com', // Production frontend URL
     process.env.APP_URL
   ].filter(Boolean),
   credentials: true,
