@@ -81,14 +81,34 @@ if (process.env.NODE_ENV === 'development') {
   app.use(morgan('combined'));
 }
 
-// Serve static files from React build
+// Serve static files from React build (if it exists)
 const path = require('path');
-app.use(express.static(path.join(__dirname, '../../frontend/build')));
+const fs = require('fs');
 
-// Root endpoint - serve React app
-app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, '../../frontend/build', 'index.html'));
-});
+const frontendBuildPath = path.join(__dirname, '../../frontend/build');
+const indexPath = path.join(frontendBuildPath, 'index.html');
+
+// Check if frontend build exists
+if (fs.existsSync(frontendBuildPath)) {
+  app.use(express.static(frontendBuildPath));
+  
+  // Root endpoint - serve React app
+  app.get('/', (req, res) => {
+    res.sendFile(indexPath);
+  });
+} else {
+  // Fallback: serve API info if frontend not built
+  app.get('/', (req, res) => {
+    res.json({
+      success: true,
+      message: 'Maandhise Corporate API is running',
+      timestamp: new Date().toISOString(),
+      environment: process.env.NODE_ENV || 'development',
+      version: '1.0.0',
+      note: 'Frontend build not found. Please build the frontend and redeploy.'
+    });
+  });
+}
 
 // Health check endpoint
 app.get('/health', (req, res) => {
@@ -116,8 +136,15 @@ app.use('*', (req, res) => {
       message: 'API endpoint not found'
     });
   }
-  // Otherwise serve React app for client-side routing
-  res.sendFile(path.join(__dirname, '../../frontend/build', 'index.html'));
+  // Otherwise serve React app for client-side routing (if it exists)
+  if (fs.existsSync(indexPath)) {
+    res.sendFile(indexPath);
+  } else {
+    res.status(404).json({
+      success: false,
+      message: 'Frontend not available. Please build and redeploy.'
+    });
+  }
 });
 
 // Global error handler
