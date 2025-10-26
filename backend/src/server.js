@@ -23,9 +23,29 @@ const app = express();
 // deploy behind a trusted proxy, you can set a more specific value instead of `true`.
 app.set('trust proxy', true);
 
-// Security middleware
+// Security middleware with CSP configuration to allow R2 images
 app.use(helmet({
-  crossOriginResourcePolicy: { policy: "cross-origin" }
+  crossOriginResourcePolicy: { policy: "cross-origin" },
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
+      fontSrc: ["'self'", "https://fonts.gstatic.com"],
+      scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
+      imgSrc: [
+        "'self'",
+        "data:",
+        "blob:",
+        "https://*.r2.dev",
+        "https://*.r2.cloudflarestorage.com",
+        `https://pub-${process.env.CLOUDFLARE_ACCOUNT_ID}.r2.dev`,
+        `https://maandhise.${process.env.CLOUDFLARE_ACCOUNT_ID}.r2.cloudflarestorage.com`
+      ],
+      connectSrc: ["'self'", "https://*.r2.dev", "https://*.r2.cloudflarestorage.com"],
+      objectSrc: ["'none'"],
+      upgradeInsecureRequests: []
+    }
+  }
 }));
 
 // Rate limiting
