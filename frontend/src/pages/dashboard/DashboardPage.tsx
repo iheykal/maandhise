@@ -73,7 +73,7 @@ const DashboardPage: React.FC = () => {
 
   const [activeTab, setActiveTab] = useState('overview');
   const [showAddUserForm, setShowAddUserForm] = useState(false);
-  const [selectedUserImage, setSelectedUserImage] = useState<{user: any, imageUrl: string} | null>(null);
+  const [selectedUserImage, setSelectedUserImage] = useState<{user: any, imageUrl: string, idImageUrl?: string} | null>(null);
   const [deleteConfirmation, setDeleteConfirmation] = useState<{user: any} | null>(null);
   const [paymentModal, setPaymentModal] = useState<{user: any} | null>(null);
   const [paymentAmount, setPaymentAmount] = useState('');
@@ -515,14 +515,14 @@ const DashboardPage: React.FC = () => {
         
         if (response.ok) {
           const data = await response.json();
-          setSelectedUserImage({ user, imageUrl: data.data.url });
+          setSelectedUserImage({ user, imageUrl: data.data.url, idImageUrl: user.idImageUrl });
         } else {
           // Fallback to original URL if refresh fails
-          setSelectedUserImage({ user, imageUrl: user.profilePicUrl });
+          setSelectedUserImage({ user, imageUrl: user.profilePicUrl, idImageUrl: user.idImageUrl });
         }
       } catch (error) {
         console.log('Failed to refresh image URL, using original:', error);
-        setSelectedUserImage({ user, imageUrl: user.profilePicUrl });
+        setSelectedUserImage({ user, imageUrl: user.profilePicUrl, idImageUrl: user.idImageUrl });
       }
     }
   }, []);
@@ -1917,16 +1917,39 @@ const DashboardPage: React.FC = () => {
 
               {/* User Details */}
               <div className="p-6 bg-gray-50">
-                <div className="flex justify-center mb-4">
-                  <img
-                    src={selectedUserImage.imageUrl}
-                    alt={selectedUserImage.user.fullName}
-                    className="max-w-full max-h-[50vh] object-contain rounded-lg shadow-lg"
-                    onError={(e) => {
-                      console.log('Profile picture failed to load in modal:', selectedUserImage.imageUrl);
-                      e.currentTarget.src = '/icons/founder.jpeg';
-                    }}
-                  />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-4">
+                  <div className="flex flex-col items-center">
+                    <h3 className="text-lg font-semibold mb-2">{language === 'en' ? 'Profile Picture' : 'Sawirka Isticmaalaha'}</h3>
+                    <img
+                      src={selectedUserImage.imageUrl}
+                      alt={selectedUserImage.user.fullName}
+                      className="max-w-full max-h-[40vh] object-contain rounded-lg shadow-lg"
+                      onError={(e) => {
+                        console.log('Profile picture failed to load in modal:', selectedUserImage.imageUrl);
+                        e.currentTarget.src = '/icons/founder.jpeg';
+                      }}
+                    />
+                  </div>
+                  
+                  <div className="flex flex-col items-center">
+                    <h3 className="text-lg font-semibold mb-2">{language === 'en' ? 'ID Image' : 'Sawirka Aqoonsiga'}</h3>
+                    {selectedUserImage.idImageUrl ? (
+                      <img
+                        src={selectedUserImage.idImageUrl}
+                        alt={`${selectedUserImage.user.fullName} ID`}
+                        className="max-w-full max-h-[40vh] object-contain rounded-lg shadow-lg"
+                        onError={(e) => {
+                          console.log('ID image failed to load in modal:', selectedUserImage.idImageUrl);
+                          e.currentTarget.src = '/icons/id-placeholder.png';
+                        }}
+                      />
+                    ) : (
+                      <div className="flex flex-col items-center justify-center w-full h-[30vh] bg-gray-100 rounded-lg border-2 border-dashed border-gray-300">
+                        <AlertCircle className="w-12 h-12 text-gray-400 mb-2" />
+                        <p className="text-gray-500 text-center">{language === 'en' ? 'No ID image available' : 'Ma jiro sawirka aqoonsiga'}</p>
+                      </div>
+                    )}
+                  </div>
                 </div>
                 
 
