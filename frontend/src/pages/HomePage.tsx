@@ -54,9 +54,7 @@ const HomePage: React.FC = () => {
 
   const stats = [
     { number: '10,000+', label: language === 'en' ? 'Our Clients' : 'Macamiisha' },
-    { number: '500+', label: language === 'en' ? 'Partner Businesses' : 'Ganacsi La Shaqeeya' },
-    { number: '50', label: language === 'en' ? 'Partners' : 'La Shaqeeya' },
-    { number: '95%', label: language === 'en' ? 'Customer Satisfaction' : 'Raalli Galin' },
+    { number: '100%', label: language === 'en' ? 'Customer Satisfaction' : 'Raalli Galin' },
   ];
 
   return (

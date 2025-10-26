@@ -4,9 +4,10 @@ const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'https://maandhise252
 
 const api = axios.create({
   baseURL: API_BASE_URL,
-  headers: {
-    'Content-Type': 'application/json',
-  },
+  // Important: do NOT set a default 'Content-Type' here. When sending FormData, axios must set
+  // the Content-Type including the multipart boundary automatically. A default of
+  // 'application/json' prevents axios from setting the proper multipart Content-Type and
+  // causes the server to see no file (Bad Request / No file uploaded).
 });
 
 // Add auth token to requests
@@ -45,16 +46,66 @@ export const uploadService = {
    * Upload file directly to backend (server-side upload to R2)
    */
   uploadFile: async (file: File): Promise<UploadResponse> => {
-    const formData = new FormData();
-    formData.append('file', file);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
 
-    const response = await api.post('/upload/file', formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-    });
+      // Debug: log file info and formData entries so we can inspect payload in console
+      console.log('uploadFile: file ->', { name: file.name, size: file.size, type: file.type });
+      try {
+        for (const entry of formData.entries()) {
+          // entry[1] can be a File object; log minimal info
+          if (entry[1] instanceof File) {
+            const f = entry[1] as File;
+            console.log('formData entry:', entry[0], { name: f.name, size: f.size, type: f.type });
+          } else {
+            console.log('formData entry:', entry[0], entry[1]);
+          }
+        }
+      } catch (logErr) {
+        console.warn('Failed to iterate formData entries for logging', logErr);
+      }
 
-    return response.data;
+      // Primary upload path using axios instance
+      const response = await api.post('/upload/file', formData);
+
+      return response.data;
+    } catch (err: any) {
+      console.error('uploadFile error:', err.response?.data || err.message || err);
+
+      // If server explicitly reported no file uploaded, try a fetch fallback to rule out axios boundary issues
+      if (err.response?.data?.message && typeof err.response.data.message === 'string' && err.response.data.message.toLowerCase().includes('no file')) {
+        console.warn('uploadFile: server said no file uploaded — retrying upload with fetch as a fallback to verify payload');
+        try {
+          const token = localStorage.getItem('token');
+          const fallbackResponse = await fetch(`${API_BASE_URL}/upload/file`, {
+            method: 'POST',
+            headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+            body: (() => {
+              const fd = new FormData();
+              fd.append('file', file);
+              return fd;
+            })(),
+          });
+
+          const data = await fallbackResponse.json();
+          if (!fallbackResponse.ok) {
+            console.error('uploadFile fallback (fetch) failed:', data);
+            // Throw the original axios error to preserve stack/response for callers
+            throw err;
+          }
+
+          console.log('uploadFile fallback succeeded:', data);
+          return data;
+        } catch (fetchErr) {
+          console.error('uploadFile fetch fallback error:', fetchErr);
+          throw err; // keep original error for caller
+        }
+      }
+
+      // Rethrow the original axios error so callers can inspect error.response
+      throw err;
+    }
   },
 
   /**
@@ -73,11 +124,16 @@ export const uploadService = {
    * Upload file directly to R2 using presigned URL
    */
   uploadToR2: async (file: File, presignedUrl: string): Promise<void> => {
-    await axios.put(presignedUrl, file, {
-      headers: {
-        'Content-Type': file.type,
-      },
-    });
+    try {
+      await axios.put(presignedUrl, file, {
+        headers: {
+          'Content-Type': file.type,
+        },
+      });
+    } catch (err: any) {
+      console.error('uploadToR2 error:', err.response?.data || err.message || err);
+      throw err;
+    }
   },
 
   /**
@@ -98,22 +154,24 @@ export const uploadService = {
     file: File,
     onProgress?: (progress: number) => void
   ): Promise<UploadResponse> => {
-    const formData = new FormData();
-    formData.append('file', file);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
 
-    const response = await api.post('/upload/file', formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-      onUploadProgress: (progressEvent) => {
-        if (onProgress && progressEvent.total) {
-          const progress = Math.round((progressEvent.loaded * 100) / progressEvent.total);
-          onProgress(progress);
-        }
-      },
-    });
+      const response = await api.post('/upload/file', formData, {
+        onUploadProgress: (progressEvent) => {
+          if (onProgress && progressEvent.total) {
+            const progress = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+            onProgress(progress);
+          }
+        },
+      });
 
-    return response.data;
+      return response.data;
+    } catch (err: any) {
+      console.error('uploadFileWithProgress error:', err.response?.data || err.message || err);
+      throw err;
+    }
   },
 
   /**

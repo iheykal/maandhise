@@ -52,7 +52,7 @@ class R2Service {
         Key: key,
         Body: fileBuffer,
         ContentType: contentType,
-        ACL: 'public-read', // Make file publicly accessible
+        // ACL removed for Cloudflare R2 compatibility
       });
 
       const result = await s3Client.send(command);
@@ -116,7 +116,7 @@ class R2Service {
         Bucket: BUCKET_NAME,
         Key: key,
         ContentType: contentType,
-        ACL: 'public-read',
+        // ACL removed for Cloudflare R2 compatibility
       });
 
       const uploadUrl = await getSignedUrl(s3Client, command, { expiresIn: 3600 }); // 1 hour

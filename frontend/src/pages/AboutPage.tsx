@@ -219,7 +219,7 @@ const AboutPage: React.FC = () => {
             </h2>
             <p className="text-xl text-gray-600 max-w-2xl mx-auto">
               {language === 'en' 
-                ? 'From vision to reality - the journey of Maandhise'
+                ? 'From vision to reality - the journey of Sahal Card'
                 : 'Laga bilaabo aragti ilaa dhab - socodka Maandhise'
               }
             </p>

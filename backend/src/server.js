@@ -17,6 +17,12 @@ const simplePaymentRoutes = require('./routes/simplePayment');
 
 const app = express();
 
+// Trust proxy so express can read X-Forwarded-For headers (required by express-rate-limit
+// when requests pass through a proxy or when certain clients set X-Forwarded-For).
+// This is safe for local development and common NAT / reverse proxy setups. If you
+// deploy behind a trusted proxy, you can set a more specific value instead of `true`.
+app.set('trust proxy', true);
+
 // Security middleware
 app.use(helmet({
   crossOriginResourcePolicy: { policy: "cross-origin" }

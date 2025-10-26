@@ -399,13 +399,13 @@ const GetSahalCardPage: React.FC = () => {
 
                           {/* Registration Date */}
                           {searchedUser.createdAt && (
-                            <div className="flex items-center justify-between bg-blue-50 rounded-lg px-3 py-2">
-                              <span className="text-blue-600 font-medium flex items-center gap-2">
-                                <Calendar className="w-4 h-4" />
-                                {language === 'en' ? 'Registered' : 'Diiwaangashan'}
-                              </span>
-                              <span className="text-blue-900 font-semibold">{new Date(searchedUser.createdAt).toLocaleDateString()}</span>
-                            </div>
+                          <div className="flex items-start justify-between bg-blue-50 rounded-lg px-3 py-2">
+                            <span className="text-blue-600 font-medium flex items-center gap-2 flex-shrink-0 text-xs">
+                              <Calendar className="w-3 h-3" />
+                              {language === 'en' ? 'Registered' : 'Diiwaangashan'}
+                            </span>
+                            <span className="text-blue-900 font-bold text-right text-sm leading-tight">{new Date(searchedUser.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</span>
+                          </div>
                           )}
 
                           {/* Generated Card Number */}

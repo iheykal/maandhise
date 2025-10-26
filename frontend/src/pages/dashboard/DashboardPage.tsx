@@ -88,6 +88,7 @@ const DashboardPage: React.FC = () => {
     registrationDate: string;
     amount: string; // USD, equals number of months
     profilePic: File | null;
+    idImage: File | null;
   };
 
   // Initial form state
@@ -98,7 +99,8 @@ const DashboardPage: React.FC = () => {
     location: '',
     registrationDate: new Date().toISOString().split('T')[0],
     amount: '1',
-    profilePic: null
+    profilePic: null,
+    idImage: null
   };
 
   // Form state reference for uncontrolled inputs
@@ -108,6 +110,7 @@ const DashboardPage: React.FC = () => {
   const [formState, setFormState] = React.useState<Omit<FormState, 'profilePic'>>(initialFormState);
 
   const [previewImage, setPreviewImage] = useState<string | null>(null);
+  const [previewIdImage, setPreviewIdImage] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   // const [users, setUsers] = useState<any[]>([]);
   const [addedUsers, setAddedUsers] = useState<any[]>([]);
@@ -343,6 +346,19 @@ const DashboardPage: React.FC = () => {
     }
   };
 
+  // Handle ID image file changes
+  const handleIdFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      formRef.current.idImage = file;
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setPreviewIdImage(e.target?.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   // Handle form submission
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -361,6 +377,20 @@ const DashboardPage: React.FC = () => {
           throw new Error('Failed to upload profile picture');
         }
         profilePicUrl = uploadResp.data.url;
+      }
+
+      // Upload ID image (if provided)
+      let idImageUrl: string | undefined = undefined;
+      if (formRef.current.idImage) {
+        const validation = uploadService.validateFile(formRef.current.idImage);
+        if (!validation.isValid) {
+          throw new Error(validation.error || 'Invalid ID image file');
+        }
+        const uploadResp = await uploadService.uploadFile(formRef.current.idImage);
+        if (!uploadResp?.success || !uploadResp?.data?.url) {
+          throw new Error('Failed to upload ID image');
+        }
+        idImageUrl = uploadResp.data.url;
       }
 
       // Calculate validity end date from registrationDate + amount months
@@ -392,7 +422,8 @@ const DashboardPage: React.FC = () => {
         registrationDate: formState.registrationDate,
         amount: months,
         validUntil: validUntilDate.toISOString(),
-        profilePicUrl
+        profilePicUrl,
+        idImageUrl
       };
 
       const newUser = await createUser(userData);
@@ -404,6 +435,7 @@ const DashboardPage: React.FC = () => {
       setFormState(initialFormState);
       formRef.current = { ...initialFormState };
       setPreviewImage(null);
+      setPreviewIdImage(null);
       setShowAddUserForm(false);
       
     } catch (error) {
@@ -421,6 +453,7 @@ const DashboardPage: React.FC = () => {
     setFormState(initialFormState);
     formRef.current = { ...initialFormState };
     setPreviewImage(null);
+    setPreviewIdImage(null);
     setShowAddUserForm(false);
   };
 
@@ -621,8 +654,8 @@ const DashboardPage: React.FC = () => {
       
       alert(
         language === 'en'
-          ? `Payment successful! User is now valid until ${newValidUntil.toLocaleDateString()}`
-          : `Lacag bixintii waa guuleysatay! Isticmaalaha hadda waa ansax ilaa ${newValidUntil.toLocaleDateString()}`
+          ? `Payment successful! User is now valid until ${newValidUntil.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}`
+          : `Lacag bixintii waa guuleysatay! Isticmaalaha hadda waa ansax ilaa ${newValidUntil.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}`
       );
       
       setPaymentModal(null);
@@ -775,7 +808,7 @@ const DashboardPage: React.FC = () => {
               </div>
               <div className="text-right">
                 <p className="text-xs text-gray-500">
-                  {new Date(user.createdAt).toLocaleDateString()}
+                  {new Date(user.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
                 </p>
               </div>
               </motion.div>
@@ -1097,12 +1130,12 @@ const DashboardPage: React.FC = () => {
 
                         {/* Registration Date */}
                         {user.createdAt && (
-                          <div className="flex items-center justify-between bg-blue-50 rounded-lg px-3 py-2">
-                            <span className="text-blue-600 font-medium flex items-center gap-2">
-                              <Calendar className="w-4 h-4" />
+                          <div className="flex items-start justify-between bg-blue-50 rounded-lg px-3 py-2">
+                            <span className="text-blue-600 font-medium flex items-center gap-2 flex-shrink-0 text-xs">
+                              <Calendar className="w-3 h-3" />
                               {language === 'en' ? 'Registered' : 'Diiwaangashan'}
                             </span>
-                            <span className="text-blue-900 font-semibold">{new Date(user.createdAt).toLocaleDateString()}</span>
+                            <span className="text-blue-900 font-bold text-right text-sm leading-tight">{new Date(user.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</span>
                           </div>
                         )}
 
@@ -1416,12 +1449,12 @@ const DashboardPage: React.FC = () => {
 
                         {/* Registration Date */}
                         {user.createdAt && (
-                          <div className="flex items-center justify-between bg-blue-50 rounded-lg px-3 py-2">
-                            <span className="text-blue-600 font-medium flex items-center gap-2">
-                              <Calendar className="w-4 h-4" />
+                          <div className="flex items-start justify-between bg-blue-50 rounded-lg px-3 py-2">
+                            <span className="text-blue-600 font-medium flex items-center gap-2 flex-shrink-0 text-xs">
+                              <Calendar className="w-3 h-3" />
                               {language === 'en' ? 'Registered' : 'Diiwaangashan'}
                             </span>
-                            <span className="text-blue-900 font-semibold">{new Date(user.createdAt).toLocaleDateString()}</span>
+                            <span className="text-blue-900 font-bold text-right text-sm leading-tight">{new Date(user.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</span>
                           </div>
                         )}
 
@@ -1752,6 +1785,64 @@ const DashboardPage: React.FC = () => {
                       </div>
                         </motion.div>
 
+                    {/* ID Image Submission Section */}
+                    <motion.div 
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ duration: 0.4, delay: 0.55 }}
+                    >
+                      <label className="block text-sm font-semibold text-gray-700 mb-2 flex items-center space-x-2">
+                        <Shield className="w-4 h-4 text-red-600" />
+                        <span>{language === 'en' ? 'Submit ID Document' : 'Gudbi Dukumentiga Aqoonsiga'}</span>
+                      </label>
+                      
+                      <div className="space-y-4">
+                        {/* File Input */}
+                        <div className="relative">
+                          <input
+                            type="file"
+                            accept="image/*"
+                            onChange={handleIdFileChange}
+                            className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-4 focus:ring-red-100 focus:border-red-500 transition-all duration-300 bg-gray-50 focus:bg-white file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-red-50 file:text-red-700 hover:file:bg-red-100"
+                          />
+                        </div>
+                        
+                        {/* ID Image Preview */}
+                        {previewIdImage && (
+                          <motion.div
+                            initial={{ opacity: 0, scale: 0.8 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            className="flex justify-center"
+                          >
+                            <div className="relative">
+                              <img
+                                src={previewIdImage}
+                                alt="ID Preview"
+                                className="w-32 h-20 rounded-lg object-cover border-4 border-red-200 shadow-lg"
+                              />
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setPreviewIdImage(null);
+                                  formRef.current.idImage = null;
+                                }}
+                                className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs hover:bg-red-600 transition-colors"
+                              >
+                                ×
+                              </button>
+                            </div>
+                          </motion.div>
+                        )}
+                        
+                        <p className="text-xs text-gray-500 text-center">
+                          {language === 'en' 
+                            ? 'Upload a clear photo of your ID document for verification'
+                            : 'Soo geli sawir cad oo dukumentiga aqoonsigaaga ah si loo xaqiijiyo'
+                          }
+                        </p>
+                      </div>
+                    </motion.div>
+
                     {/* Form Buttons */}
               <motion.div 
                       className="flex space-x-4 pt-6"
@@ -1908,7 +1999,7 @@ const DashboardPage: React.FC = () => {
                         <h4 className="font-semibold text-gray-700 text-sm">{language === 'en' ? 'Registered' : 'Diiwaangashan'}</h4>
                         <p className="text-gray-600 text-sm">
                           {selectedUserImage.user.createdAt 
-                            ? new Date(selectedUserImage.user.createdAt).toLocaleDateString()
+                            ? new Date(selectedUserImage.user.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
                             : 'Not available'
                           }
                         </p>
@@ -1923,7 +2014,7 @@ const DashboardPage: React.FC = () => {
                         <h4 className="font-semibold text-gray-700 text-sm">{language === 'en' ? 'Expires' : 'Dhacaya'}</h4>
                         <p className="text-gray-600 text-sm">
                           {selectedUserImage.user.validUntil 
-                            ? new Date(selectedUserImage.user.validUntil).toLocaleDateString()
+                            ? new Date(selectedUserImage.user.validUntil).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
                             : 'Not set'
                           }
                         </p>
@@ -2000,8 +2091,8 @@ const DashboardPage: React.FC = () => {
                           : 'text-red-600'
                       }`}>
                         {new Date(paymentModal.user.validUntil) > new Date()
-                          ? `${language === 'en' ? 'Valid until' : 'Ansax ilaa'}: ${new Date(paymentModal.user.validUntil).toLocaleDateString()}`
-                          : `${language === 'en' ? 'Expired' : 'Dhacay'}: ${new Date(paymentModal.user.validUntil).toLocaleDateString()}`
+                          ? `${language === 'en' ? 'Valid until' : 'Ansax ilaa'}: ${new Date(paymentModal.user.validUntil).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}`
+                          : `${language === 'en' ? 'Expired' : 'Dhacay'}: ${new Date(paymentModal.user.validUntil).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}`
                         }
                       </p>
                     )}

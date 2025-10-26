@@ -217,7 +217,7 @@ const SimplePaymentManager: React.FC = () => {
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {new Date(user.validUntil).toLocaleDateString()}
+                    {new Date(user.validUntil).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm">
                     <span className={getDaysColor(user.daysUntilDue)}>
@@ -225,7 +225,7 @@ const SimplePaymentManager: React.FC = () => {
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {user.lastPaymentDate ? new Date(user.lastPaymentDate).toLocaleDateString() : 'Never'}
+                    {user.lastPaymentDate ? new Date(user.lastPaymentDate).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) : 'Never'}
                   </td>
                 </tr>
               ))}

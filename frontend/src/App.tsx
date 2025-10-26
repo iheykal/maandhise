@@ -73,7 +73,7 @@ function App() {
                       </section>
                       
                       {/* Services Section */}
-                      <section id="services" data-snap-section className="h-screen">
+                      <section id="services" data-snap-section className="min-h-screen">
                         <ServicesPage />
                       </section>
                       

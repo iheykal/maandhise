@@ -103,7 +103,7 @@ const Navbar: React.FC = () => {
               alt="Dhii Logo" 
               className="w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 lg:w-18 lg:h-18 object-contain bg-transparent pb-1"
             />
-            <span className="whitespace-nowrap font-extrabold tracking-wide">Maandhise</span>
+            <span className="font-extrabold tracking-wide text-sm sm:text-xl md:text-2xl lg:text-3xl xl:text-4xl">Maandhise Corporate</span>
           </button>
 
           {/* Desktop Navigation */}
