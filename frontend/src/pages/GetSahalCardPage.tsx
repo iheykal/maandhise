@@ -1,7 +1,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { Helmet } from 'react-helmet-async';
-import { ArrowLeft, CreditCard, Search, XCircle, Phone, Calendar, User, Trash2, X, DollarSign } from 'lucide-react';
+import { ArrowLeft, CreditCard, Search, XCircle, Phone, Calendar, User, Trash2, X, DollarSign, Lock as LockIcon } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext.tsx';
 import { useNavigate } from 'react-router-dom';
 
@@ -17,6 +17,11 @@ const GetSahalCardPage: React.FC = () => {
   const [searchError, setSearchError] = React.useState<string | null>(null);
   const [selectedUserImage, setSelectedUserImage] = React.useState<{user: any, imageUrl: string} | null>(null);
   
+  // PIN verification state
+  const [pin, setPin] = React.useState('');
+  const [pinError, setPinError] = React.useState<string | null>(null);
+  const [isPinVerified, setIsPinVerified] = React.useState(false);
+
   const API_BASE_URL = process.env.REACT_APP_API_URL || 'https://maandhise252.onrender.com/api';
 
   // Helper function to extract only numbers from a string
@@ -99,6 +104,9 @@ const GetSahalCardPage: React.FC = () => {
     setSearchLoading(true);
     setSearchError(null);
     setSearchedUser(null);
+    setIsPinVerified(false);
+    setPin('');
+    setPinError(null);
 
     try {
       const response = await fetch(`${API_BASE_URL}/auth/search-by-id`, {
@@ -124,6 +132,25 @@ const GetSahalCardPage: React.FC = () => {
       setSearchedUser(null);
     } finally {
       setSearchLoading(false);
+    }
+  };
+
+  // Handle PIN verification
+  const handlePinVerification = () => {
+    if (!searchedUser || !searchedUser.phone) {
+      setPinError('User data not available');
+      return;
+    }
+
+    const userPhone = searchedUser.phone;
+    const last4Digits = userPhone.slice(-4);
+
+    if (pin === last4Digits) {
+      setIsPinVerified(true);
+      setPinError(null);
+    } else {
+      setPinError('Incorrect PIN. Please try again.');
+      setIsPinVerified(false);
     }
   };
 
@@ -251,6 +278,66 @@ const GetSahalCardPage: React.FC = () => {
                 </motion.div>
               )}
 
+              {/* PIN Verification Section */}
+              {searchedUser && !isPinVerified && (
+                <motion.div 
+                  className="mb-6 mt-8"
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                >
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
+                    <div className="flex items-center gap-3 mb-4">
+                      <div className="p-2 bg-blue-500 rounded-lg">
+                        <CreditCard className="w-5 h-5 text-white" />
+                      </div>
+                      <h3 className="text-lg font-bold text-gray-800">
+                        {language === 'en' ? 'PIN Verification Required' : 'Xaqiijinta PIN-ka Ayaa Loo Baahan Yahay'}
+                      </h3>
+                    </div>
+                    
+                    <p className="text-gray-600 mb-4">
+                      {language === 'en' 
+                        ? 'Please enter the last 4 digits of your phone number to view card details.' 
+                        : 'Fadlan geli 4-ta digit ee ugu dambeeya lambarka telefoonkaaga si aad u aragto faahfaahinta kaarkaaga.'}
+                    </p>
+                    
+                    <div className="flex space-x-4">
+                      <div className="flex-1 relative">
+                        <input
+                          type="text"
+                          inputMode="numeric"
+                          pattern="[0-9]*"
+                          maxLength={4}
+                          value={pin}
+                          onChange={(e) => {
+                            // Only allow numeric digits
+                            const numericValue = e.target.value.replace(/[^0-9]/g, '');
+                            setPin(numericValue);
+                          }}
+                          placeholder={language === 'en' ? 'Enter 4-digit PIN...' : 'Geli PIN-ka 4-digit...'}
+                          className="w-full pl-3 pr-3 py-3 border border-gray-300 rounded-lg bg-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        />
+                      </div>
+                      <button
+                        onClick={handlePinVerification}
+                        disabled={pin.length !== 4}
+                        className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
+                      >
+                        <span>{language === 'en' ? 'Verify' : 'Xaqiiji'}</span>
+                      </button>
+                    </div>
+                    
+                    {/* PIN Error Message */}
+                    {pinError && (
+                      <div className="mt-3 text-red-600 text-sm flex items-center">
+                        <XCircle className="w-4 h-4 mr-1" />
+                        <span>{pinError}</span>
+                      </div>
+                    )}
+                  </div>
+                </motion.div>
+              )}
+
               {/* User Card Display - Exact format from Users tab */}
               {searchedUser && (
                 <motion.div 
@@ -261,10 +348,24 @@ const GetSahalCardPage: React.FC = () => {
                 >
                   <div className="flex justify-center px-4">
                     <motion.div 
-                      className="relative bg-white rounded-2xl shadow-xl border border-gray-100 w-full max-w-sm"
+                      className={`relative bg-white rounded-2xl shadow-xl border border-gray-100 w-full max-w-sm ${!isPinVerified ? 'select-none' : ''}`}
                       whileHover={{ y: -5, shadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)" }}
                       transition={{ duration: 0.3 }}
                     >
+                      {/* Blur overlay when PIN is not verified */}
+                      {!isPinVerified && (
+                        <div className="absolute inset-0 bg-white/50 backdrop-blur-md rounded-2xl z-10 flex flex-col items-center justify-center p-6 text-center">
+                          <LockIcon className="w-12 h-12 text-blue-500 mb-3" />
+                          <h3 className="text-xl font-bold text-gray-800 mb-2">
+                            {language === 'en' ? 'Card Details Protected' : 'Faahfaahinta Kaarka Waa La Ilaaliyay'}
+                          </h3>
+                          <p className="text-gray-600">
+                            {language === 'en' 
+                              ? 'Enter the PIN above to view card details' 
+                              : 'Geli PIN-ka kor ku xusan si aad u aragto faahfaahinta kaarka'}
+                          </p>
+                        </div>
+                      )}
                     {/* Card Header with gradient */}
                     <div className="h-24 bg-gradient-to-r from-blue-500 to-indigo-600 relative">
                       {/* INVALID badge for expired users */}
@@ -359,55 +460,8 @@ const GetSahalCardPage: React.FC = () => {
 
                       {/* User Information - Clean Structure */}
                       <div className="mt-4 space-y-3">
-                        {/* Name */}
-                        <div className="text-center">
-                          <div className="flex items-center justify-center gap-2">
-                            <h3 className="text-lg font-bold text-gray-900 truncate">
-                              {searchedUser.fullName}
-                            </h3>
-                            {searchedUser.validUntil && new Date() <= new Date(searchedUser.validUntil) && (
-                              <img 
-                                src="/icons/check.png" 
-                                alt="Valid" 
-                                className="w-5 h-5"
-                              />
-                            )}
-                          </div>
-                        </div>
-
-                        {/* Information Grid */}
+                        {/* Information Grid - Only Card Number and Expiration Date */}
                         <div className="space-y-2 text-sm">
-                          {/* Phone Number */}
-                          <div className="flex items-center justify-between bg-gray-50 rounded-lg px-3 py-2">
-                            <span className="text-gray-600 font-medium flex items-center gap-2">
-                              <Phone className="w-4 h-4" />
-                              {language === 'en' ? 'Number' : 'Lambar'}
-                            </span>
-                            <span className="text-gray-900 font-semibold">{searchedUser.phone}</span>
-                          </div>
-
-                          {/* ID Number */}
-                          {searchedUser.idNumber && (
-                            <div className="flex items-center justify-between bg-gray-50 rounded-lg px-3 py-2">
-                              <span className="text-gray-600 font-medium flex items-center gap-2">
-                                <CreditCard className="w-4 h-4" />
-                                {language === 'en' ? 'ID' : 'Aqoonsi'}
-                              </span>
-                              <span className="text-gray-900 font-semibold">{searchedUser.idNumber}</span>
-                            </div>
-                          )}
-
-                          {/* Registration Date */}
-                          {searchedUser.createdAt && (
-                          <div className="flex items-start justify-between bg-blue-50 rounded-lg px-3 py-2">
-                            <span className="text-blue-600 font-medium flex items-center gap-2 flex-shrink-0 text-xs">
-                              <Calendar className="w-3 h-3" />
-                              {language === 'en' ? 'Registered' : 'Diiwaangashan'}
-                            </span>
-                            <span className="text-blue-900 font-bold text-right text-sm leading-tight">{new Date(searchedUser.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</span>
-                          </div>
-                          )}
-
                           {/* Generated Card Number */}
                           <div className="flex items-center justify-between bg-green-50 rounded-lg px-3 py-2">
                             <span className="text-green-600 font-medium flex items-center gap-2">
@@ -417,60 +471,16 @@ const GetSahalCardPage: React.FC = () => {
                             <span className="text-green-900 font-semibold font-mono">{generateCardNumber(searchedUser)}</span>
                           </div>
 
-                          {/* Balance Information */}
-                          {(() => {
-                            const balanceInfo = calculateRemainingBalance(searchedUser.validUntil, searchedUser.createdAt);
-                            return (
-                              <div className={`flex items-center justify-between rounded-lg px-3 py-2 ${
-                                balanceInfo.balance < 0 
-                                  ? 'bg-red-50' 
-                                  : balanceInfo.balance > 0 
-                                    ? 'bg-blue-50' 
-                                    : 'bg-gray-50'
-                              }`}>
-                                <span className={`font-medium flex items-center gap-2 ${
-                                  balanceInfo.balance < 0 
-                                    ? 'text-red-600' 
-                                    : balanceInfo.balance > 0 
-                                      ? 'text-blue-600' 
-                                      : 'text-gray-600'
-                                }`}>
-                                  <DollarSign className="w-4 h-4" />
-                                  {language === 'en' ? 'Balance' : 'Xisaabta'}
-                                </span>
-                                <div className="text-right">
-                                  <div className={`font-semibold ${
-                                    balanceInfo.balance < 0 
-                                      ? 'text-red-900' 
-                                      : balanceInfo.balance > 0 
-                                        ? 'text-blue-900' 
-                                        : 'text-gray-900'
-                                  }`}>
-                                    ${Math.abs(balanceInfo.balance)}
-                                  </div>
-                                  <div className={`text-xs ${
-                                    balanceInfo.balance < 0 
-                                      ? 'text-red-600' 
-                                      : balanceInfo.balance > 0 
-                                        ? 'text-blue-600' 
-                                        : 'text-gray-600'
-                                  }`}>
-                                    {balanceInfo.isValid ? (
-                                      <>
-                                        {balanceInfo.months} {language === 'en' ? 'month' : 'bil'}{balanceInfo.months !== 1 ? 's' : ''} {language === 'en' ? 'remaining' : 'oo haray'}
-                                      </>
-                                    ) : balanceInfo.balance < 0 ? (
-                                      <>
-                                        {language === 'en' ? 'Owes' : 'Wuu Leeyahay'}: {Math.abs(balanceInfo.months)} {language === 'en' ? 'month' : 'bil'}{Math.abs(balanceInfo.months) !== 1 ? 's' : ''}
-                                      </>
-                                    ) : (
-                                      language === 'en' ? 'No active subscription' : 'Ma jiro rukunka firfircoon'
-                                    )}
-                                  </div>
-                                </div>
-                              </div>
-                            );
-                          })()}
+                          {/* Expiration Date */}
+                          {searchedUser.validUntil && (
+                          <div className="flex items-center justify-between bg-amber-50 rounded-lg px-3 py-2">
+                            <span className="text-amber-600 font-medium flex items-center gap-2">
+                              <Calendar className="w-4 h-4" />
+                              {language === 'en' ? 'Expiration Date' : 'Taariikhda Dhicitaanka'}
+                            </span>
+                            <span className="text-amber-900 font-semibold">{new Date(searchedUser.validUntil).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</span>
+                          </div>
+                          )}
                         </div>
                       </div>
 

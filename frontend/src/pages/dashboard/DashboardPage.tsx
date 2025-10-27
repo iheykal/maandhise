@@ -423,7 +423,7 @@ const DashboardPage: React.FC = () => {
         amount: months,
         validUntil: validUntilDate.toISOString(),
         profilePicUrl,
-        idImageUrl
+        idCardImageUrl: idImageUrl
       };
 
       const newUser = await createUser(userData);
@@ -459,9 +459,8 @@ const DashboardPage: React.FC = () => {
 
   // Handle user actions - Memoized to prevent recreation
   const handleImageClick = useCallback(async (user: any) => {
-    const imageUrl = user.profilePicUrl;
-    if (imageUrl && imageUrl.trim() !== '') {
-      // Try to refresh the image URL first
+    const refreshUrl = async (fileUrl: string) => {
+      if (!fileUrl || fileUrl.trim() === '') return null;
       try {
         const response = await fetch('/api/upload/refresh-url', {
           method: 'POST',
@@ -469,24 +468,39 @@ const DashboardPage: React.FC = () => {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${localStorage.getItem('token')}`
           },
-          body: JSON.stringify({ fileUrl: imageUrl })
+          body: JSON.stringify({ fileUrl })
         });
-        
         if (response.ok) {
           const data = await response.json();
-          setSelectedUserImage({ user, imageUrl: data.data.url });
-        } else {
-          // Fallback to original URL if refresh fails
-          setSelectedUserImage({ user, imageUrl });
+          return data.data.url;
         }
-      } catch (error) {
-        console.log('Failed to refresh image URL, using original:', error);
-        setSelectedUserImage({ user, imageUrl });
+        return fileUrl; // Fallback to original URL if refresh fails
+      } catch (err) {
+        console.warn('Failed to refresh image URL:', err);
+        return fileUrl; // Fallback on error
       }
-    } else {
-      console.warn('No image available for user:', user.fullName);
-      alert('No profile picture available.');
+    };
+
+    const profileUrl = user.profilePicUrl;
+    const idUrl = user.idCardImageUrl || user.idImageUrl || user.idImage;
+
+    if (!profileUrl && !idUrl) {
+      console.warn('No image (ID or profile) available for user:', user.fullName);
+      alert('No ID image available.');
+      return;
     }
+
+    // Concurrently refresh both URLs
+    const [refreshedProfileUrl, refreshedIdUrl] = await Promise.all([
+      refreshUrl(profileUrl),
+      refreshUrl(idUrl)
+    ]);
+
+    setSelectedUserImage({
+      user,
+      imageUrl: refreshedProfileUrl || profileUrl,
+      idImageUrl: refreshedIdUrl || idUrl
+    });
   }, []);
 
   const handleDeleteClick = useCallback((user: any) => {
@@ -499,33 +513,7 @@ const DashboardPage: React.FC = () => {
     setPaymentAmount('1');
   }, []);
 
-  // Handle profile picture click
-  const handleProfilePicClick = useCallback(async (user: any) => {
-    if (user.profilePicUrl && user.profilePicUrl.trim() !== '') {
-      // Try to refresh the image URL first
-      try {
-        const response = await fetch('/api/upload/refresh-url', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${localStorage.getItem('token')}`
-          },
-          body: JSON.stringify({ fileUrl: user.profilePicUrl })
-        });
-        
-        if (response.ok) {
-          const data = await response.json();
-          setSelectedUserImage({ user, imageUrl: data.data.url, idImageUrl: user.idImageUrl });
-        } else {
-          // Fallback to original URL if refresh fails
-          setSelectedUserImage({ user, imageUrl: user.profilePicUrl, idImageUrl: user.idImageUrl });
-        }
-      } catch (error) {
-        console.log('Failed to refresh image URL, using original:', error);
-        setSelectedUserImage({ user, imageUrl: user.profilePicUrl, idImageUrl: user.idImageUrl });
-      }
-    }
-  }, []);
+
 
   // Calculate months owed for expired users
   const calculateMonthsOwed = (validUntil: string) => {
@@ -1054,7 +1042,7 @@ const DashboardPage: React.FC = () => {
                   <div className="relative -mt-16 px-6 pb-6">
                     <div className="w-full flex items-center justify-center">
                       {user.profilePicUrl && user.profilePicUrl.trim() !== '' ? (
-                        <div className="relative cursor-pointer group/avatar" onClick={() => handleProfilePicClick(user)}>
+                        <div className="relative cursor-pointer group/avatar" onClick={() => handleImageClick(user)}>
                           <img
                             src={user.profilePicUrl}
                             alt={user.fullName}
@@ -1167,7 +1155,7 @@ const DashboardPage: React.FC = () => {
       </motion.div>
       </motion.div>
     </motion.div>
-  ), [filteredUsers, isLoading, language, addedUsers, getValidityInfo, handleDeleteClick, handleImageClick, handleProfilePicClick, handleRoleChange, inputValue, roleFilter]);
+  ), [filteredUsers, isLoading, language, addedUsers, getValidityInfo, handleDeleteClick, handleImageClick, handleRoleChange, inputValue, roleFilter]);
 
   // Payments Tab Component - Memoized to prevent recreation
   const PaymentsTab = useMemo(() => (
@@ -1385,8 +1373,8 @@ const DashboardPage: React.FC = () => {
                           />
                           <div className={`absolute -bottom-1 -right-1 w-8 h-8 rounded-full border-4 border-white flex items-center justify-center ${
                             user.validUntil && new Date() > new Date(user.validUntil)
-                              ? 'bg-red-500'
-                              : 'bg-green-500'
+                              ? 'bg-red-500' // Red status for expired
+                              : 'bg-green-500' // Green status for valid
                           }`}>
                             <div className="w-3 h-3 bg-white rounded-full" />
                           </div>
@@ -1398,8 +1386,8 @@ const DashboardPage: React.FC = () => {
                           </div>
                           <div className={`absolute -bottom-1 -right-1 w-8 h-8 rounded-full border-4 border-white flex items-center justify-center ${
                             user.validUntil && new Date() > new Date(user.validUntil)
-                              ? 'bg-red-500'
-                              : 'bg-green-500'
+                              ? 'bg-red-500' // Red status for expired
+                              : 'bg-green-500' // Green status for valid
                           }`}>
                             <div className="w-3 h-3 bg-white rounded-full" />
                           </div>
@@ -2010,8 +1998,7 @@ const DashboardPage: React.FC = () => {
                       <CreditCard className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
                       <div className="min-w-0 flex-1">
                         <h4 className="font-semibold text-gray-700 text-sm">{language === 'en' ? 'ID Number' : 'Lambarka Aqoonsiga'}</h4>
-                        <p className="text-gray-600 text-sm break-all">{selectedUserImage.user.idNumber || 'Not provided'}</p>
-                      </div>
+                        <p className="text-gray-600 text-sm break-all">{selectedUserImage.user.idNumber || 'Not provided'}</p></div>
                     </div>
                   </div>
                   
@@ -2176,7 +2163,7 @@ const DashboardPage: React.FC = () => {
                       <CheckCircle className="w-5 h-5 text-green-600 mt-0.5" />
                       <div>
                         <p className="text-sm font-semibold text-green-900">
-                          {language === 'en' ? 'Payment Preview' : 'Muuqaalka Lacag Bixinta'}
+                          {language === 'en' ? 'Payment Preview' : 'Muuqaalka Lacag Bixin'}
                         </p>
                         <p className="text-xs text-green-700 mt-1">
                           {(() => {
@@ -2280,7 +2267,7 @@ const DashboardPage: React.FC = () => {
                     )}
                   </div>
                   
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                  <h3 className="text-lg font-semibold mb-2">
                     {language === 'en' ? 'Are you sure you want to delete' : 'Ma hubtaa inaad tirtirto'}
                   </h3>
                   <p className="text-xl font-bold text-red-600 mb-2">{deleteConfirmation.user.fullName}</p>

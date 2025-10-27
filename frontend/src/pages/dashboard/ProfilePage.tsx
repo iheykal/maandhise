@@ -70,6 +70,23 @@ const ProfilePage: React.FC = () => {
             </div>
           </div>
         </div>
+
+        <div className="glass-card p-8 md:p-12 mt-8">
+          <h2 className="text-2xl font-bold text-gray-900 mb-6">
+            {language === 'en' ? 'ID Card Image' : 'Sawirka Kaarka Aqoonsiga'}
+          </h2>
+          {user?.idCardImageUrl ? (
+            <img 
+              src={user.idCardImageUrl} 
+              alt="ID Card" 
+              className="w-full max-w-sm mx-auto rounded-lg shadow-lg"
+            />
+          ) : (
+            <p className="text-gray-600">
+              {language === 'en' ? 'No ID image available' : 'Sawirka aqoonsiga lama hayo'}
+            </p>
+          )}
+        </div>
       </div>
     </div>
   );

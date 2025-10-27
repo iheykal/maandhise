@@ -10,6 +10,7 @@ interface User {
   idNumber?: string;
   location?: string;
   profilePicUrl?: string;
+  idCardImageUrl?: string;
   role: 'customer' | 'company' | 'admin' | 'superadmin';
   canLogin: boolean;
   membershipMonths?: number;
@@ -432,6 +433,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     role?: 'customer' | 'company' | 'admin' | 'superadmin';
     idNumber?: string;
     profilePicUrl?: string;
+    idCardImageUrl?: string;
   }) => {
     try {
       const newUser = await authService.createUser(userData);
