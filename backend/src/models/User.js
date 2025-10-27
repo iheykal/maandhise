@@ -18,6 +18,7 @@ const userSchema = new mongoose.Schema({
   idNumber: {
     type: String,
     trim: true,
+    unique: true,
     minlength: [1, 'ID number must be at least 1 character'],
     maxlength: [20, 'ID number cannot exceed 20 characters']
   },
@@ -38,6 +39,10 @@ const userSchema = new mongoose.Schema({
     default: null
   },
   profilePicUrl: {
+    type: String,
+    trim: true
+  },
+  idCardImageUrl: {
     type: String,
     trim: true
   },
@@ -89,6 +94,7 @@ userSchema.virtual('profile').get(function() {
     membershipMonths: this.membershipMonths,
     validUntil: this.validUntil,
     profilePicUrl: this.profilePicUrl,
+    idCardImageUrl: this.idCardImageUrl,
     role: this.role,
     canLogin: this.canLogin,
     createdAt: this.createdAt

@@ -24,7 +24,7 @@ const generateTokens = (userId) => {
 // Register new user
 const register = async (req, res) => {
   try {
-    const { fullName, phone, password, role = 'customer' } = req.body;
+    const { fullName, phone, password, role = 'customer', idNumber } = req.body;
 
     // Check if user already exists
     const existingUser = await User.findByPhone(phone);
@@ -33,6 +33,17 @@ const register = async (req, res) => {
         success: false,
         message: 'User with this phone number already exists'
       });
+    }
+    
+    // Check if ID number is already in use
+    if (idNumber) {
+      const existingIdUser = await User.findOne({ idNumber });
+      if (existingIdUser) {
+        return res.status(400).json({
+          success: false,
+          message: 'User with this ID number already exists'
+        });
+      }
     }
 
     // Create new user
@@ -462,15 +473,26 @@ const resetPassword = async (req, res) => {
 // Create user (Admin only)
 const createUser = async (req, res) => {
   try {
-    const { fullName, phone, role = 'customer', idNumber, profilePicUrl, registrationDate, amount } = req.body;
+    const { fullName, phone, role = 'customer', idNumber, profilePicUrl, idCardImageUrl, registrationDate, amount } = req.body;
 
-    // Check if user already exists
+    // Check if user already exists with same phone
     const existingUser = await User.findByPhone(phone);
     if (existingUser) {
       return res.status(400).json({
         success: false,
         message: 'User with this phone number already exists'
       });
+    }
+    
+    // Check if ID number is already in use
+    if (idNumber) {
+      const existingIdUser = await User.findOne({ idNumber });
+      if (existingIdUser) {
+        return res.status(400).json({
+          success: false,
+          message: 'User with this ID number already exists'
+        });
+      }
     }
 
     // Generate a default password
@@ -639,7 +661,7 @@ const updateUser = async (req, res) => {
     }
 
     // Update allowed fields
-    const allowedFields = ['fullName', 'phone', 'idNumber', 'location', 'profilePicUrl', 'validUntil', 'membershipMonths', 'canLogin'];
+    const allowedFields = ['fullName', 'phone', 'idNumber', 'location', 'profilePicUrl', 'idCardImageUrl', 'validUntil', 'membershipMonths', 'canLogin'];
     allowedFields.forEach(field => {
       if (updateData[field] !== undefined) {
         userToUpdate[field] = updateData[field];
