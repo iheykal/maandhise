@@ -157,10 +157,10 @@ const GetSahalCardPage: React.FC = () => {
   return (
     <>
       <Helmet>
-        <title>Get Your Sahal Card - Order Now | Maandhise Corporate</title>
+        <title>Get Your Sahal Card - Order Now | SAHAL CARDS</title>
         <meta name="description" content="Order your Sahal Card via WhatsApp and start saving today! Join thousands of Somalis already saving money with exclusive discounts." />
         <meta name="keywords" content="order sahacard, get sahacard, sahacard somalia, order discount card, whatsapp order, maandhise card order" />
-        <meta name="author" content="Maandhise Corporate" />
+        <meta name="author" content="SAHAL CARDS" />
         
         {/* Open Graph / Facebook */}
         <meta property="og:type" content="website" />
@@ -168,7 +168,7 @@ const GetSahalCardPage: React.FC = () => {
         <meta property="og:title" content="Get Your Sahal Card - Order Now" />
         <meta property="og:description" content="Order your Sahal Card via WhatsApp and start saving today! Join thousands of Somalis already saving money with exclusive discounts." />
         <meta property="og:image" content="https://maandhise.com/og-get-sahal-card.png" />
-        <meta property="og:site_name" content="Maandhise Corporate" />
+        <meta property="og:site_name" content="SAHAL CARDS" />
         
         {/* Twitter */}
         <meta property="twitter:card" content="summary_large_image" />
@@ -243,6 +243,7 @@ const GetSahalCardPage: React.FC = () => {
                       placeholder={language === 'en' ? 'Enter ID number...' : 'Geli lambarka aqoonsiga...'}
                       className="w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg bg-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     />
+                    {/* User ID badge removed as requested */}
                   </div>
                   <button
                     onClick={() => searchUserById(searchId)}
@@ -462,13 +463,24 @@ const GetSahalCardPage: React.FC = () => {
                       <div className="mt-4 space-y-3">
                         {/* Information Grid - Only Card Number and Expiration Date */}
                         <div className="space-y-2 text-sm">
+                          {/* User Phone Number */}
+                          <div className="flex items-center justify-between bg-blue-50 rounded-lg px-3 py-2">
+                            <span className="text-blue-600 font-medium flex items-center">
+                              <Phone className="w-4 h-4" />
+                            </span>
+                            <span className="text-blue-900 font-bold font-mono text-lg">
+                              {searchedUser.phone ? (searchedUser.phone.startsWith('+252') ? 
+                                '0' + searchedUser.phone.substring(4) : searchedUser.phone) : ''}
+                            </span>
+                          </div>
+                          
                           {/* Generated Card Number */}
                           <div className="flex items-center justify-between bg-green-50 rounded-lg px-3 py-2">
                             <span className="text-green-600 font-medium flex items-center gap-2">
                               <CreditCard className="w-4 h-4" />
                               {language === 'en' ? 'Card Number' : 'Lambarka Kaadhka'}
                             </span>
-                            <span className="text-green-900 font-semibold font-mono">{generateCardNumber(searchedUser)}</span>
+                            <span className="text-green-900 font-bold font-mono">{generateCardNumber(searchedUser)}</span>
                           </div>
 
                           {/* Expiration Date */}

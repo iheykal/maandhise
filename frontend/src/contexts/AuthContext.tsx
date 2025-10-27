@@ -351,7 +351,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         },
       });
       
-      toast.success(`Welcome to Maandhise Corporate, ${response.user.fullName}!`);
+      toast.success(`Welcome to SAHAL CARDS, ${response.user.fullName}!`);
     } catch (error: any) {
       const errorMessage = error.response?.data?.message || 'Registration failed';
       dispatch({ type: 'AUTH_FAILURE', payload: errorMessage });

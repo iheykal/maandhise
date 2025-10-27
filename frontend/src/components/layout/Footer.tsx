@@ -18,7 +18,7 @@ const Footer: React.FC = () => {
                 alt="Dhii Logo" 
                 className="w-12 h-12 object-contain bg-transparent"
               />
-              <span className="text-xl font-bold">Maandhise Corporate</span>
+              <span className="text-xl font-bold">SAHAL CARDS</span>
             </div>
             <p className="text-blue-100 text-sm text-center md:text-left max-w-xs">
               {language === 'en' 
@@ -81,7 +81,7 @@ const Footer: React.FC = () => {
         <div className="border-t border-white/20 pt-6">
           <div className="flex flex-col md:flex-row justify-between items-center space-y-2 md:space-y-0">
             <div className="text-blue-100 text-sm">
-              © 2025 Maandhise Corporate. {language === 'en' ? 'All rights reserved.' : 'Dhammaan xuquuqda way dhowran yihiin.'}
+              © 2025 SAHAL CARDS. {language === 'en' ? 'All rights reserved.' : 'Dhammaan xuquuqda way dhowran yihiin.'}
             </div>
             <div className="text-blue-100 text-sm">
               {language === 'en' ? 'Made with ❤️ in Somalia' : 'Loo sameeyay ❤️ Soomaaliya'}

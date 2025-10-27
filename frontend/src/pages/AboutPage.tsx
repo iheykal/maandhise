@@ -82,24 +82,24 @@ const AboutPage: React.FC = () => {
   return (
     <>
       <Helmet>
-        <title>About Maandhise Corporate - Our Story, Mission & Vision | Somalia</title>
-        <meta name="description" content="Learn about Maandhise Corporate's journey since 2021. Founded by Abdullahi Abdi Elmi, we unite education, consulting & savings for Somalia's future." />
-        <meta name="keywords" content="about maandhise, company story, somalia business, abdullahi abdi elmi, founder, mission, vision, education somalia" />
-        <meta name="author" content="Maandhise Corporate" />
+        <title>About SAHAL CARDS - Our Story, Mission & Vision | Somalia</title>
+        <meta name="description" content="Learn about SAHAL CARDS's journey since 2021. Founded by Abdullahi Abdi Elmi, we unite education, consulting & savings for Somalia's future." />
+        <meta name="keywords" content="about sahal cards, company story, somalia business, abdullahi abdi elmi, founder, mission, vision, education somalia" />
+        <meta name="author" content="SAHAL CARDS" />
         
         {/* Open Graph / Facebook */}
         <meta property="og:type" content="website" />
         <meta property="og:url" content="https://maandhise.com/about" />
-        <meta property="og:title" content="About Maandhise Corporate - Our Story, Mission & Vision" />
-        <meta property="og:description" content="Learn about Maandhise Corporate's journey since 2021. Founded by Abdullahi Abdi Elmi, we unite education, consulting & savings for Somalia's future." />
-        <meta property="og:image" content="https://maandhise.com/og-about.png" />
-        <meta property="og:site_name" content="Maandhise Corporate" />
+        <meta property="og:title" content="About SAHAL CARDS - Our Story, Mission & Vision" />
+      <meta property="og:description" content="Learn about SAHAL CARDS's journey since 2021. Founded by Abdullahi Abdi Elmi, we unite education, consulting & savings for Somalia's future." />
+      <meta property="og:image" content="https://maandhise.com/og-about.png" />
+      <meta property="og:site_name" content="SAHAL CARDS" />
         
         {/* Twitter */}
         <meta property="twitter:card" content="summary_large_image" />
         <meta property="twitter:url" content="https://maandhise.com/about" />
-        <meta property="twitter:title" content="About Maandhise Corporate - Our Story, Mission & Vision" />
-        <meta property="twitter:description" content="Learn about Maandhise Corporate's journey since 2021. Founded by Abdullahi Abdi Elmi, we unite education, consulting & savings for Somalia's future." />
+        <meta property="twitter:title" content="About SAHAL CARDS - Our Story, Mission & Vision" />
+      <meta property="twitter:description" content="Learn about SAHAL CARDS's journey since 2021. Founded by Abdullahi Abdi Elmi, we unite education, consulting & savings for Somalia's future." />
         <meta property="twitter:image" content="https://maandhise.com/og-about.png" />
         
         {/* Canonical URL */}
@@ -123,7 +123,7 @@ const AboutPage: React.FC = () => {
             className="text-center mb-16"
           >
             <h1 className="text-4xl md:text-6xl font-bold gradient-text mb-6">
-              {language === 'en' ? 'About Maandhise Corporate' : 'Ku Saabsan Maandhise Corporate'}
+              {language === 'en' ? 'About SAHAL CARDS' : 'Ku Saabsan SAHAL CARDS'}
             </h1>
             
             <div className="flex justify-center items-center mb-8">
@@ -261,8 +261,8 @@ const AboutPage: React.FC = () => {
                   
                   <blockquote className="text-gray-700 italic leading-relaxed text-lg">
                     {language === 'en' 
-                      ? 'At Maandhise Corporate, we are honored to introduce one of the most in-demand services: Sahal Card.'
-                      : 'Maandhise Corporate, waxaan sharaf u nahay in aan soo bandhigno mid ka mid ah adeegyada ugu baahida badan: Kaarka Sahal.'
+                      ? 'At SAHAL CARDS, we are honored to introduce one of the most in-demand services: Sahal Card.'
+                : 'SAHAL CARDS, waxaan sharaf u nahay in aan soo bandhigno mid ka mid ah adeegyada ugu baahida badan: Kaarka Sahal.'
                     }
                   </blockquote>
                   
@@ -297,12 +297,12 @@ const AboutPage: React.FC = () => {
             className="text-center mb-16"
           >
             <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
-              {language === 'en' ? 'Why Choose Maandhise Corporate' : 'Maxaad Dooranaysaa Maandhise Corporate'}
+              {language === 'en' ? 'Why Choose SAHAL CARDS' : 'Maxaad Dooranaysaa SAHAL CARDS'}
             </h2>
             <p className="text-xl text-gray-600 max-w-4xl mx-auto leading-relaxed">
               {language === 'en' 
-                ? 'Maandhise Corporate is a leading Somali organization dedicated to innovation, business growth, and sustainable development. We focus on empowering entrepreneurs, creating jobs, and driving marketing excellence across all sectors.'
-                : 'Maandhise Corporate waa urur Soomaali ah oo hore u socda oo u go\'an cusboonaysi, koritaanka ganacsiga, iyo horumarinta joogtada ah. Waxaan diirada saarnay awoodsiinta ganacsatada, abuurista shaqooyinka, iyo horumarinta heerka suuqgeynta dhammaan qaybaha.'
+                ? 'SAHAL CARDS is a leading Somali organization dedicated to innovation, business growth, and sustainable development. We focus on empowering entrepreneurs, creating jobs, and driving marketing excellence across all sectors.'
+                : 'SAHAL CARDS waa urur Soomaali ah oo hore u socda oo u go\'an cusboonaysi, koritaanka ganacsiga, iyo horumarinta joogtada ah. Waxaan diirada saarnay awoodsiinta ganacsatada, abuurista shaqooyinka, iyo horumarinta heerka suuqgeynta dhammaan qaybaha.'
               }
             </p>
           </motion.div>
@@ -383,8 +383,8 @@ const AboutPage: React.FC = () => {
             <div className="glass-card p-8 max-w-4xl mx-auto">
               <h3 className="text-2xl md:text-3xl font-bold gradient-text mb-4">
               {language === 'en' 
-                  ? 'Maandhise Corporate — Innovation, Opportunity, and Growth for All.'
-                  : 'Maandhise Corporate — Cusboonaysi, Fursad, iyo Koritaan Dhammaan Dadka.'
+                  ? 'SAHAL CARDS — Innovation, Opportunity, and Growth for All.'
+                : 'SAHAL CARDS — Cusboonaysi, Fursad, iyo Koritaan Dhammaan Dadka.'
               }
               </h3>
             </div>
