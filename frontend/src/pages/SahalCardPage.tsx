@@ -12,10 +12,10 @@ const SahalCardPage: React.FC = () => {
   return (
     <>
       <Helmet>
-        <title>Sahal Card - Exclusive Discounts & Savings | Maandhise Corporate</title>
+        <title>Sahal Card - Exclusive Discounts & Savings | SAHAL CARD</title>
         <meta name="description" content="Get your Sahal Card today! Save money at 500+ partner businesses across Somalia. Exclusive discounts on groceries, restaurants, healthcare & more." />
         <meta name="keywords" content="sahal card, discount card somalia, savings card, maandhise card, somalia discounts, mogadishu savings" />
-        <meta name="author" content="Maandhise Corporate" />
+        <meta name="author" content="SAHAL CARD" />
         
         {/* Open Graph / Facebook */}
         <meta property="og:type" content="website" />
@@ -23,7 +23,7 @@ const SahalCardPage: React.FC = () => {
         <meta property="og:title" content="Sahal Card - Exclusive Discounts & Savings" />
         <meta property="og:description" content="Get your Sahal Card today! Save money at 500+ partner businesses across Somalia. Exclusive discounts on groceries, restaurants, healthcare & more." />
         <meta property="og:image" content="https://maandhise.com/og-sahal-card.png" />
-        <meta property="og:site_name" content="Maandhise Corporate" />
+        <meta property="og:site_name" content="SAHAL CARD" />
         
         {/* Twitter */}
         <meta property="twitter:card" content="summary_large_image" />

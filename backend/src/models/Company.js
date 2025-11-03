@@ -13,8 +13,9 @@ const branchSchema = new mongoose.Schema({
   },
   phone: {
     type: String,
-    required: [true, 'Branch phone is required'],
-    trim: true
+    required: false, // Phone is optional for branches
+    trim: true,
+    default: null
   },
   coordinates: {
     lat: {
@@ -45,8 +46,8 @@ const companySchema = new mongoose.Schema({
   userId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
-    required: true,
-    unique: true
+    required: false, // Companies no longer require user accounts
+    default: null
   },
   businessName: {
     type: String,
@@ -59,7 +60,8 @@ const companySchema = new mongoose.Schema({
     required: [true, 'Business type is required'],
     enum: [
       'pharmacy', 'supermarket', 'restaurant', 'clothing', 'electronics',
-      'beauty', 'healthcare', 'automotive', 'education', 'services', 'other'
+      'beauty', 'healthcare', 'automotive', 'education', 'services', 
+      'telecommunication', 'other'
     ]
   },
   description: {
@@ -71,7 +73,7 @@ const companySchema = new mongoose.Schema({
     type: Number,
     required: [true, 'Discount rate is required'],
     min: [1, 'Discount rate must be at least 1%'],
-    max: [50, 'Discount rate cannot exceed 50%']
+    max: [100, 'Discount rate cannot exceed 100%']
   },
   branches: [branchSchema],
   logo: {
@@ -146,8 +148,9 @@ const companySchema = new mongoose.Schema({
     },
     phone: {
       type: String,
-      required: [true, 'Contact phone is required'],
-      trim: true
+      required: false, // Phone is optional for companies
+      trim: true,
+      default: null
     },
     website: {
       type: String,

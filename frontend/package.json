@@ -1,7 +1,7 @@
 {
   "name": "maandhise-frontend",
   "version": "1.0.0",
-  "description": "Maandhise Corporate Frontend - Beautiful Blue Theme",
+  "description": "SAHAL CARD Frontend - Beautiful Blue Theme",
   "private": true,
   "dependencies": {
     "@types/node": "^20.5.0",

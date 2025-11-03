@@ -20,6 +20,7 @@ import GetSahalCardPage from './pages/GetSahalCardPage.tsx';
 import LoginPage from './pages/auth/LoginPage.tsx';
 import DashboardPage from './pages/dashboard/DashboardPage.tsx';
 import ProfilePage from './pages/dashboard/ProfilePage.tsx';
+import CompanyManagementPage from './pages/CompanyManagementPage.tsx';
 
 // Context
 import { AuthProvider } from './contexts/AuthContext.tsx';
@@ -57,6 +58,11 @@ function App() {
                   <Route path="/profile" element={
                     <ProtectedRoute>
                       <ProfilePage />
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/companies" element={
+                    <ProtectedRoute requireAdmin={true}>
+                      <CompanyManagementPage />
                     </ProtectedRoute>
                   } />
                   <Route path="/get-sahal-card" element={<GetSahalCardPage />} />

@@ -11,9 +11,7 @@ const userSchema = new mongoose.Schema({
   phone: {
     type: String,
     required: [true, 'Phone number is required'],
-    unique: true,
-    trim: true,
-    match: [/^[\+]?[1-9][\d]{0,15}$/, 'Please enter a valid phone number']
+    trim: true
   },
   idNumber: {
     type: String,
@@ -48,7 +46,7 @@ const userSchema = new mongoose.Schema({
   },
   role: {
     type: String,
-    enum: ['customer', 'company', 'admin', 'superadmin'],
+    enum: ['customer', 'admin', 'superadmin'],
     default: 'customer'
   },
   canLogin: {
@@ -80,7 +78,7 @@ const userSchema = new mongoose.Schema({
 });
 
 // Index for better query performance
-userSchema.index({ phone: 1 });
+userSchema.index({ phone: 1 }, { unique: true });
 userSchema.index({ role: 1 });
 
 // Virtual for user's full profile

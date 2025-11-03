@@ -61,71 +61,114 @@ const GlobalLoginButton: React.FC = () => {
       } else if (cleanPhone.startsWith('252')) {
         // Has 252 but missing +
         fullPhoneNumber = '+' + cleanPhone;
-      } else if (cleanPhone.startsWith('613273911')) {
-        // Just the number part
-        fullPhoneNumber = '+252' + cleanPhone;
       } else {
-        // Default: prepend +252
+        // Just the number part (9 digits for Somali numbers) - prepend +252
         fullPhoneNumber = '+252' + cleanPhone;
       }
       
-      // Final validation: ensure it's exactly +252613273911
-      if (fullPhoneNumber !== '+252613273911') {
-        console.warn('Phone number format mismatch. Expected: +252613273911, Got:', fullPhoneNumber);
-        // Force correct format for superadmin
-        fullPhoneNumber = '+252613273911';
+      // Validate format: should be +252 followed by 9 digits
+      if (!/^\+252\d{9}$/.test(fullPhoneNumber)) {
+        throw new Error(language === 'en' 
+          ? 'Invalid phone number format. Please enter a valid Somali phone number (+252XXXXXXXXX)' 
+          : 'Foomka lambarka telefoonka ma sax ah. Fadlan geli lambar Somali ah (+252XXXXXXXXX)');
       }
       
-      console.log('=== MOBILE LOGIN DEBUG ===');
+      console.log('=== LOGIN DEBUG ===');
       console.log('User Agent:', navigator.userAgent);
       console.log('Platform:', navigator.platform);
       console.log('Is Mobile:', /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent));
+      console.log('Window location:', {
+        hostname: window.location.hostname,
+        origin: window.location.origin,
+        href: window.location.href,
+      });
       console.log('Original phone input:', `"${loginData.phone}"`);
-      console.log('Input length:', loginData.phone.length);
-      console.log('Input characters:', loginData.phone.split('').map(c => `'${c}' (${c.charCodeAt(0)})`));
       console.log('Cleaned phone:', `"${cleanPhone}"`);
-      console.log('Final phone number:', `"${fullPhoneNumber.replace(/\d(?=\d{3})/g, '*')}"`);
-      console.log('Expected format: +252*******');
-      console.log('Match check:', fullPhoneNumber === '+252613273911');
-      console.log('Login attempt:', { phone: fullPhoneNumber, password: loginData.password });
+      // Mask all but last 3 digits for logging
+      const maskedPhone = fullPhoneNumber.replace(/^(\+252)(\d{6})(\d{3})$/, '$1******$3');
+      console.log('Final phone number:', `"${maskedPhone}"`);
+      console.log('Login attempt:', { phone: fullPhoneNumber, password: '***' });
       
-      // Test backend connectivity
-      try {
-        const healthCheck = await fetch('https://maandhise252.onrender.com/api');
-        console.log('Backend health check:', healthCheck.status, healthCheck.statusText);
-      } catch (healthError) {
-        console.error('Backend connectivity issue:', healthError);
+      // Check if running on localhost
+      const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+      
+      // Retry mechanism: fewer retries for localhost, more for production (Render cold starts)
+      const maxRetries = isLocalhost ? 0 : 2; // No retries for localhost, 2 for production
+      let attempt = 0;
+      let loginSucceeded = false;
+      
+      while (attempt <= maxRetries && !loginSucceeded) {
+        attempt++;
+        console.log(`Login attempt ${attempt} of ${maxRetries + 1}...`);
+        
+        try {
+          // Wrap in Promise.race with timeout as a safety measure
+          const loginStartTime = Date.now();
+          // Capture all variables used in closure for loop safety
+          const currentAttempt = attempt;
+          const currentLanguage = language;
+          const currentIsLocalhost = isLocalhost;
+          
+          console.log(`[Login Attempt ${currentAttempt}] Starting login promise...`);
+          
+          const loginPromise = login(fullPhoneNumber, loginData.password);
+          const timeoutMs = currentIsLocalhost ? 15000 : 65000; // 15s for localhost, 65s for production
+          
+          console.log(`[Login Attempt ${currentAttempt}] Timeout set to ${timeoutMs}ms`);
+          
+          let timeoutId: NodeJS.Timeout;
+          const timeoutPromise = new Promise<never>((_, reject) => {
+            timeoutId = setTimeout(() => {
+              const elapsed = Date.now() - loginStartTime;
+              console.error(`[Login Attempt ${currentAttempt}] Timeout triggered after ${elapsed}ms`);
+              const timeoutMsg = currentIsLocalhost
+                ? (currentLanguage === 'en' 
+                    ? 'Backend server is not responding. Please make sure the server is running on http://localhost:5000' 
+                    : 'Server-ka ma u jeediya. Fadlan hubi in server-ku uu shaqeeyo http://localhost:5000')
+                : (currentLanguage === 'en' 
+                    ? 'Backend server is taking too long to respond. The server may be waking up. Please try again in a moment.' 
+                    : 'Server-ka ayaa waqtin badan u qaaday. Server-ku wuu kici karaa. Fadlan mar kale isku day.');
+              reject(new Error(timeoutMsg));
+            }, timeoutMs);
+          });
+          
+          // If loginPromise resolves (even with undefined), login succeeded
+          try {
+            console.log(`[Login Attempt ${currentAttempt}] Waiting for Promise.race...`);
+            await Promise.race([loginPromise, timeoutPromise]);
+            const elapsed = Date.now() - loginStartTime;
+            // Clear timeout if login succeeded before timeout
+            if (timeoutId) clearTimeout(timeoutId);
+            console.log(`[Login Attempt ${currentAttempt}] Login successful after ${elapsed}ms`);
+            loginSucceeded = true;
+            break; // Success, exit retry loop
+          } catch (raceError: any) {
+            const elapsed = Date.now() - loginStartTime;
+            // Clear timeout on error too
+            if (timeoutId) clearTimeout(timeoutId);
+            console.error(`[Login Attempt ${currentAttempt}] Promise.race failed after ${elapsed}ms:`, raceError.message);
+            throw raceError;
+          }
+        } catch (error: any) {
+          console.error(`Login attempt ${currentAttempt} failed:`, error.message);
+          
+          // If it's a timeout and we have retries left (and not localhost), wait and retry
+          if (!currentIsLocalhost && (error.code === 'ECONNABORTED' || error.message?.includes('timeout')) && currentAttempt <= maxRetries) {
+            const waitTime = currentAttempt * 2000; // Wait 2s, 4s before retries
+            console.log(`Waiting ${waitTime}ms before retry ${currentAttempt + 1}...`);
+            await new Promise(resolve => setTimeout(resolve, waitTime));
+            continue; // Retry
+          }
+          
+          // If localhost or no retries left, throw the error immediately
+          throw error;
+        }
       }
       
-      let result;
-      try {
-        result = await login(fullPhoneNumber, loginData.password);
-        console.log('Login result:', result);
-      } catch (firstError) {
-        console.log('First attempt failed, trying alternative formats...');
-        
-        // Try alternative phone number formats for mobile compatibility
-        // Only try formats that will pass backend validation
-        const alternatives = [
-          '+252613273911'   // Only the exact format that passes validation
-        ];
-        
-        let loginSuccess = false;
-        for (const altPhone of alternatives) {
-          try {
-            console.log(`Trying alternative format: "${altPhone}"`);
-            result = await login(altPhone, loginData.password);
-            console.log('Alternative login successful:', result);
-            loginSuccess = true;
-            break;
-          } catch (altError) {
-            console.log(`Alternative "${altPhone}" failed:`, altError.response?.data?.message);
-          }
-        }
-        
-        if (!loginSuccess) {
-          throw firstError; // Re-throw original error if all alternatives fail
-        }
+      if (!loginSucceeded) {
+        throw new Error(language === 'en' 
+          ? 'Login failed after multiple attempts. The backend server may be down. Please try again later.' 
+          : 'Gelitaan way ku fashilantay ka dib isku dayayaal badan. Server-ka wuu dhacay. Fadlan waqtiimo kale isku day.');
       }
       
       // Show success message
@@ -139,19 +182,83 @@ const GlobalLoginButton: React.FC = () => {
       }, 1500);
     } catch (error: any) {
       console.error('Login error:', error);
-      console.error('Request data sent:', { phone: fullPhoneNumber, password: loginData.password });
+      console.error('Request data sent:', { phone: fullPhoneNumber, password: '***' });
       console.error('Error response:', error.response?.data);
       console.error('Validation errors:', error.response?.data?.errors);
+      console.error('Error code:', error.code);
+      console.error('Error message:', error.message);
       
-      // Show specific error message if available
-      if (error.response?.data?.message) {
-        alert(`Login failed: ${error.response.data.message}`);
-      } else if (error.response?.data?.errors) {
-        alert(`Validation failed: ${JSON.stringify(error.response.data.errors)}`);
-      } else {
-        alert('Login failed. Please check your credentials.');
+      // Handle different types of errors - prioritize network/timeout errors
+      let errorMessage = '';
+      const currentApiUrl = process.env.REACT_APP_API_URL || 'https://maandhise252.onrender.com/api';
+      const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+      
+      // Check for network/timeout errors first (these don't have a response)
+      if (!error.response) {
+        if (error.code === 'ECONNABORTED' || error.message?.includes('timeout')) {
+          // Different messages for localhost vs production
+          if (isLocalhost) {
+            if (currentApiUrl.includes('localhost')) {
+              errorMessage = language === 'en' 
+                ? 'Backend server is not responding. Please make sure the backend is running on http://localhost:5000' 
+                : 'Server-ka ma u jeediya. Fadlan hubi in backend-ku uu shaqeeyo http://localhost:5000';
+            } else {
+              errorMessage = language === 'en' 
+                ? '⚠️ API is pointing to production. For local testing, create a .env file in frontend/ with: REACT_APP_API_URL=http://localhost:5000/api and restart the dev server.' 
+                : '⚠️ API-ga wuxuu u jeedayaa production. Si aad u test gareeyso local, samee file .env gudaha frontend/ oo ku qor: REACT_APP_API_URL=http://localhost:5000/api oo dib u bilow server-ka.';
+            }
+          } else {
+            errorMessage = language === 'en' 
+              ? 'Backend server is not responding. The server may be waking up (this can take up to 60 seconds on free hosting). Please wait a moment and try again.' 
+              : 'Server-ka ayaa u jeediya. Server-ku wuu kici karaa (60 ilbiriqood oo kaliya). Fadlan sug oo mar kale isku day.';
+          }
+        } else if (error.code === 'ERR_NETWORK' || error.message?.includes('Network Error') || error.message?.includes('Failed to fetch')) {
+          errorMessage = language === 'en' 
+            ? 'Network error. Please check your internet connection and try again.' 
+            : 'Qaladka xidhiidhka. Fadlan hubi xiriirkaaga internetka oo mar kale isku day.';
+        } else if (error.message?.includes('format') || error.message?.includes('Foomka')) {
+          // Validation error thrown by us
+          errorMessage = error.message;
+        } else {
+          // Generic error without response
+          errorMessage = language === 'en' 
+            ? 'Connection error. Please check your internet connection and try again.' 
+            : 'Qaladka isku xirka. Fadlan hubi xiriirkaaga internetka oo mar kale isku day.';
+        }
+      } 
+      // Check for HTTP response errors
+      else if (error.response) {
+        if (error.response.status === 401) {
+          errorMessage = language === 'en' 
+            ? 'Invalid phone number or password. Please check your credentials.' 
+            : 'Lambarka telefoonka ama furaha sirta ma sax ah. Fadlan hubi macluumaadkaaga.';
+        } else if (error.response.status === 500) {
+          errorMessage = language === 'en' 
+            ? 'Server error. Please try again later.' 
+            : 'Qaladka server. Fadlan mar kale isku day waqtimo kale.';
+        } else if (error.response.data?.message) {
+          errorMessage = `Login failed: ${error.response.data.message}`;
+        } else if (error.response.data?.errors) {
+          errorMessage = `Validation failed: ${JSON.stringify(error.response.data.errors)}`;
+        } else {
+          errorMessage = language === 'en' 
+            ? `Login failed. Status: ${error.response.status}` 
+            : `Gelitaan way ku fashilantay. Xaalada: ${error.response.status}`;
+        }
+      } 
+      // Fallback for any other error
+      else {
+        errorMessage = language === 'en' 
+          ? 'Login failed. Please check your credentials and try again.' 
+          : 'Gelitaan way ku fashilantay. Fadlan hubi macluumaadkaaga oo mar kale isku day.';
+      }
+      
+      // Show error message to user
+      if (errorMessage) {
+        alert(errorMessage);
       }
     } finally {
+      // Always reset loading state
       setIsLoading(false);
     }
   };

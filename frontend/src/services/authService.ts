@@ -1,13 +1,54 @@
 import axios from 'axios';
 
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'https://maandhise252.onrender.com/api';
+// Helper function to get API base URL dynamically
+const getApiBaseUrl = (): string => {
+  // Check if environment variable is set
+  if (process.env.REACT_APP_API_URL) {
+    return process.env.REACT_APP_API_URL;
+  }
+  
+  // Auto-detect localhost in development
+  if (typeof window !== 'undefined') {
+    const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+    if (isLocalhost) {
+      return 'http://localhost:5000/api';
+    }
+  }
+  
+  // Default to production
+  return 'https://maandhise252.onrender.com/api';
+};
 
-// Create axios instance
+// Helper function to get timeout dynamically
+const getApiTimeout = (): number => {
+  if (typeof window !== 'undefined') {
+    const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+    return isLocalhost ? 10000 : 60000; // 10s for localhost, 60s for production
+  }
+  return 60000; // Default to production timeout
+};
+
+const API_BASE_URL = getApiBaseUrl();
+const API_TIMEOUT = getApiTimeout();
+
+// Log configuration (only in browser)
+if (typeof window !== 'undefined') {
+  console.log('[API Config]', {
+    hostname: window.location.hostname,
+    isLocalhost: window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1',
+    apiUrl: API_BASE_URL,
+    timeout: API_TIMEOUT,
+    envApiUrl: process.env.REACT_APP_API_URL,
+  });
+}
+
+// Create axios instance with timeout
 const api = axios.create({
   baseURL: API_BASE_URL,
   headers: {
     'Content-Type': 'application/json',
   },
+  timeout: API_TIMEOUT,
 });
 
 // Add request interceptor to include auth token
@@ -30,7 +71,8 @@ api.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config;
 
-    if (error.response?.status === 401 && !originalRequest._retry) {
+    // Don't retry on 401 for login requests (would cause infinite loop)
+    if (error.response?.status === 401 && !originalRequest._retry && !originalRequest.url?.includes('/auth/login')) {
       originalRequest._retry = true;
 
       try {
@@ -67,7 +109,7 @@ export interface User {
   idNumber?: string;
   location?: string;
   profilePicUrl?: string;
-  role: 'customer' | 'company' | 'admin' | 'superadmin';
+  role: 'customer' | 'admin' | 'superadmin';
   canLogin: boolean;
   membershipMonths?: number;
   validUntil?: string;
@@ -100,8 +142,63 @@ export interface RegisterResponse {
 export const authService = {
   // Login user
   login: async (phone: string, password: string): Promise<LoginResponse> => {
-    const response = await api.post('/auth/login', { phone, password });
-    return response.data.data; // Extract data from the nested structure
+    const startTime = Date.now();
+    console.log('[authService.login] Starting login request...', { 
+      phone, 
+      endpoint: '/auth/login', 
+      baseURL: API_BASE_URL,
+      timeout: API_TIMEOUT,
+      timestamp: new Date().toISOString(),
+    });
+    
+    // Create abort controller as additional safety
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => {
+      console.warn('[authService.login] Timeout reached, aborting request...');
+      controller.abort();
+    }, API_TIMEOUT);
+    
+    try {
+      const response = await api.post('/auth/login', { phone, password }, {
+        signal: controller.signal
+      });
+      clearTimeout(timeoutId);
+      const elapsed = Date.now() - startTime;
+      console.log('[authService.login] Response received:', {
+        status: response.status,
+        statusText: response.statusText,
+        hasData: !!response.data,
+        dataStructure: Object.keys(response.data || {}),
+        elapsed: `${elapsed}ms`,
+      });
+      const result = response.data.data; // Extract data from the nested structure
+      console.log('[authService.login] Extracted data:', { hasUser: !!result?.user, hasTokens: !!result?.tokens });
+      return result;
+    } catch (error: any) {
+      clearTimeout(timeoutId);
+      const elapsed = Date.now() - startTime;
+      
+      // Check if aborted
+      if (error.name === 'AbortError' || error.name === 'CanceledError') {
+        console.error('[authService.login] Request was aborted after timeout:', elapsed);
+        const timeoutError = new Error('Request timed out');
+        (timeoutError as any).code = 'ECONNABORTED';
+        throw timeoutError;
+      }
+      
+      console.error('[authService.login] Error occurred:', {
+        message: error.message,
+        code: error.code,
+        status: error.response?.status,
+        statusText: error.response?.statusText,
+        responseData: error.response?.data,
+        elapsed: `${elapsed}ms`,
+        timeout: API_TIMEOUT,
+        isTimeout: error.code === 'ECONNABORTED',
+        errorName: error.name,
+      });
+      throw error;
+    }
   },
 
   // Register user
@@ -165,7 +262,7 @@ export const authService = {
   createUser: async (userData: {
     fullName: string;
     phone: string;
-    role?: 'customer' | 'company' | 'admin' | 'superadmin';
+    role?: 'customer' | 'admin' | 'superadmin';
     idNumber?: string;
     profilePicUrl?: string;
     registrationDate?: string;

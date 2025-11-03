@@ -1,7 +1,7 @@
-# SEO Implementation for Maandhise Corporate
+# SEO Implementation for SAHAL CARD
 
 ## Overview
-This document outlines the comprehensive SEO improvements implemented for the Maandhise Corporate website to enhance search engine visibility and indexing.
+This document outlines the comprehensive SEO improvements implemented for the SAHAL CARD website to enhance search engine visibility and indexing.
 
 ## Pages Indexed (6 Public Pages)
 
@@ -25,27 +25,27 @@ This document outlines the comprehensive SEO improvements implemented for the Ma
 Each page now has unique, optimized meta tags:
 
 #### Home Page
-- **Title**: "Maandhise Corporate - Save More, Spend Less | Somalia's Leading Discount Card"
+- **Title**: "SAHAL CARD - Save More, Spend Less | Somalia's Leading Discount Card"
 - **Description**: "Join 10,000+ Somalis saving with Sahal Card. Get exclusive discounts at 500+ partner businesses across Somalia. Education, consulting & savings solutions."
 
 #### About Page
-- **Title**: "About Maandhise Corporate - Our Story, Mission & Vision | Somalia"
-- **Description**: "Learn about Maandhise Corporate's journey since 2021. Founded by Abdullahi Abdi Elmi, we unite education, consulting & savings for Somalia's future."
+- **Title**: "About SAHAL CARD - Our Story, Mission & Vision | Somalia"
+- **Description**: "Learn about SAHAL CARD's journey since 2021. Founded by Abdullahi Abdi Elmi, we unite education, consulting & savings for Somalia's future."
 
 #### Services Page
 - **Title**: "Our Services - Sahal Card, Education & Business Consulting | Maandhise"
 - **Description**: "Discover Maandhise's comprehensive services: Sahal discount card, quality education programs, and professional business consulting across Somalia."
 
 #### Sahal Card Page
-- **Title**: "Sahal Card - Exclusive Discounts & Savings | Maandhise Corporate"
+- **Title**: "Sahal Card - Exclusive Discounts & Savings | SAHAL CARD"
 - **Description**: "Get your Sahal Card today! Save money at 500+ partner businesses across Somalia. Exclusive discounts on groceries, restaurants, healthcare & more."
 
 #### Contact Page
-- **Title**: "Contact Maandhise Corporate - Get in Touch | Mogadishu, Somalia"
-- **Description**: "Contact Maandhise Corporate for Sahal Card orders, business inquiries, or support. Phone: +252 613 273 911, Email: Maandhisecorporate@gmail.com"
+- **Title**: "Contact SAHAL CARD - Get in Touch | Mogadishu, Somalia"
+- **Description**: "Contact SAHAL CARD for Sahal Card orders, business inquiries, or support. Phone: +252 613 273 911, Email: Maandhisecorporate@gmail.com"
 
 #### Get Sahal Card Page
-- **Title**: "Get Your Sahal Card - Order Now | Maandhise Corporate"
+- **Title**: "Get Your Sahal Card - Order Now | SAHAL CARD"
 - **Description**: "Order your Sahal Card via WhatsApp and start saving today! Join thousands of Somalis already saving money with exclusive discounts."
 
 ### 2. **Structured Data (JSON-LD)**
@@ -88,9 +88,9 @@ Created `/public/sitemap.xml` with:
 
 ### 7. **Image Alt Text**
 Added descriptive alt text to all images:
-- Gallery images: "Maandhise Corporate gallery image X - showcasing our community events, achievements, and business activities"
+- Gallery images: "SAHAL CARD gallery image X - showcasing our community events, achievements, and business activities"
 - Partner business logos: "Business Name - Partner business accepting Sahal Card with X% discount"
-- Founder images: "Name - Founder/Co-founder of Maandhise Corporate"
+- Founder images: "Name - Founder/Co-founder of SAHAL CARD"
 
 ### 8. **Enhanced Base HTML**
 Updated `index.html` with:
@@ -184,7 +184,7 @@ frontend/src/pages/
 
 ## Conclusion
 
-The Maandhise Corporate website now has a solid SEO foundation with:
+The SAHAL CARD website now has a solid SEO foundation with:
 - ✅ 6 optimized pages ready for search engine indexing
 - ✅ Comprehensive meta tags and structured data
 - ✅ Proper robots.txt and sitemap.xml

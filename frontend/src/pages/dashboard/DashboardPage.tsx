@@ -26,6 +26,8 @@ import {
 import { useAuth } from '../../contexts/AuthContext.tsx';
 import { uploadService } from '../../services/uploadService.ts';
 import { useTheme } from '../../contexts/ThemeContext.tsx';
+import { companyService } from '../../services/companyService.ts';
+import { useNavigate } from 'react-router-dom';
 
 // const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://192.168.100.32:5000/api';
 
@@ -49,6 +51,7 @@ import { useTheme } from '../../contexts/ThemeContext.tsx';
 const DashboardPage: React.FC = () => {
   const { user, createUser, getAllUsers, deleteUser, updateUser } = useAuth();
   const { language } = useTheme();
+  const navigate = useNavigate();
 
   // Add custom styles for animations
   React.useEffect(() => {
@@ -73,7 +76,7 @@ const DashboardPage: React.FC = () => {
 
   const [activeTab, setActiveTab] = useState('overview');
   const [showAddUserForm, setShowAddUserForm] = useState(false);
-  const [selectedUserImage, setSelectedUserImage] = useState<{user: any, imageUrl: string, idImageUrl?: string} | null>(null);
+  const [selectedUserImage, setSelectedUserImage] = useState<{user: any, imageUrl: string} | null>(null);
   const [deleteConfirmation, setDeleteConfirmation] = useState<{user: any} | null>(null);
   const [paymentModal, setPaymentModal] = useState<{user: any} | null>(null);
   const [paymentAmount, setPaymentAmount] = useState('');
@@ -88,7 +91,6 @@ const DashboardPage: React.FC = () => {
     registrationDate: string;
     amount: string; // USD, equals number of months
     profilePic: File | null;
-    idImage: File | null;
   };
 
   // Initial form state
@@ -99,8 +101,7 @@ const DashboardPage: React.FC = () => {
     location: '',
     registrationDate: new Date().toISOString().split('T')[0],
     amount: '1',
-    profilePic: null,
-    idImage: null
+    profilePic: null
   };
 
   // Form state reference for uncontrolled inputs
@@ -110,10 +111,10 @@ const DashboardPage: React.FC = () => {
   const [formState, setFormState] = React.useState<Omit<FormState, 'profilePic'>>(initialFormState);
 
   const [previewImage, setPreviewImage] = useState<string | null>(null);
-  const [previewIdImage, setPreviewIdImage] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   // const [users, setUsers] = useState<any[]>([]);
   const [addedUsers, setAddedUsers] = useState<any[]>([]);
+  const [companiesCount, setCompaniesCount] = useState<number>(0);
   const [roleFilter, setRoleFilter] = useState('all');
   const searchInputRef = useRef<HTMLInputElement>(null);
 
@@ -273,10 +274,28 @@ const DashboardPage: React.FC = () => {
     }
   }, [getAllUsers]);
 
+  // Load companies count
+  const loadCompaniesCount = useCallback(async () => {
+    try {
+      const response = await companyService.getAllCompanies({ limit: 1000 });
+      if (response && response.companies) {
+        setCompaniesCount(response.companies.length);
+      }
+    } catch (error) {
+      console.error('Error loading companies count:', error);
+      setCompaniesCount(0);
+    }
+  }, []);
+
   // Load users on component mount
   useEffect(() => {
     loadUsers();
   }, [loadUsers]);
+
+  // Load companies count on component mount
+  useEffect(() => {
+    loadCompaniesCount();
+  }, [loadCompaniesCount]);
 
   // Handle input changes for controlled components
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -346,18 +365,7 @@ const DashboardPage: React.FC = () => {
     }
   };
 
-  // Handle ID image file changes
-  const handleIdFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      formRef.current.idImage = file;
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        setPreviewIdImage(e.target?.result as string);
-      };
-      reader.readAsDataURL(file);
-    }
-  };
+  // ID image functionality removed
 
   // Handle form submission
   const handleSubmit = async (e: React.FormEvent) => {
@@ -377,20 +385,6 @@ const DashboardPage: React.FC = () => {
           throw new Error('Failed to upload profile picture');
         }
         profilePicUrl = uploadResp.data.url;
-      }
-
-      // Upload ID image (if provided)
-      let idImageUrl: string | undefined = undefined;
-      if (formRef.current.idImage) {
-        const validation = uploadService.validateFile(formRef.current.idImage);
-        if (!validation.isValid) {
-          throw new Error(validation.error || 'Invalid ID image file');
-        }
-        const uploadResp = await uploadService.uploadFile(formRef.current.idImage);
-        if (!uploadResp?.success || !uploadResp?.data?.url) {
-          throw new Error('Failed to upload ID image');
-        }
-        idImageUrl = uploadResp.data.url;
       }
 
       // Calculate validity end date from registrationDate + amount months
@@ -422,8 +416,7 @@ const DashboardPage: React.FC = () => {
         registrationDate: formState.registrationDate,
         amount: months,
         validUntil: validUntilDate.toISOString(),
-        profilePicUrl,
-        idCardImageUrl: idImageUrl
+        profilePicUrl
       };
 
       const newUser = await createUser(userData);
@@ -435,7 +428,6 @@ const DashboardPage: React.FC = () => {
       setFormState(initialFormState);
       formRef.current = { ...initialFormState };
       setPreviewImage(null);
-      setPreviewIdImage(null);
       setShowAddUserForm(false);
       
     } catch (error) {
@@ -453,7 +445,6 @@ const DashboardPage: React.FC = () => {
     setFormState(initialFormState);
     formRef.current = { ...initialFormState };
     setPreviewImage(null);
-    setPreviewIdImage(null);
     setShowAddUserForm(false);
   };
 
@@ -482,24 +473,19 @@ const DashboardPage: React.FC = () => {
     };
 
     const profileUrl = user.profilePicUrl;
-    const idUrl = user.idCardImageUrl || user.idImageUrl || user.idImage;
 
-    if (!profileUrl && !idUrl) {
-      console.warn('No image (ID or profile) available for user:', user.fullName);
-      alert('No ID image available.');
+    if (!profileUrl) {
+      console.warn('No profile picture available for user:', user.fullName);
+      alert('No profile picture available.');
       return;
     }
 
-    // Concurrently refresh both URLs
-    const [refreshedProfileUrl, refreshedIdUrl] = await Promise.all([
-      refreshUrl(profileUrl),
-      refreshUrl(idUrl)
-    ]);
+    // Refresh profile picture URL
+    const refreshedProfileUrl = await refreshUrl(profileUrl);
 
     setSelectedUserImage({
       user,
-      imageUrl: refreshedProfileUrl || profileUrl,
-      idImageUrl: refreshedIdUrl || idUrl
+      imageUrl: refreshedProfileUrl || profileUrl
     });
   }, []);
 
@@ -707,19 +693,28 @@ const DashboardPage: React.FC = () => {
           transition={{ duration: 0.3 }}
         >
           <div className="flex items-center justify-between">
-            <div>
+            <div className="flex-1">
               <p className="text-sm font-medium text-gray-600">
                 {language === 'en' ? 'Companies' : 'Shirkadaha'}
               </p>
               <p className="text-3xl font-bold text-gray-900">
-                {addedUsers.filter(u => u.role === 'company').length}
+                {companiesCount}
               </p>
-                      </div>
-            <div className="p-3 bg-purple-100 rounded-full">
-              <Shield className="w-6 h-6 text-purple-600" />
             </div>
-                </div>
-              </motion.div>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => navigate('/companies')}
+                className="p-2 bg-green-100 hover:bg-green-200 rounded-full transition-colors group"
+                title={language === 'en' ? 'Add New Company' : 'Ku Dar Shirkad Cusub'}
+              >
+                <Plus className="w-5 h-5 text-green-600 group-hover:scale-110 transition-transform" />
+              </button>
+              <div className="p-3 bg-purple-100 rounded-full">
+                <Shield className="w-6 h-6 text-purple-600" />
+              </div>
+            </div>
+          </div>
+        </motion.div>
 
               <motion.div
           className="bg-white rounded-2xl shadow-lg p-6 border border-gray-100"
@@ -804,7 +799,7 @@ const DashboardPage: React.FC = () => {
         </div>
               </motion.div>
           </motion.div>
-  ), [addedUsers, language]);
+  ), [addedUsers, language, companiesCount, navigate]);
 
   // Users Tab Component - Memoized to prevent recreation
   const UsersTab = useMemo(() => (
@@ -1773,64 +1768,6 @@ const DashboardPage: React.FC = () => {
                       </div>
                         </motion.div>
 
-                    {/* ID Image Submission Section */}
-                    <motion.div 
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ duration: 0.4, delay: 0.55 }}
-                    >
-                      <label className="block text-sm font-semibold text-gray-700 mb-2 flex items-center space-x-2">
-                        <Shield className="w-4 h-4 text-red-600" />
-                        <span>{language === 'en' ? 'Submit ID Document' : 'Gudbi Dukumentiga Aqoonsiga'}</span>
-                      </label>
-                      
-                      <div className="space-y-4">
-                        {/* File Input */}
-                        <div className="relative">
-                          <input
-                            type="file"
-                            accept="image/*"
-                            onChange={handleIdFileChange}
-                            className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-4 focus:ring-red-100 focus:border-red-500 transition-all duration-300 bg-gray-50 focus:bg-white file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-red-50 file:text-red-700 hover:file:bg-red-100"
-                          />
-                        </div>
-                        
-                        {/* ID Image Preview */}
-                        {previewIdImage && (
-                          <motion.div
-                            initial={{ opacity: 0, scale: 0.8 }}
-                            animate={{ opacity: 1, scale: 1 }}
-                            className="flex justify-center"
-                          >
-                            <div className="relative">
-                              <img
-                                src={previewIdImage}
-                                alt="ID Preview"
-                                className="w-32 h-20 rounded-lg object-cover border-4 border-red-200 shadow-lg"
-                              />
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setPreviewIdImage(null);
-                                  formRef.current.idImage = null;
-                                }}
-                                className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs hover:bg-red-600 transition-colors"
-                              >
-                                ×
-                              </button>
-                            </div>
-                          </motion.div>
-                        )}
-                        
-                        <p className="text-xs text-gray-500 text-center">
-                          {language === 'en' 
-                            ? 'Upload a clear photo of your ID document for verification'
-                            : 'Soo geli sawir cad oo dukumentiga aqoonsigaaga ah si loo xaqiijiyo'
-                          }
-                        </p>
-                      </div>
-                    </motion.div>
-
                     {/* Form Buttons */}
               <motion.div 
                       className="flex space-x-4 pt-6"
@@ -1917,26 +1854,6 @@ const DashboardPage: React.FC = () => {
                         e.currentTarget.src = '/icons/founder.jpeg';
                       }}
                     />
-                  </div>
-                  
-                  <div className="flex flex-col items-center">
-                    <h3 className="text-lg font-semibold mb-2">{language === 'en' ? 'ID Image' : 'Sawirka Aqoonsiga'}</h3>
-                    {selectedUserImage.idImageUrl ? (
-                      <img
-                        src={selectedUserImage.idImageUrl}
-                        alt={`${selectedUserImage.user.fullName} ID`}
-                        className="max-w-full max-h-[40vh] object-contain rounded-lg shadow-lg"
-                        onError={(e) => {
-                          console.log('ID image failed to load in modal:', selectedUserImage.idImageUrl);
-                          e.currentTarget.src = '/icons/id-placeholder.png';
-                        }}
-                      />
-                    ) : (
-                      <div className="flex flex-col items-center justify-center w-full h-[30vh] bg-gray-100 rounded-lg border-2 border-dashed border-gray-300">
-                        <AlertCircle className="w-12 h-12 text-gray-400 mb-2" />
-                        <p className="text-gray-500 text-center">{language === 'en' ? 'No ID image available' : 'Ma jiro sawirka aqoonsiga'}</p>
-                      </div>
-                    )}
                   </div>
                 </div>
                 

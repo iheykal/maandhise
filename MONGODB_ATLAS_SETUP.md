@@ -1,6 +1,6 @@
-# MongoDB Atlas Setup Guide for Maandhise Corporate
+# MongoDB Atlas Setup Guide for SAHAL CARD
 
-This guide will help you set up MongoDB Atlas for your Maandhise Corporate application.
+This guide will help you set up MongoDB Atlas for your SAHAL CARD application.
 
 ## 🚀 Quick Start
 
@@ -110,7 +110,7 @@ curl http://localhost:5000/health
 # Should return:
 {
   "success": true,
-  "message": "Maandhise Corporate API is running",
+  "message": "SAHAL CARD API is running",
   "timestamp": "2025-01-12T...",
   "environment": "development"
 }
@@ -198,4 +198,4 @@ curl http://localhost:5000/health
 5. 🔄 Set up monitoring and alerts
 6. 🔄 Implement backup strategies
 
-Your MongoDB Atlas setup is now ready for the Maandhise Corporate application! 🎉
+Your MongoDB Atlas setup is now ready for the SAHAL CARD application! 🎉

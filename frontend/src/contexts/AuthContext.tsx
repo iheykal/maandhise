@@ -11,7 +11,7 @@ interface User {
   location?: string;
   profilePicUrl?: string;
   idCardImageUrl?: string;
-  role: 'customer' | 'company' | 'admin' | 'superadmin';
+  role: 'customer' | 'admin' | 'superadmin';
   canLogin: boolean;
   membershipMonths?: number;
   validUntil?: string;
@@ -36,7 +36,7 @@ interface AuthContextType extends AuthState {
   createUser: (userData: {
     fullName: string;
     phone: string;
-    role?: 'customer' | 'company' | 'admin' | 'superadmin';
+    role?: 'customer' | 'admin' | 'superadmin';
     idNumber?: string;
     profilePicUrl?: string;
     registrationDate?: string;
@@ -308,13 +308,24 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const login = async (phone: string, password: string) => {
     try {
+      console.log('[AuthContext.login] Starting login...', { phone });
       dispatch({ type: 'AUTH_START' });
+      console.log('[AuthContext.login] AUTH_START dispatched');
       
+      console.log('[AuthContext.login] Calling authService.login...');
       const response = await authService.login(phone, password);
+      console.log('[AuthContext.login] authService.login returned:', { hasUser: !!response?.user, hasTokens: !!response?.tokens });
       
+      if (!response?.tokens?.accessToken || !response?.tokens?.refreshToken) {
+        throw new Error('Invalid response: missing tokens');
+      }
+      
+      console.log('[AuthContext.login] Storing tokens in localStorage...');
       localStorage.setItem('token', response.tokens.accessToken);
       localStorage.setItem('refreshToken', response.tokens.refreshToken);
+      console.log('[AuthContext.login] Tokens stored');
       
+      console.log('[AuthContext.login] Dispatching AUTH_SUCCESS...');
       dispatch({
         type: 'AUTH_SUCCESS',
         payload: {
@@ -323,10 +334,18 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           refreshToken: response.tokens.refreshToken,
         },
       });
+      console.log('[AuthContext.login] AUTH_SUCCESS dispatched');
       
       toast.success(`Welcome back, ${response.user.fullName}!`);
+      console.log('[AuthContext.login] Login completed successfully');
     } catch (error: any) {
-      const errorMessage = error.response?.data?.message || 'Login failed';
+      console.error('[AuthContext.login] Error caught:', {
+        message: error.message,
+        code: error.code,
+        status: error.response?.status,
+        responseData: error.response?.data,
+      });
+      const errorMessage = error.response?.data?.message || error.message || 'Login failed';
       dispatch({ type: 'AUTH_FAILURE', payload: errorMessage });
       toast.error(errorMessage);
       throw error;
@@ -351,7 +370,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         },
       });
       
-      toast.success(`Welcome to Maandhise Corporate, ${response.user.fullName}!`);
+      toast.success(`Welcome to SAHAL CARD, ${response.user.fullName}!`);
     } catch (error: any) {
       const errorMessage = error.response?.data?.message || 'Registration failed';
       dispatch({ type: 'AUTH_FAILURE', payload: errorMessage });
@@ -430,7 +449,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const createUser = async (userData: {
     fullName: string;
     phone: string;
-    role?: 'customer' | 'company' | 'admin' | 'superadmin';
+    role?: 'customer' | 'admin' | 'superadmin';
     idNumber?: string;
     profilePicUrl?: string;
     idCardImageUrl?: string;

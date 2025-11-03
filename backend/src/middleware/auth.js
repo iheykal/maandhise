@@ -175,46 +175,13 @@ const requireActiveCard = async (req, res, next) => {
   }
 };
 
-// Check if user is verified company
+// Company role removed - companies are now independent entities
+// This middleware is no longer needed since companies don't require user accounts
 const requireVerifiedCompany = async (req, res, next) => {
-  try {
-    if (!req.user) {
-      return res.status(401).json({
-        success: false,
-        message: 'Authentication required'
-      });
-    }
-
-    if (req.user.role !== 'company') {
-      return res.status(403).json({
-        success: false,
-        message: 'Company account required'
-      });
-    }
-
-    const Company = require('../models/Company');
-    const company = await Company.findOne({ 
-      userId: req.user._id,
-      isVerified: true,
-      isActive: true
-    });
-
-    if (!company) {
-      return res.status(403).json({
-        success: false,
-        message: 'Verified company account required'
-      });
-    }
-
-    req.company = company;
-    next();
-  } catch (error) {
-    return res.status(500).json({
-      success: false,
-      message: 'Error checking company status',
-      error: error.message
-    });
-  }
+  return res.status(403).json({
+    success: false,
+    message: 'Company role no longer exists. Companies are independent entities.'
+  });
 };
 
 module.exports = {

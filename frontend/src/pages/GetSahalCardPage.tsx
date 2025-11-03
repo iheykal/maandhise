@@ -1,9 +1,10 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Helmet } from 'react-helmet-async';
-import { ArrowLeft, CreditCard, Search, XCircle, Phone, Calendar, User, Trash2, X, DollarSign, Lock as LockIcon } from 'lucide-react';
+import { ArrowLeft, CreditCard, Search, XCircle, Phone, Calendar, User, Trash2, X, Building2 } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext.tsx';
 import { useNavigate } from 'react-router-dom';
+import { companyService } from '../services/companyService.ts';
 
 const GetSahalCardPage: React.FC = () => {
   const { language } = useTheme();
@@ -22,76 +23,95 @@ const GetSahalCardPage: React.FC = () => {
   const [pinError, setPinError] = React.useState<string | null>(null);
   const [isPinVerified, setIsPinVerified] = React.useState(false);
 
-  const API_BASE_URL = process.env.REACT_APP_API_URL || 'https://maandhise252.onrender.com/api';
+  // Companies state - load from database
+  const [companies, setCompanies] = useState<any[]>([]);
+  const [companiesLoading, setCompaniesLoading] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState<string>('all');
 
-  // Helper function to extract only numbers from a string
-  const extractNumbers = (str: string): string => {
-    return str.replace(/\D/g, '');
-  };
-
-  // Helper function to generate card number from user ID
-  const generateCardNumber = (user: any): string => {
-    if (user.idNumber) {
-      const numbers = extractNumbers(user.idNumber);
-      return numbers.slice(-8); // Take last 8 digits
-    }
-    // Fallback to user ID if no ID number
-    const numbers = extractNumbers(user._id);
-    return numbers.slice(-8);
-  };
-
-  // Calculate months owed for expired users
-  const calculateMonthsOwed = (validUntil: string) => {
-    const now = new Date();
-    const expiredDate = new Date(validUntil);
-    
-    if (expiredDate >= now) return 0;
-    
-    const yearsDiff = now.getFullYear() - expiredDate.getFullYear();
-    const monthsDiff = now.getMonth() - expiredDate.getMonth();
-    const totalMonthsExpired = (yearsDiff * 12) + monthsDiff;
-    
-    return Math.max(0, totalMonthsExpired);
-  };
-
-  // Calculate remaining months and balance (1 month = $1)
-  const calculateRemainingBalance = (validUntil: string | undefined, createdAt: string | undefined) => {
-    if (!validUntil || !createdAt) return { months: 0, balance: 0, isValid: false };
-    
-    const now = new Date();
-    const expiryDate = new Date(validUntil);
-    // const registrationDate = new Date(createdAt);
-    
-    // If expired, balance is negative (debt)
-    if (expiryDate < now) {
-      const monthsExpired = calculateMonthsOwed(validUntil);
-      return { 
-        months: -monthsExpired, 
-        balance: -monthsExpired, 
-        isValid: false 
-      };
-    }
-    
-    // Calculate remaining months from now until expiry
-    const yearsDiff = expiryDate.getFullYear() - now.getFullYear();
-    const monthsDiff = expiryDate.getMonth() - now.getMonth();
-    const daysDiff = expiryDate.getDate() - now.getDate();
-    
-    let remainingMonths = (yearsDiff * 12) + monthsDiff;
-    
-    // If days are negative, subtract one month
-    if (daysDiff < 0) {
-      remainingMonths--;
-    }
-    
-    // Ensure at least 0 months
-    remainingMonths = Math.max(0, remainingMonths);
-    
-    return { 
-      months: remainingMonths, 
-      balance: remainingMonths, // $1 per month
-      isValid: true 
+  // Load companies from database
+  useEffect(() => {
+    const loadCompanies = async () => {
+      setCompaniesLoading(true);
+      try {
+        console.log('[GetSahalCardPage] Loading companies...', { category: selectedCategory });
+        const params: any = { limit: 100 };
+        if (selectedCategory !== 'all') {
+          params.businessType = selectedCategory;
+        }
+        const response = await companyService.getPublicCompanies(params);
+        console.log('[GetSahalCardPage] Response:', response);
+        console.log('[GetSahalCardPage] Companies count:', response.companies?.length || 0);
+        console.log('[GetSahalCardPage] Companies data:', response.companies);
+        setCompanies(response.companies || []);
+      } catch (error: any) {
+        console.error('[GetSahalCardPage] Failed to load companies:', error);
+        console.error('[GetSahalCardPage] Error response:', error.response?.data);
+        console.error('[GetSahalCardPage] Error message:', error.message);
+        // If loading fails, companies array will remain empty
+        setCompanies([]);
+      } finally {
+        setCompaniesLoading(false);
+      }
     };
+
+    loadCompanies();
+  }, [selectedCategory]);
+
+  // Get card colors based on business type
+  const getCardColors = (businessType: string) => {
+    const colorMap: { [key: string]: { from: string; to: string } } = {
+      supermarket: { from: 'from-green-500', to: 'to-green-600' },
+      pharmacy: { from: 'from-blue-500', to: 'to-blue-600' },
+      restaurant: { from: 'from-red-500', to: 'to-red-600' },
+      clothing: { from: 'from-purple-500', to: 'to-purple-600' },
+      electronics: { from: 'from-indigo-500', to: 'to-indigo-600' },
+      beauty: { from: 'from-pink-500', to: 'to-pink-600' },
+      healthcare: { from: 'from-teal-500', to: 'to-teal-600' },
+      automotive: { from: 'from-orange-500', to: 'to-orange-600' },
+      education: { from: 'from-cyan-500', to: 'to-cyan-600' },
+      services: { from: 'from-amber-500', to: 'to-amber-600' },
+      telecommunication: { from: 'from-violet-500', to: 'to-violet-600' },
+      other: { from: 'from-gray-500', to: 'to-gray-600' }
+    };
+    
+    return colorMap[businessType] || { from: 'from-green-500', to: 'to-green-600' };
+  };
+
+
+  // Auto-detect localhost in development
+  const isLocalhost = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+  const defaultApiUrl = isLocalhost 
+    ? 'http://localhost:5000/api' 
+    : 'https://maandhise252.onrender.com/api';
+  const API_BASE_URL = process.env.REACT_APP_API_URL || defaultApiUrl;
+  
+  console.log('[GetSahalCardPage] API Config:', {
+    hostname: typeof window !== 'undefined' ? window.location.hostname : 'server',
+    isLocalhost,
+    apiUrl: API_BASE_URL,
+  });
+
+  // Helper function to format phone number (remove +252 prefix)
+  const formatPhoneNumber = (phone: string | undefined): string => {
+    if (!phone) return '';
+    // Remove +252 prefix and return local format (0XXXXXXXXX)
+    if (phone.startsWith('+252')) {
+      return '0' + phone.slice(4);
+    }
+    if (phone.startsWith('252')) {
+      return '0' + phone.slice(3);
+    }
+    return phone;
+  };
+
+  // Helper function to format ID number (remove any country code if present)
+  const formatIdNumber = (idNumber: string | undefined): string => {
+    if (!idNumber) return '';
+    // If ID number starts with +252 or 252, remove it
+    if (idNumber.startsWith('+252') || idNumber.startsWith('252')) {
+      return idNumber.replace(/^(\+?252)?/, '');
+    }
+    return idNumber;
   };
 
   // Search user by ID
@@ -109,47 +129,91 @@ const GetSahalCardPage: React.FC = () => {
     setPinError(null);
 
     try {
+      console.log('[Search] Starting search for ID:', idNumber.trim());
+      console.log('[Search] API URL:', `${API_BASE_URL}/auth/search-by-id`);
+      
+      // Create abort controller for timeout
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 second timeout
+      
       const response = await fetch(`${API_BASE_URL}/auth/search-by-id`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ idNumber: idNumber.trim() })
+        body: JSON.stringify({ idNumber: idNumber.trim() }),
+        signal: controller.signal
       });
+      
+      clearTimeout(timeoutId);
+
+      console.log('[Search] Response status:', response.status);
+      console.log('[Search] Response ok:', response.ok);
 
       const data = await response.json();
+      console.log('[Search] Response data:', data);
 
       if (response.ok && data.success) {
-        setSearchedUser(data.user);
-        setSearchError(null);
+        console.log('[Search] User found:', data.user);
+        if (data.user) {
+          setSearchedUser(data.user);
+          setSearchError(null);
+          console.log('[Search] User set in state');
+        } else {
+          console.error('[Search] No user in response data');
+          setSearchError('User data not found in response');
+          setSearchedUser(null);
+        }
       } else {
+        console.error('[Search] Search failed:', data.message);
         setSearchError(data.message || 'User not found');
         setSearchedUser(null);
       }
-    } catch (error) {
-      console.error('Search error:', error);
-      setSearchError('Failed to search user');
+    } catch (error: any) {
+      console.error('[Search] Error occurred:', error);
+      console.error('[Search] Error message:', error.message);
+      console.error('[Search] Error name:', error.name);
+      
+      if (error.name === 'AbortError') {
+        setSearchError('Request timed out. Please try again.');
+      } else if (error.message) {
+        setSearchError(error.message);
+      } else {
+        setSearchError('Failed to search user. Please check your connection.');
+      }
       setSearchedUser(null);
     } finally {
       setSearchLoading(false);
+      console.log('[Search] Search completed, loading set to false');
     }
   };
 
-  // Handle PIN verification
+  // Handle PIN verification - get last 4 digits from original phone number
   const handlePinVerification = () => {
     if (!searchedUser || !searchedUser.phone) {
       setPinError('User data not available');
       return;
     }
 
+    // Get last 4 digits from original phone number (remove +252 if present, then get last 4)
     const userPhone = searchedUser.phone;
-    const last4Digits = userPhone.slice(-4);
+    let phoneDigits = userPhone;
+    
+    // Remove country code if present
+    if (phoneDigits.startsWith('+252')) {
+      phoneDigits = phoneDigits.slice(4);
+    } else if (phoneDigits.startsWith('252')) {
+      phoneDigits = phoneDigits.slice(3);
+    }
+    
+    // Get last 4 digits
+    const last4Digits = phoneDigits.slice(-4);
 
-    if (pin === last4Digits) {
+    if (pin.trim() === last4Digits) {
       setIsPinVerified(true);
       setPinError(null);
     } else {
-      setPinError('Incorrect PIN. Please try again.');
+      setPinError(language === 'en' ? 'Incorrect PIN. Please try again.' : 'PIN-ka ma sax ah. Fadlan mar kale isku day.');
       setIsPinVerified(false);
     }
   };
@@ -157,10 +221,10 @@ const GetSahalCardPage: React.FC = () => {
   return (
     <>
       <Helmet>
-        <title>Get Your Sahal Card - Order Now | Maandhise Corporate</title>
+        <title>Get Your Sahal Card - Order Now | SAHAL CARD</title>
         <meta name="description" content="Order your Sahal Card via WhatsApp and start saving today! Join thousands of Somalis already saving money with exclusive discounts." />
         <meta name="keywords" content="order sahacard, get sahacard, sahacard somalia, order discount card, whatsapp order, maandhise card order" />
-        <meta name="author" content="Maandhise Corporate" />
+        <meta name="author" content="SAHAL CARD" />
         
         {/* Open Graph / Facebook */}
         <meta property="og:type" content="website" />
@@ -168,7 +232,7 @@ const GetSahalCardPage: React.FC = () => {
         <meta property="og:title" content="Get Your Sahal Card - Order Now" />
         <meta property="og:description" content="Order your Sahal Card via WhatsApp and start saving today! Join thousands of Somalis already saving money with exclusive discounts." />
         <meta property="og:image" content="https://maandhise.com/og-get-sahal-card.png" />
-        <meta property="og:site_name" content="Maandhise Corporate" />
+        <meta property="og:site_name" content="SAHAL CARD" />
         
         {/* Twitter */}
         <meta property="twitter:card" content="summary_large_image" />
@@ -278,68 +342,61 @@ const GetSahalCardPage: React.FC = () => {
                 </motion.div>
               )}
 
-              {/* PIN Verification Section */}
-              {searchedUser && !isPinVerified && (
-                <motion.div 
-                  className="mb-6 mt-8"
+              {/* PIN Verification Form */}
+              {searchedUser && Object.keys(searchedUser).length > 0 && !isPinVerified && (
+                <motion.div
+                  className="mb-6 p-6 bg-blue-50 border border-blue-200 rounded-lg"
                   initial={{ opacity: 0, y: -10 }}
                   animate={{ opacity: 1, y: 0 }}
                 >
-                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
-                    <div className="flex items-center gap-3 mb-4">
-                      <div className="p-2 bg-blue-500 rounded-lg">
-                        <CreditCard className="w-5 h-5 text-white" />
-                      </div>
-                      <h3 className="text-lg font-bold text-gray-800">
-                        {language === 'en' ? 'PIN Verification Required' : 'Xaqiijinta PIN-ka Ayaa Loo Baahan Yahay'}
-                      </h3>
-                    </div>
-                    
-                    <p className="text-gray-600 mb-4">
+                  <div className="text-center mb-4">
+                    <h3 className="text-lg font-semibold text-gray-800 mb-2">
+                      {language === 'en' ? 'Verify Identity' : 'Xaqiijinta'}
+                    </h3>
+                    <p className="text-sm text-gray-600">
                       {language === 'en' 
-                        ? 'Please enter the last 4 digits of your phone number to view card details.' 
-                        : 'Fadlan geli 4-ta digit ee ugu dambeeya lambarka telefoonkaaga si aad u aragto faahfaahinta kaarkaaga.'}
+                        ? 'Enter the last 4 digits of the phone number to view full information' 
+                        : 'Geli 4 xaraf ee ugu dambeeya lambarka telefoonka si aad u aragto macluumaadka dhamaystiran'}
                     </p>
-                    
-                    <div className="flex space-x-4">
-                      <div className="flex-1 relative">
-                        <input
-                          type="text"
-                          inputMode="numeric"
-                          pattern="[0-9]*"
-                          maxLength={4}
-                          value={pin}
-                          onChange={(e) => {
-                            // Only allow numeric digits
-                            const numericValue = e.target.value.replace(/[^0-9]/g, '');
-                            setPin(numericValue);
-                          }}
-                          placeholder={language === 'en' ? 'Enter 4-digit PIN...' : 'Geli PIN-ka 4-digit...'}
-                          className="w-full pl-3 pr-3 py-3 border border-gray-300 rounded-lg bg-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                        />
-                      </div>
-                      <button
-                        onClick={handlePinVerification}
-                        disabled={pin.length !== 4}
-                        className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
-                      >
-                        <span>{language === 'en' ? 'Verify' : 'Xaqiiji'}</span>
-                      </button>
+                  </div>
+                  <div className="flex flex-col space-y-3">
+                    <div>
+                      <input
+                        type="text"
+                        inputMode="numeric"
+                        pattern="[0-9]*"
+                        maxLength={4}
+                        value={pin}
+                        onChange={(e) => {
+                          const numericValue = e.target.value.replace(/[^0-9]/g, '').slice(0, 4);
+                          setPin(numericValue);
+                          setPinError(null);
+                        }}
+                        placeholder={language === 'en' ? 'Enter 4 digits' : 'Geli 4 lambar'}
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg text-center text-lg font-mono focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        onKeyPress={(e) => {
+                          if (e.key === 'Enter' && pin.length === 4) {
+                            handlePinVerification();
+                          }
+                        }}
+                      />
                     </div>
-                    
-                    {/* PIN Error Message */}
                     {pinError && (
-                      <div className="mt-3 text-red-600 text-sm flex items-center">
-                        <XCircle className="w-4 h-4 mr-1" />
-                        <span>{pinError}</span>
-                      </div>
+                      <div className="text-red-600 text-sm text-center">{pinError}</div>
                     )}
+                    <button
+                      onClick={handlePinVerification}
+                      disabled={pin.length !== 4}
+                      className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+                    >
+                      {language === 'en' ? 'Verify' : 'Xaqiiji'}
+                    </button>
                   </div>
                 </motion.div>
               )}
 
               {/* User Card Display - Exact format from Users tab */}
-              {searchedUser && (
+              {searchedUser && Object.keys(searchedUser).length > 0 && (
                 <motion.div 
                   className="mt-8 mb-8"
                   initial={{ opacity: 0, scale: 0.95 }}
@@ -347,25 +404,14 @@ const GetSahalCardPage: React.FC = () => {
                   transition={{ duration: 0.3 }}
                 >
                   <div className="flex justify-center px-4">
-                    <motion.div 
-                      className={`relative bg-white rounded-2xl shadow-xl border border-gray-100 w-full max-w-sm ${!isPinVerified ? 'select-none' : ''}`}
-                      whileHover={{ y: -5, shadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)" }}
-                      transition={{ duration: 0.3 }}
-                    >
-                      {/* Blur overlay when PIN is not verified */}
-                      {!isPinVerified && (
-                        <div className="absolute inset-0 bg-white/50 backdrop-blur-md rounded-2xl z-10 flex flex-col items-center justify-center p-6 text-center">
-                          <LockIcon className="w-12 h-12 text-blue-500 mb-3" />
-                          <h3 className="text-xl font-bold text-gray-800 mb-2">
-                            {language === 'en' ? 'Card Details Protected' : 'Faahfaahinta Kaarka Waa La Ilaaliyay'}
-                          </h3>
-                          <p className="text-gray-600">
-                            {language === 'en' 
-                              ? 'Enter the PIN above to view card details' 
-                              : 'Geli PIN-ka kor ku xusan si aad u aragto faahfaahinta kaarka'}
-                          </p>
-                        </div>
-                      )}
+                    <div className="relative">
+                      <motion.div 
+                        className={`relative bg-white rounded-2xl shadow-xl border border-gray-100 w-full max-w-sm transition-all duration-300 ${
+                          !isPinVerified ? 'blur-md' : ''
+                        }`}
+                        whileHover={isPinVerified ? { y: -5, shadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)" } : {}}
+                        transition={{ duration: 0.3 }}
+                      >
                     {/* Card Header with gradient */}
                     <div className="h-24 bg-gradient-to-r from-blue-500 to-indigo-600 relative">
                       {/* INVALID badge for expired users */}
@@ -460,27 +506,84 @@ const GetSahalCardPage: React.FC = () => {
 
                       {/* User Information - Clean Structure */}
                       <div className="mt-4 space-y-3">
-                        {/* Information Grid - Only Card Number and Expiration Date */}
-                        <div className="space-y-2 text-sm">
-                          {/* Generated Card Number */}
-                          <div className="flex items-center justify-between bg-green-50 rounded-lg px-3 py-2">
-                            <span className="text-green-600 font-medium flex items-center gap-2">
-                              <CreditCard className="w-4 h-4" />
-                              {language === 'en' ? 'Card Number' : 'Lambarka Kaadhka'}
-                            </span>
-                            <span className="text-green-900 font-semibold font-mono">{generateCardNumber(searchedUser)}</span>
+                        {/* Name */}
+                        <div className="text-center">
+                          <div className="flex items-center justify-center gap-2">
+                            <h3 className="text-lg font-bold text-gray-900 truncate">
+                              {searchedUser.fullName}
+                            </h3>
+                            {searchedUser.validUntil && new Date() <= new Date(searchedUser.validUntil) && (
+                              <img 
+                                src="/icons/check.png" 
+                                alt="Valid" 
+                                className="w-5 h-5"
+                              />
+                            )}
                           </div>
+                        </div>
+
+                        {/* Information Grid */}
+                        <div className="space-y-2 text-sm">
+                          {/* Phone Number */}
+                          {searchedUser.phone && (
+                            <div className="flex items-center justify-between bg-gray-50 rounded-lg px-3 py-2">
+                              <span className="text-gray-600 font-medium flex items-center gap-2">
+                                <Phone className="w-4 h-4" />
+                                {language === 'en' ? 'Number' : 'Lambar'}
+                              </span>
+                              <span className="text-gray-900 font-semibold">{formatPhoneNumber(searchedUser.phone)}</span>
+                            </div>
+                          )}
+
+                          {/* ID Number */}
+                          {searchedUser.idNumber && (
+                            <div className="flex items-center justify-between bg-gray-50 rounded-lg px-3 py-2">
+                              <span className="text-gray-600 font-medium flex items-center gap-2">
+                                <CreditCard className="w-4 h-4" />
+                                {language === 'en' ? 'ID' : 'Aqoonsi'}
+                              </span>
+                              <span className="text-gray-900 font-semibold">{formatIdNumber(searchedUser.idNumber)}</span>
+                            </div>
+                          )}
+
+                          {/* Registration Date */}
+                          {searchedUser.createdAt && (
+                            <div className="flex items-start justify-between bg-blue-50 rounded-lg px-3 py-2">
+                              <span className="text-blue-600 font-medium flex items-center gap-2 flex-shrink-0 text-xs">
+                                <Calendar className="w-3 h-3" />
+                                {language === 'en' ? 'Registered' : 'Diiwaangashan'}
+                              </span>
+                              <span className="text-blue-900 font-bold text-right text-sm leading-tight">{new Date(searchedUser.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</span>
+                            </div>
+                          )}
 
                           {/* Expiration Date */}
                           {searchedUser.validUntil && (
-                          <div className="flex items-center justify-between bg-amber-50 rounded-lg px-3 py-2">
-                            <span className="text-amber-600 font-medium flex items-center gap-2">
-                              <Calendar className="w-4 h-4" />
-                              {language === 'en' ? 'Expiration Date' : 'Taariikhda Dhicitaanka'}
-                            </span>
-                            <span className="text-amber-900 font-semibold">{new Date(searchedUser.validUntil).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</span>
-                          </div>
+                            <div className={`flex items-start justify-between rounded-lg px-3 py-2 ${
+                              new Date() > new Date(searchedUser.validUntil) 
+                                ? 'bg-red-50' 
+                                : 'bg-green-50'
+                            }`}>
+                              <span className={`font-medium flex items-center gap-2 flex-shrink-0 text-xs ${
+                                new Date() > new Date(searchedUser.validUntil)
+                                  ? 'text-red-600'
+                                  : 'text-green-600'
+                              }`}>
+                                <Calendar className="w-3 h-3" />
+                                {language === 'en' ? 'Expires' : 'Dhamaan'}
+                              </span>
+                              <span className={`font-bold text-right text-sm leading-tight ${
+                                new Date() > new Date(searchedUser.validUntil)
+                                  ? 'text-red-900'
+                                  : 'text-green-900'
+                              }`}>
+                                {new Date(searchedUser.validUntil).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
+                              </span>
+                            </div>
                           )}
+
+                          {/* Card Number - Hidden from public search */}
+                          {/* Balance Information - Hidden from public search */}
                         </div>
                       </div>
 
@@ -491,6 +594,9 @@ const GetSahalCardPage: React.FC = () => {
                             setSearchedUser(null);
                             setSearchId('');
                             setSearchError(null);
+                            setIsPinVerified(false);
+                            setPin('');
+                            setPinError(null);
                           }}
                           className="inline-flex items-center justify-center gap-1 px-2 py-1 bg-red-100 text-red-700 rounded-md hover:bg-red-200 transition-colors text-xs font-medium"
                         >
@@ -500,6 +606,23 @@ const GetSahalCardPage: React.FC = () => {
                       </div>
                     </div>
                     </motion.div>
+                    
+                    {/* Blur Overlay Message - Shows when PIN not verified */}
+                    {!isPinVerified && (
+                      <div className="absolute inset-0 flex items-center justify-center bg-black/30 rounded-2xl backdrop-blur-sm z-10 pointer-events-none">
+                        <div className="bg-white/90 backdrop-blur-sm px-6 py-4 rounded-lg shadow-lg text-center max-w-xs">
+                          <p className="text-sm font-semibold text-gray-800 mb-1">
+                            {language === 'en' ? 'Protected Information' : 'Macluumaadka La Ilaaliyey'}
+                          </p>
+                          <p className="text-xs text-gray-600">
+                            {language === 'en' 
+                              ? 'Enter PIN to view details' 
+                              : 'Geli PIN si aad u arko macluumaadka'}
+                          </p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
                   </div>
                 </motion.div>
               )}
@@ -507,55 +630,33 @@ const GetSahalCardPage: React.FC = () => {
           </div>
         </motion.div>
 
-        {/* Hero Section */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
-          className="text-center mb-16"
-        >
-          <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-3xl mb-8 shadow-2xl">
-            <CreditCard className="w-10 h-10 text-white" />
-          </div>
-          <h1 className="text-4xl md:text-6xl font-bold gradient-text mb-6">
-            {language === 'en' ? 'Get Your Sahal Card' : 'Hel Kaarkaaga Sahal'}
-          </h1>
-          <p className="text-xl md:text-2xl text-gray-600 max-w-4xl mx-auto leading-relaxed mb-8">
-            {language === 'en' 
-              ? 'Join thousands of Somalis who are already saving money with Sahal Card. Start your savings journey today!'
-              : 'Ku biir kunno Soomaali ah oo horey u keydinayeen lacag Kaarka Sahal. Bilaab socodkaaga keydin maanta!'
-            }
-          </p>
-          
-        </motion.div>
-
         {/* WhatsApp Order Section */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.1 }}
-          className="mb-16"
+          className="mb-8"
         >
-          <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-green-500 to-green-600 p-12 shadow-2xl">
+          <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-green-500 to-green-600 p-6 shadow-xl">
             <div className="absolute inset-0 bg-black/10"></div>
             <div className="relative z-10">
-              <div className="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center mx-auto mb-6">
+              <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center mx-auto mb-4">
                 <svg className="w-8 h-8 text-white" viewBox="0 0 24 24" fill="currentColor">
                   <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893A11.821 11.821 0 0020.885 3.488"/>
                 </svg>
               </div>
               
-              <h2 className="text-3xl md:text-4xl font-bold text-white mb-6">
+              <h2 className="text-xl md:text-2xl font-bold text-white mb-3">
                 {language === 'en' ? 'Ready to Get Your Sahal Card?' : 'Diyaar u Tahay inaad Heldo Kaarkaaga Sahal?'}
               </h2>
-              <p className="text-xl text-green-100 mb-8 max-w-2xl mx-auto">
+              <p className="text-sm md:text-base text-green-100 mb-4 max-w-xl mx-auto">
                 {language === 'en' 
                   ? 'Order your Sahal Card now via WhatsApp and start saving money today!'
                   : 'Dalbo Kaarkaaga Sahal hadda WhatsApp ku adoo bilaabaya keydin lacag maanta!'
                 }
               </p>
               
-              <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <div className="flex flex-col sm:flex-row gap-3 justify-center">
                 <button
                   onClick={() => {
                     const message = language === 'en' 
@@ -575,7 +676,7 @@ const GetSahalCardPage: React.FC = () => {
                       setShowSuccess(false);
                     }, 4000);
                   }}
-                  className="px-8 py-4 bg-white text-green-600 rounded-2xl font-semibold hover:bg-green-50 transition-all duration-300 shadow-lg inline-flex items-center justify-center gap-2"
+                  className="px-6 py-2.5 bg-white text-green-600 rounded-xl font-semibold hover:bg-green-50 transition-all duration-300 shadow-md inline-flex items-center justify-center gap-2 text-sm"
                 >
                   <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
                     <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893A11.821 11.821 0 0020.885 3.488"/>
@@ -584,13 +685,13 @@ const GetSahalCardPage: React.FC = () => {
                 </button>
                 <button
                   onClick={() => navigate(-1)}
-                  className="px-8 py-4 border-2 border-white text-white rounded-2xl font-semibold hover:bg-white hover:text-green-600 transition-all duration-300"
+                  className="px-6 py-2.5 border-2 border-white text-white rounded-xl font-semibold hover:bg-white hover:text-green-600 transition-all duration-300 text-sm"
                 >
                   {language === 'en' ? 'Back to Home' : 'Dib u Noqo Guri'}
                 </button>
               </div>
               
-              <div className="mt-6 text-green-200 text-sm">
+              <div className="mt-3 text-green-200 text-xs">
                 {language === 'en' 
                   ? '📱 Click the button above to start your order process'
                   : '📱 Guji badhanka kor ku xusan si aad u bilaabto habka dalabka'
@@ -656,112 +757,184 @@ const GetSahalCardPage: React.FC = () => {
             </p>
           </div>
 
+          {/* Category Filter */}
+          <div className="mb-6">
+            <div className="flex flex-wrap gap-2 justify-center">
+              <button
+                onClick={() => setSelectedCategory('all')}
+                className={`px-4 py-2 rounded-lg font-medium transition-all duration-200 ${
+                  selectedCategory === 'all'
+                    ? 'bg-blue-500 text-white shadow-lg scale-105'
+                    : 'bg-white text-gray-700 hover:bg-gray-100 shadow'
+                }`}
+              >
+                {language === 'en' ? 'All Categories' : 'Dhammaan Noocyada'}
+              </button>
+              <button
+                onClick={() => setSelectedCategory('supermarket')}
+                className={`px-4 py-2 rounded-lg font-medium transition-all duration-200 ${
+                  selectedCategory === 'supermarket'
+                    ? 'bg-green-500 text-white shadow-lg scale-105'
+                    : 'bg-white text-gray-700 hover:bg-gray-100 shadow'
+                }`}
+              >
+                {language === 'en' ? 'Supermarket' : 'Bakaarad'}
+              </button>
+              <button
+                onClick={() => setSelectedCategory('pharmacy')}
+                className={`px-4 py-2 rounded-lg font-medium transition-all duration-200 ${
+                  selectedCategory === 'pharmacy'
+                    ? 'bg-blue-500 text-white shadow-lg scale-105'
+                    : 'bg-white text-gray-700 hover:bg-gray-100 shadow'
+                }`}
+              >
+                {language === 'en' ? 'Pharmacy' : 'Dhakhtarka'}
+              </button>
+              <button
+                onClick={() => setSelectedCategory('restaurant')}
+                className={`px-4 py-2 rounded-lg font-medium transition-all duration-200 ${
+                  selectedCategory === 'restaurant'
+                    ? 'bg-red-500 text-white shadow-lg scale-105'
+                    : 'bg-white text-gray-700 hover:bg-gray-100 shadow'
+                }`}
+              >
+                {language === 'en' ? 'Restaurant' : 'Maqaaxa'}
+              </button>
+              <button
+                onClick={() => setSelectedCategory('clothing')}
+                className={`px-4 py-2 rounded-lg font-medium transition-all duration-200 ${
+                  selectedCategory === 'clothing'
+                    ? 'bg-purple-500 text-white shadow-lg scale-105'
+                    : 'bg-white text-gray-700 hover:bg-gray-100 shadow'
+                }`}
+              >
+                {language === 'en' ? 'Clothing' : 'Dharka'}
+              </button>
+              <button
+                onClick={() => setSelectedCategory('electronics')}
+                className={`px-4 py-2 rounded-lg font-medium transition-all duration-200 ${
+                  selectedCategory === 'electronics'
+                    ? 'bg-indigo-500 text-white shadow-lg scale-105'
+                    : 'bg-white text-gray-700 hover:bg-gray-100 shadow'
+                }`}
+              >
+                {language === 'en' ? 'Electronics' : 'Elektroonikada'}
+              </button>
+              <button
+                onClick={() => setSelectedCategory('beauty')}
+                className={`px-4 py-2 rounded-lg font-medium transition-all duration-200 ${
+                  selectedCategory === 'beauty'
+                    ? 'bg-pink-500 text-white shadow-lg scale-105'
+                    : 'bg-white text-gray-700 hover:bg-gray-100 shadow'
+                }`}
+              >
+                {language === 'en' ? 'Beauty' : 'Qurxinta'}
+              </button>
+              <button
+                onClick={() => setSelectedCategory('healthcare')}
+                className={`px-4 py-2 rounded-lg font-medium transition-all duration-200 ${
+                  selectedCategory === 'healthcare'
+                    ? 'bg-teal-500 text-white shadow-lg scale-105'
+                    : 'bg-white text-gray-700 hover:bg-gray-100 shadow'
+                }`}
+              >
+                {language === 'en' ? 'Healthcare' : 'Caafimaadka'}
+              </button>
+              <button
+                onClick={() => setSelectedCategory('telecommunication')}
+                className={`px-4 py-2 rounded-lg font-medium transition-all duration-200 ${
+                  selectedCategory === 'telecommunication'
+                    ? 'bg-violet-500 text-white shadow-lg scale-105'
+                    : 'bg-white text-gray-700 hover:bg-gray-100 shadow'
+                }`}
+              >
+                {language === 'en' ? 'Telecommunication' : 'Isgaadhsiinta'}
+              </button>
+              <button
+                onClick={() => setSelectedCategory('other')}
+                className={`px-4 py-2 rounded-lg font-medium transition-all duration-200 ${
+                  selectedCategory === 'other'
+                    ? 'bg-gray-500 text-white shadow-lg scale-105'
+                    : 'bg-white text-gray-700 hover:bg-gray-100 shadow'
+                }`}
+              >
+                {language === 'en' ? 'Other' : 'Kale'}
+              </button>
+            </div>
+          </div>
+
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {/* Hayat Supermarket Card */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.3 }}
-              className="group relative overflow-hidden rounded-2xl bg-gradient-to-br from-green-500 to-green-600 shadow-xl hover:shadow-2xl transition-all duration-300"
-            >
-              <div className="relative p-6 text-white">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="w-16 h-16 flex items-center justify-center">
-                    <img 
-                      src="/icons/heyat.png" 
-                      alt="Hayat Supermarket - Partner business accepting Sahal Card with 20% discount" 
-                      className="w-full h-full object-contain bg-transparent"
-                    />
-                  </div>
-                  <div className="text-right">
-                    <div className="text-3xl font-bold">20%</div>
-                    <div className="text-sm opacity-90">OFF</div>
-                  </div>
-                </div>
-                <h3 className="text-xl font-bold mb-2">Hayat Supermarket</h3>
-                <p className="text-green-100 text-sm mb-4">
-                  {language === 'en' 
-                    ? 'Get 20% discount on all groceries and household items'
-                    : 'Hel 20% qiimo dhimis dhammaan cunto iyo alaabta guriga'
-                  }
+            {companiesLoading ? (
+              <div className="col-span-full text-center py-12">
+                <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+                <p className="mt-4 text-gray-600">
+                  {language === 'en' ? 'Loading companies...' : 'Soo gelaya shirkadaha...'}
                 </p>
-                <div className="flex items-center justify-between text-xs opacity-80">
-                  <span>📍 Mogadishu</span>
-                  <span>🕒 All Day</span>
-                </div>
               </div>
-            </motion.div>
-
-            {/* Somali Sudanese Restaurant Card */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.4 }}
-              className="group relative overflow-hidden rounded-2xl bg-gradient-to-br from-orange-500 to-red-500 shadow-xl hover:shadow-2xl transition-all duration-300"
-            >
-              <div className="relative p-6 text-white">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="w-20 h-20 flex items-center justify-center">
-                    <img 
-                      src="/icons/somali-sudanese-specialized-hospital.png" 
-                      alt="Somali Sudanese Restaurant - Partner business accepting Sahal Card with 40% discount" 
-                      className="w-full h-full object-contain bg-transparent"
-                    />
-                  </div>
-                  <div className="text-right">
-                    <div className="text-3xl font-bold">40%</div>
-                    <div className="text-sm opacity-90">OFF</div>
-                  </div>
-                </div>
-                <h3 className="text-xl font-bold mb-2">Somali Sudanese</h3>
-                <p className="text-orange-100 text-sm mb-4">
-                  {language === 'en' 
-                    ? 'Enjoy 40% discount on traditional Somali and Sudanese dishes'
-                    : 'Ku raaxayso 40% qiimo dhimis cuntooyinka dhaqameedka Soomaali iyo Suudaan'
-                  }
+            ) : companies.length === 0 ? (
+              <div className="col-span-full text-center py-12">
+                <Building2 className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                <p className="text-gray-600">
+                  {language === 'en' ? 'No companies available yet.' : 'Shirkado ma jiraan hada.'}
                 </p>
-                <div className="flex items-center justify-between text-xs opacity-80">
-                  <span>📍 Mogadishu</span>
-                  <span>🕒 All Day</span>
-                </div>
               </div>
-            </motion.div>
-
-            {/* More Sample Cards */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.5 }}
-              className="group relative overflow-hidden rounded-2xl bg-gradient-to-br from-blue-500 to-purple-500 shadow-xl hover:shadow-2xl transition-all duration-300"
-            >
-              <div className="relative p-6 text-white">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="w-16 h-16 flex items-center justify-center">
-                    <img 
-                      src="/icons/juba.png" 
-                      alt="Jubba Hypermarket - Partner business accepting Sahal Card with 15% discount" 
-                      className="w-full h-full object-contain bg-transparent"
-                    />
+            ) : (
+              companies.map((company, index) => (
+                <motion.div
+                  key={company._id}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.6, delay: index * 0.1 }}
+                  whileHover={{ y: -5 }}
+                  className={`group relative overflow-hidden rounded-2xl bg-gradient-to-br ${getCardColors(company.businessType).from} ${getCardColors(company.businessType).to} shadow-xl hover:shadow-2xl transition-all duration-300`}
+                >
+                  <div className="relative p-6 text-white">
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="w-36 h-36 flex items-center justify-center relative">
+                        {company.logo && company.logo.trim() !== '' ? (
+                          <img
+                            src={company.logo}
+                            alt={`${company.businessName} logo`}
+                            className="w-full h-full object-contain"
+                            style={{
+                              backgroundColor: 'transparent',
+                              imageRendering: 'auto',
+                              filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.1))',
+                              mixBlendMode: 'normal'
+                            }}
+                            onLoad={(e) => {
+                              const img = e.currentTarget;
+                              img.style.backgroundColor = 'transparent';
+                              img.style.display = 'block';
+                            }}
+                            onError={(e) => {
+                              e.currentTarget.style.display = 'none';
+                              const parent = e.currentTarget.parentElement;
+                              if (parent) {
+                                const icon = document.createElement('div');
+                                icon.innerHTML = '<svg class="w-24 h-24 text-white/80" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>';
+                                parent.appendChild(icon);
+                              }
+                            }}
+                          />
+                        ) : (
+                          <Building2 className="w-24 h-24 text-white/80" />
+                        )}
+                      </div>
+                      <div className="text-right">
+                        <div className="text-3xl font-bold">{company.discountRate}%</div>
+                        <div className="text-sm opacity-90">{language === 'en' ? 'OFF' : 'DHIMIS'}</div>
+                      </div>
+                    </div>
+                    <h3 className="text-xl font-bold mb-2">{company.businessName}</h3>
+                    <p className="text-white/90 text-sm mb-4">{company.description}</p>
+                    <div className="flex items-center justify-between text-xs opacity-80">
+                      <span>📍 {company.branches?.[0]?.address || company.location || 'Mogadishu'}</span>
+                    </div>
                   </div>
-                  <div className="text-right">
-                    <div className="text-3xl font-bold">15%</div>
-                    <div className="text-sm opacity-90">OFF</div>
-                  </div>
-                </div>
-                <h3 className="text-xl font-bold mb-2">Jubba Hypermarket</h3>
-                <p className="text-blue-100 text-sm mb-4">
-                  {language === 'en' 
-                    ? 'Save 15% on groceries and household essentials'
-                    : 'Keydi 15% cunto iyo alaabta guriga muhiimka ah'
-                  }
-                </p>
-                <div className="flex items-center justify-between text-xs opacity-80">
-                  <span>📍 Mogadishu</span>
-                  <span>🕒 All Day</span>
-                </div>
-              </div>
-            </motion.div>
-
+                </motion.div>
+              ))
+            )}
           </div>
         </motion.div>
 

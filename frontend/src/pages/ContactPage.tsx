@@ -34,24 +34,24 @@ const ContactPage: React.FC = () => {
   return (
     <>
       <Helmet>
-        <title>Contact Maandhise Corporate - Get in Touch | Mogadishu, Somalia</title>
-        <meta name="description" content="Contact Maandhise Corporate for Sahal Card orders, business inquiries, or support. Phone: +252 613 273 911, Email: Maandhisecorporate@gmail.com" />
+        <title>Contact SAHAL CARD - Get in Touch | Mogadishu, Somalia</title>
+        <meta name="description" content="Contact SAHAL CARD for Sahal Card orders, business inquiries, or support. Phone: +252 613 273 911, Email: Maandhisecorporate@gmail.com" />
         <meta name="keywords" content="contact maandhise, somalia business contact, mogadishu office, sahacard support, business inquiries" />
-        <meta name="author" content="Maandhise Corporate" />
+        <meta name="author" content="SAHAL CARD" />
         
         {/* Open Graph / Facebook */}
         <meta property="og:type" content="website" />
         <meta property="og:url" content="https://maandhise.com/contact" />
-        <meta property="og:title" content="Contact Maandhise Corporate - Get in Touch" />
-        <meta property="og:description" content="Contact Maandhise Corporate for Sahal Card orders, business inquiries, or support. Phone: +252 613 273 911, Email: Maandhisecorporate@gmail.com" />
+        <meta property="og:title" content="Contact SAHAL CARD - Get in Touch" />
+        <meta property="og:description" content="Contact SAHAL CARD for Sahal Card orders, business inquiries, or support. Phone: +252 613 273 911, Email: Maandhisecorporate@gmail.com" />
         <meta property="og:image" content="https://maandhise.com/og-contact.png" />
-        <meta property="og:site_name" content="Maandhise Corporate" />
+        <meta property="og:site_name" content="SAHAL CARD" />
         
         {/* Twitter */}
         <meta property="twitter:card" content="summary_large_image" />
         <meta property="twitter:url" content="https://maandhise.com/contact" />
-        <meta property="twitter:title" content="Contact Maandhise Corporate - Get in Touch" />
-        <meta property="twitter:description" content="Contact Maandhise Corporate for Sahal Card orders, business inquiries, or support. Phone: +252 613 273 911, Email: Maandhisecorporate@gmail.com" />
+        <meta property="twitter:title" content="Contact SAHAL CARD - Get in Touch" />
+        <meta property="twitter:description" content="Contact SAHAL CARD for Sahal Card orders, business inquiries, or support. Phone: +252 613 273 911, Email: Maandhisecorporate@gmail.com" />
         <meta property="twitter:image" content="https://maandhise.com/og-contact.png" />
         
         {/* Canonical URL */}

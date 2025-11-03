@@ -1,6 +1,6 @@
-# 🌐 Maandhise Corporate
+# 🌐 SAHAL CARD
 
-**Maandhise Corporate** is a comprehensive platform uniting three major services:
+**SAHAL CARD** is a comprehensive platform uniting three major services:
 
 1. **Maandhise Institute** – Education and Training
 2. **Maandhise Consulting Agency** – Business and strategic consulting  

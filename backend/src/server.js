@@ -14,6 +14,7 @@ const sahacardRoutes = require('./routes/sahalCard');
 const uploadRoutes = require('./routes/uploadRoutes');
 const paymentRoutes = require('./routes/payment');
 const simplePaymentRoutes = require('./routes/simplePayment');
+const companyRoutes = require('./routes/company');
 
 const app = express();
 
@@ -129,7 +130,7 @@ if (fs.existsSync(frontendBuildPath)) {
   app.get('/', (req, res) => {
     res.json({
       success: true,
-      message: 'Maandhise Corporate API is running',
+      message: 'SAHAL CARD API is running',
       timestamp: new Date().toISOString(),
       environment: process.env.NODE_ENV || 'development',
       version: '1.0.0',
@@ -142,7 +143,7 @@ if (fs.existsSync(frontendBuildPath)) {
 app.get('/health', (req, res) => {
   res.json({
     success: true,
-    message: 'Maandhise Corporate API is running',
+    message: 'SAHAL CARD API is running',
     timestamp: new Date().toISOString(),
     environment: process.env.NODE_ENV || 'development'
   });
@@ -154,6 +155,7 @@ app.use('/api/sahal-card', sahacardRoutes);
 app.use('/api/upload', uploadRoutes);
 app.use('/api/payments', paymentRoutes);
 app.use('/api/simple-payments', simplePaymentRoutes);
+app.use('/api/companies', companyRoutes);
 
 // 404 handler - serve React app for client-side routing
 app.use('*', (req, res) => {
@@ -255,16 +257,90 @@ const connectDB = async () => {
     
     // Create indexes for better performance
     try {
-      await mongoose.connection.db.collection('users').createIndex({ phone: 1 }, { unique: true });
+      // Get all existing indexes
+      const existingIndexes = await mongoose.connection.db.collection('users').indexes();
+      console.log('📋 Existing user indexes:', existingIndexes.map(idx => idx.name));
+      
+      // Try to drop the old phone index if it exists (to recreate with sparse)
+      const phoneIndex = existingIndexes.find(idx => idx.name === 'phone_1' || idx.key?.phone === 1);
+      if (phoneIndex && !phoneIndex.sparse) {
+        try {
+          await mongoose.connection.db.collection('users').dropIndex('phone_1');
+          console.log('✅ Dropped old phone index (not sparse) to recreate with sparse option');
+        } catch (dropError) {
+          console.log('⚠️  Could not drop phone index:', dropError.message);
+          // If drop fails, try to recreate anyway (it will error if needed)
+        }
+      }
+      
+      // Create phone index with sparse option (allows multiple null values for companies)
+      try {
+        await mongoose.connection.db.collection('users').createIndex({ phone: 1 }, { unique: true, sparse: true, name: 'phone_1' });
+        console.log('✅ Created sparse unique phone index');
+      } catch (createError) {
+        if (createError.message.includes('already exists')) {
+          console.log('⚠️  Phone index already exists - checking if sparse...');
+          // Check if the existing index is sparse
+          const indexes = await mongoose.connection.db.collection('users').indexes();
+          const existingPhoneIdx = indexes.find(idx => idx.name === 'phone_1' || idx.key?.phone === 1);
+          if (existingPhoneIdx && !existingPhoneIdx.sparse) {
+            console.error('❌ Phone index exists but is NOT sparse! You need to manually drop it:');
+            console.error('   Run in MongoDB: db.users.dropIndex("phone_1")');
+            console.error('   Then restart the server');
+          }
+        } else {
+          throw createError;
+        }
+      }
+      
       await mongoose.connection.db.collection('sahacards').createIndex({ cardNumber: 1 }, { unique: true });
       await mongoose.connection.db.collection('sahacards').createIndex({ userId: 1 });
+      
+      // Fix companies userId index - make it sparse to allow multiple null values
+      try {
+        const companyIndexes = await mongoose.connection.db.collection('companies').indexes();
+        console.log('📋 Existing company indexes:', companyIndexes.map(idx => idx.name));
+        
+        const userIdIndex = companyIndexes.find(idx => idx.name === 'userId_1' || idx.key?.userId === 1);
+        if (userIdIndex && userIdIndex.unique && !userIdIndex.sparse) {
+          try {
+            await mongoose.connection.db.collection('companies').dropIndex('userId_1');
+            console.log('✅ Dropped old userId unique index on companies collection');
+          } catch (dropError) {
+            console.log('⚠️  Could not drop userId index:', dropError.message);
+          }
+        }
+        
+        // Create sparse index on userId (or don't create unique index at all)
+        // Since userId is now optional and can be null for all companies, we don't need a unique index
+        // If you want to keep the index for queries but allow nulls, make it sparse
+        if (!companyIndexes.find(idx => idx.name === 'userId_1' || (idx.key?.userId === 1 && idx.sparse))) {
+          try {
+            await mongoose.connection.db.collection('companies').createIndex({ userId: 1 }, { sparse: true, name: 'userId_1' });
+            console.log('✅ Created sparse userId index on companies collection');
+          } catch (createError) {
+            if (!createError.message.includes('already exists')) {
+              console.log('⚠️  Could not create sparse userId index:', createError.message);
+            }
+          }
+        }
+      } catch (companyIndexError) {
+        console.log('⚠️  Error fixing company userId index:', companyIndexError.message);
+      }
+      
       await mongoose.connection.db.collection('companies').createIndex({ businessName: 'text' });
       await mongoose.connection.db.collection('transactions').createIndex({ customerId: 1, createdAt: -1 });
       await mongoose.connection.db.collection('notifications').createIndex({ userId: 1, createdAt: -1 });
       
       console.log('✅ Database indexes created successfully');
     } catch (indexError) {
-      console.log('⚠️  Some indexes may already exist:', indexError.message);
+      console.log('⚠️  Index creation error:', indexError.message);
+      if (indexError.message.includes('phone')) {
+        console.error('❌ CRITICAL: Phone index issue. Please manually fix:');
+        console.error('   1. Connect to MongoDB');
+        console.error('   2. Run: db.users.dropIndex("phone_1")');
+        console.error('   3. Restart this server');
+      }
     }
     
   } catch (error) {

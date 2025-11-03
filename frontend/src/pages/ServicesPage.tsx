@@ -17,7 +17,7 @@ const ServicesPage: React.FC = () => {
         <title>Our Services - Sahal Card, Education & Business Consulting | Maandhise</title>
         <meta name="description" content="Discover Maandhise's comprehensive services: Sahal discount card, quality education programs, and professional business consulting across Somalia." />
         <meta name="keywords" content="maandhise services, sahacard, education somalia, business consulting, discount card, somalia business services" />
-        <meta name="author" content="Maandhise Corporate" />
+        <meta name="author" content="SAHAL CARD" />
         
         {/* Open Graph / Facebook */}
         <meta property="og:type" content="website" />
@@ -25,7 +25,7 @@ const ServicesPage: React.FC = () => {
         <meta property="og:title" content="Our Services - Sahal Card, Education & Business Consulting" />
         <meta property="og:description" content="Discover Maandhise's comprehensive services: Sahal discount card, quality education programs, and professional business consulting across Somalia." />
         <meta property="og:image" content="https://maandhise.com/og-services.png" />
-        <meta property="og:site_name" content="Maandhise Corporate" />
+        <meta property="og:site_name" content="SAHAL CARD" />
         
         {/* Twitter */}
         <meta property="twitter:card" content="summary_large_image" />
@@ -113,8 +113,8 @@ const ServicesPage: React.FC = () => {
             <div className="glass-card p-8 max-w-4xl mx-auto">
               <h3 className="text-2xl md:text-3xl font-bold gradient-text mb-4">
                 {language === 'en' 
-                  ? 'Maandhise Corporate — Education, Consulting, and Savings for All.'
-                  : 'Maandhise Corporate — Waxbarasho, La Taliye, iyo Keydin Dhammaan Dadka.'
+                  ? 'SAHAL CARD — Education, Consulting, and Savings for All.'
+                  : 'SAHAL CARD — Waxbarasho, La Taliye, iyo Keydin Dhammaan Dadka.'
                 }
               </h3>
             </div>

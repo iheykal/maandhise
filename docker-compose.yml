@@ -45,8 +45,8 @@ services:
       SMTP_USER: your-email@gmail.com
       SMTP_PASS: your-app-password
       FROM_EMAIL: noreply@maandhise.com
-      FROM_NAME: Maandhise Corporate
-      APP_NAME: Maandhise Corporate
+      FROM_NAME: SAHAL CARD
+      APP_NAME: SAHAL CARD
       APP_URL: http://localhost:3000
       API_URL: http://localhost:5000
       SAHAL_CARD_YEARLY_FEE: 1
@@ -70,7 +70,7 @@ services:
       - "3000:80"
     environment:
       REACT_APP_API_URL: http://localhost:5000/api
-      REACT_APP_APP_NAME: Maandhise Corporate
+      REACT_APP_APP_NAME: SAHAL CARD
       REACT_APP_APP_URL: http://localhost:3000
       REACT_APP_CLOUDFLARE_PUBLIC_URL: https://your-bucket.r2.cloudflarestorage.com
     depends_on:

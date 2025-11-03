@@ -60,24 +60,24 @@ const HomePage: React.FC = () => {
   return (
     <>
       <Helmet>
-        <title>Maandhise Corporate - Save More, Spend Less | Somalia's Leading Discount Card</title>
+        <title>SAHAL CARD - Save More, Spend Less | Somalia's Leading Discount Card</title>
         <meta name="description" content="Join 10,000+ Somalis saving with Sahal Card. Get exclusive discounts at 500+ partner businesses across Somalia. Education, consulting & savings solutions." />
         <meta name="keywords" content="maandhise, sahacard, discount card, somalia, mogadishu, savings, education, consulting, business" />
-        <meta name="author" content="Maandhise Corporate" />
+        <meta name="author" content="SAHAL CARD" />
         
         {/* Open Graph / Facebook */}
         <meta property="og:type" content="website" />
         <meta property="og:url" content="https://maandhise.com/" />
-        <meta property="og:title" content="Maandhise Corporate - Save More, Spend Less" />
+        <meta property="og:title" content="SAHAL CARD - Save More, Spend Less" />
         <meta property="og:description" content="Join 10,000+ Somalis saving with Sahal Card. Get exclusive discounts at 500+ partner businesses across Somalia." />
         <meta property="og:image" content="https://maandhise.com/og-home.png" />
-        <meta property="og:site_name" content="Maandhise Corporate" />
+        <meta property="og:site_name" content="SAHAL CARD" />
         <meta property="og:locale" content="en_US" />
         
         {/* Twitter */}
         <meta property="twitter:card" content="summary_large_image" />
         <meta property="twitter:url" content="https://maandhise.com/" />
-        <meta property="twitter:title" content="Maandhise Corporate - Save More, Spend Less" />
+        <meta property="twitter:title" content="SAHAL CARD - Save More, Spend Less" />
         <meta property="twitter:description" content="Join 10,000+ Somalis saving with Sahal Card. Get exclusive discounts at 500+ partner businesses across Somalia." />
         <meta property="twitter:image" content="https://maandhise.com/og-home.png" />
         
@@ -89,7 +89,7 @@ const HomePage: React.FC = () => {
           {JSON.stringify({
             "@context": "https://schema.org",
             "@type": "Organization",
-            "name": "Maandhise Corporate",
+            "name": "SAHAL CARD",
             "description": "Uniting Education, Consulting & Savings for a better future in Somalia",
             "url": "https://maandhise.com",
             "logo": "https://maandhise.com/logo.png",
@@ -144,7 +144,7 @@ const HomePage: React.FC = () => {
                   className="text-2xl md:text-4xl lg:text-5xl font-bold"
                 >
                   <span className="gradient-text">
-                    {language === 'en' ? 'Maandhise Corporate' : 'Maandhise Corporate'}
+                    {language === 'en' ? 'SAHAL CARD' : 'SAHAL CARD'}
                   </span>
                 </motion.h1>
                 
@@ -243,7 +243,7 @@ const HomePage: React.FC = () => {
                   >
                     <img
                       src={`/icons/${galleryImages[currentImageIndex]}`}
-                      alt={`Maandhise Corporate gallery ${currentImageIndex + 1} - showcasing our achievements and community events`}
+                      alt={`SAHAL CARD gallery ${currentImageIndex + 1} - showcasing our achievements and community events`}
                       className="w-full h-full object-cover"
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent"></div>

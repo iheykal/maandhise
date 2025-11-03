@@ -34,8 +34,8 @@ const validateUserRegistration = [
   
   body('role')
     .optional()
-    .isIn(['customer', 'company'])
-    .withMessage('Role must be either customer or company'),
+    .isIn(['customer'])
+    .withMessage('Role must be customer'),
   
   handleValidationErrors
 ];
@@ -82,8 +82,8 @@ const validateAdminUserCreation = [
   
   body('role')
     .optional()
-    .isIn(['customer', 'company', 'admin', 'superadmin'])
-    .withMessage('Role must be customer, company, admin, or superadmin'),
+    .isIn(['customer', 'admin', 'superadmin'])
+    .withMessage('Role must be customer, admin, or superadmin'),
   
   handleValidationErrors
 ];
@@ -127,8 +127,8 @@ const validateCompanyRegistration = [
     .withMessage('Invalid business type'),
   
   body('discountRate')
-    .isFloat({ min: 1, max: 50 })
-    .withMessage('Discount rate must be between 1% and 50%'),
+    .isFloat({ min: 1, max: 100 })
+    .withMessage('Discount rate must be between 1% and 100%'),
   
   body('branches')
     .isArray({ min: 1 })

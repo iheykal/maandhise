@@ -1,7 +1,7 @@
 {
   "name": "maandhise-corporate",
   "version": "1.0.0",
-  "description": "Maandhise Corporate - Education, Consulting & Sahal Card Platform",
+  "description": "SAHAL CARD - Education, Consulting & Sahal Card Platform",
   "main": "index.js",
   "scripts": {
     "dev": "concurrently \"npm run server\" \"npm run client\"",
@@ -17,7 +17,7 @@
     "consulting",
     "discount-card"
   ],
-  "author": "Maandhise Corporate",
+  "author": "SAHAL CARD",
   "license": "MIT",
   "devDependencies": {
     "concurrently": "^8.2.2"

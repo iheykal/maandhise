@@ -92,21 +92,8 @@ const Navbar: React.FC = () => {
       }`}
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-20">
-          {/* Logo */}
-          <button
-            onClick={() => navigate('/')}
-            className="flex items-center space-x-2 sm:space-x-3 text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold gradient-text hover:scale-105 transition-transform duration-300"
-          >
-            <img 
-              src="/icons/dhii.png" 
-              alt="Dhii Logo" 
-              className="w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 lg:w-18 lg:h-18 object-contain bg-transparent pb-1"
-            />
-            <span className="font-extrabold tracking-wide text-sm sm:text-xl md:text-2xl lg:text-3xl xl:text-4xl">Maandhise Corporate</span>
-          </button>
-
-          {/* Desktop Navigation */}
+        <div className="relative flex justify-between items-center h-20">
+          {/* Desktop Navigation - Left */}
           <div className="hidden md:flex items-center space-x-8">
             {navItems.map((item) => (
               <button
@@ -120,7 +107,7 @@ const Navbar: React.FC = () => {
           </div>
 
           {/* Right Side Actions */}
-          <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-4 ml-auto">
 
             {/* Authentication */}
             {isAuthenticated && (

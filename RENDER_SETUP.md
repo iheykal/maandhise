@@ -1,4 +1,4 @@
-# 🚀 Render Deployment Setup for Maandhise Corporate
+# 🚀 Render Deployment Setup for SAHAL CARD
 
 ## Current Issue
 Your Render service is only serving the backend API because:
@@ -37,8 +37,8 @@ Your Render service is only serving the backend API because:
    SMTP_USER=your-email@gmail.com
    SMTP_PASS=your-app-password
    FROM_EMAIL=noreply@maandhise.com
-   FROM_NAME=Maandhise Corporate
-   APP_NAME=Maandhise Corporate
+   FROM_NAME=SAHAL CARD
+   APP_NAME=SAHAL CARD
    APP_URL=https://maandhise252.onrender.com
    API_URL=https://maandhise252.onrender.com
    SAHAL_CARD_YEARLY_FEE=1
@@ -70,7 +70,7 @@ If you prefer not to use Docker:
 ## After Deployment
 
 1. **Visit**: `https://maandhise252.onrender.com`
-2. **You should see**: The full Maandhise Corporate web application
+2. **You should see**: The full SAHAL CARD web application
 3. **API endpoints**: Still available at `/api/*` routes
 
 ## Troubleshooting

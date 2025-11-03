@@ -36,10 +36,10 @@ SMTP_PORT=587
 SMTP_USER=your-email@gmail.com
 SMTP_PASS=your-app-password
 FROM_EMAIL=noreply@maandhise.com
-FROM_NAME=Maandhise Corporate
+FROM_NAME=SAHAL CARD
 
 # App Configuration
-APP_NAME=Maandhise Corporate
+APP_NAME=SAHAL CARD
 APP_URL=http://localhost:3000
 API_URL=http://localhost:5000
 

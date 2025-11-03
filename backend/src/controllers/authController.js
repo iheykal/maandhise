@@ -1,7 +1,7 @@
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 const SahalCard = require('../models/SahalCard');
-const Company = require('../models/Company');
+// Company model no longer needed - companies are independent entities
 const Notification = require('../models/Notification');
 
 // Generate JWT tokens
@@ -47,8 +47,8 @@ const register = async (req, res) => {
     }
 
     // Create new user
-    // Business partners (company) need admin approval before they can login
-    const canLogin = role !== 'company';
+    // All users can login by default (unless admin creates them)
+    const canLogin = true;
     
     const user = new User({
       fullName,
@@ -69,7 +69,7 @@ const register = async (req, res) => {
     // Create welcome notification
     await Notification.createNotification({
       userId: user._id,
-      title: 'Welcome to Maandhise Corporate!',
+      title: 'Welcome to SAHAL CARD!',
       message: `Welcome ${fullName}! Your account has been created successfully. Get your Sahal Card to start saving!`,
       type: 'success',
       category: 'system',
@@ -284,10 +284,8 @@ const getProfile = async (req, res) => {
     if (user.role === 'customer') {
       const sahacard = await SahalCard.findOne({ userId: user._id });
       additionalData.sahalCard = sahacard ? sahacard.getStats() : null;
-    } else if (user.role === 'company') {
-      const company = await Company.findOne({ userId: user._id });
-      additionalData.company = company ? company.getAnalytics() : null;
     }
+    // Company role removed - companies are now independent entities
 
     res.json({
       success: true,
@@ -311,11 +309,35 @@ const getProfile = async (req, res) => {
 const updateProfile = async (req, res) => {
   try {
     const user = req.user;
-    const { fullName, phone } = req.body;
+    const { fullName, phone, idNumber, location } = req.body;
 
     // Update allowed fields
     if (fullName) user.fullName = fullName;
     if (phone) user.phone = phone;
+    if (location) user.location = location;
+    
+    // Update ID number if provided (check for uniqueness)
+    if (idNumber !== undefined) {
+      const trimmedIdNumber = idNumber.trim();
+      
+      // Check if the new ID number is different from current
+      if (trimmedIdNumber !== user.idNumber) {
+        // Check if ID number already exists (excluding current user)
+        const existingUser = await User.findOne({ 
+          idNumber: trimmedIdNumber,
+          _id: { $ne: user._id }
+        });
+        
+        if (existingUser) {
+          return res.status(400).json({
+            success: false,
+            message: 'ID number already exists'
+          });
+        }
+        
+        user.idNumber = trimmedIdNumber;
+      }
+    }
 
     await user.save();
 
@@ -527,7 +549,7 @@ const createUser = async (req, res) => {
     // Create welcome notification
     await Notification.createNotification({
       userId: user._id,
-      title: 'Welcome to Maandhise Corporate!',
+      title: 'Welcome to SAHAL CARD!',
       message: `Welcome ${fullName}! Your account has been created by an administrator. Get your Sahal Card to start saving!`,
       type: 'success',
       category: 'system',
@@ -573,16 +595,21 @@ const createUser = async (req, res) => {
   }
 };
 
-// Get all users (Admin only) - excludes superadmin users from the list
+// Get all users (Admin only) - excludes superadmin and company users from the list
 const getAllUsers = async (req, res) => {
   try {
     const { page = 1, limit = 10, role, search } = req.query;
     
-    // Build query - ALWAYS exclude superadmin users from the list for security
-    const baseQuery = { role: { $ne: 'superadmin' } };
+    // Build query - ALWAYS exclude superadmin and company users from the list
+    // Companies are now independent entities and should not appear in user lists
+    const baseQuery = { 
+      role: { 
+        $nin: ['superadmin', 'company'] // Exclude both superadmin and company roles
+      } 
+    };
     
-    // Add role filter if specified (but never allow superadmin)
-    if (role && role !== 'superadmin') {
+    // Add role filter if specified (but never allow superadmin or company)
+    if (role && role !== 'superadmin' && role !== 'company') {
       baseQuery.role = role;
     }
     
@@ -605,8 +632,8 @@ const getAllUsers = async (req, res) => {
       .limit(limit * 1)
       .skip((page - 1) * limit);
 
-    // Double-check: Filter out any superadmin users that might have slipped through
-    users = users.filter(user => user.role !== 'superadmin');
+    // Double-check: Filter out any superadmin or company users that might have slipped through
+    users = users.filter(user => user.role !== 'superadmin' && user.role !== 'company');
 
     // Get total count
     const total = await User.countDocuments(query);
@@ -736,7 +763,7 @@ const deleteUser = async (req, res) => {
       await Transaction.deleteMany({ customerId: userId });
       
       // Delete user's company (if any)
-      await Company.deleteMany({ userId: userId });
+      // Companies no longer require user accounts, so no company deletion needed
       
       console.log(`Deleted related data for user: ${userToDelete.fullName}`);
     } catch (relatedDataError) {
@@ -762,7 +789,7 @@ const deleteUser = async (req, res) => {
   }
 };
 
-// Search user by ID number (Admin only)
+// Search user by ID number (Public - anyone can search)
 const searchUserById = async (req, res) => {
   try {
     const { idNumber } = req.body;

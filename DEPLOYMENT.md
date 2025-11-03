@@ -1,6 +1,6 @@
-# 🚀 Maandhise Corporate - Deployment Guide
+# 🚀 SAHAL CARD - Deployment Guide
 
-This guide will help you deploy the Maandhise Corporate application to production.
+This guide will help you deploy the SAHAL CARD application to production.
 
 ## 📋 Prerequisites
 
@@ -168,10 +168,10 @@ SMTP_PORT=587
 SMTP_USER=your-email@gmail.com
 SMTP_PASS=your-app-password
 FROM_EMAIL=noreply@maandhise.com
-FROM_NAME=Maandhise Corporate
+FROM_NAME=SAHAL CARD
 
 # App Configuration
-APP_NAME=Maandhise Corporate
+APP_NAME=SAHAL CARD
 APP_URL=https://your-domain.com
 API_URL=https://api.your-domain.com
 ```
@@ -180,7 +180,7 @@ API_URL=https://api.your-domain.com
 
 ```env
 REACT_APP_API_URL=https://api.your-domain.com/api
-REACT_APP_APP_NAME=Maandhise Corporate
+REACT_APP_APP_NAME=SAHAL CARD
 REACT_APP_APP_URL=https://your-domain.com
 REACT_APP_CLOUDFLARE_PUBLIC_URL=https://your-bucket.r2.cloudflarestorage.com
 ```
@@ -326,7 +326,7 @@ For deployment issues or questions:
 
 ## 🎉 Success!
 
-Once deployed, your Maandhise Corporate application will be available at:
+Once deployed, your SAHAL CARD application will be available at:
 - Frontend: https://your-domain.com
 - Backend API: https://api.your-domain.com
 - Admin Panel: https://your-domain.com/admin

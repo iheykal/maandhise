@@ -163,8 +163,8 @@ const GalleryPage: React.FC = () => {
           </h1>
           <p className="text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed">
             {language === 'en' 
-              ? 'Explore our collection of moments, achievements, and memories that showcase the journey of Maandhise Corporate'
-              : 'Baaritaan ururka wakhtiyada, guulaha, iyo xusuusta oo muujinaya socodka Maandhise Corporate'
+              ? 'Explore our collection of moments, achievements, and memories that showcase the journey of SAHAL CARD'
+              : 'Baaritaan ururka wakhtiyada, guulaha, iyo xusuusta oo muujinaya socodka SAHAL CARD'
             }
           </p>
         </motion.div>
@@ -190,7 +190,7 @@ const GalleryPage: React.FC = () => {
               <div className="relative overflow-hidden rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:scale-105 bg-white">
                 <img
                   src={`/icons/${image}`}
-                  alt={`Maandhise Corporate gallery ${index + 1} - showcasing our community events, achievements, and business activities`}
+                  alt={`SAHAL CARD gallery ${index + 1} - showcasing our community events, achievements, and business activities`}
                   className="w-full h-auto min-h-[20rem] sm:min-h-[24rem] md:min-h-[28rem] lg:min-h-[32rem] xl:min-h-[36rem] object-contain bg-gray-100 transition-transform duration-300 group-hover:scale-110"
                   loading="lazy"
                 />
@@ -303,7 +303,7 @@ const GalleryPage: React.FC = () => {
                     duration: 0.3
                   }}
                   src={`/icons/${selectedImage}`}
-                  alt={`Maandhise Corporate gallery ${currentIndex + 1} - showcasing our community events and business achievements`}
+                  alt={`SAHAL CARD gallery ${currentIndex + 1} - showcasing our community events and business achievements`}
                   className="max-w-full max-h-[90vh] object-contain rounded-2xl shadow-2xl select-none"
                   draggable={false}
                 />

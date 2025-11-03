@@ -43,9 +43,9 @@ services:
       - key: FROM_EMAIL
         value: noreply@maandhise.com
       - key: FROM_NAME
-        value: Maandhise Corporate
+        value: SAHAL CARD
       - key: APP_NAME
-        value: Maandhise Corporate
+        value: SAHAL CARD
       - key: APP_URL
         fromService:
           type: web

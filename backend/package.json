@@ -1,7 +1,7 @@
 {
   "name": "maandhise-backend",
   "version": "1.0.0",
-  "description": "Maandhise Corporate Backend API",
+  "description": "SAHAL CARD Backend API",
   "main": "src/server.js",
   "scripts": {
     "start": "node src/server.js",
@@ -45,6 +45,6 @@
     "sahal-card",
     "discount-card"
   ],
-  "author": "Maandhise Corporate",
+  "author": "SAHAL CARD",
   "license": "MIT"
 }

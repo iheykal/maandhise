@@ -72,7 +72,7 @@ const RegisterPage: React.FC = () => {
               {language === 'en' ? 'Create Account' : 'Samee Akoon'}
             </h1>
             <p className="text-gray-600">
-              {language === 'en' ? 'Join Maandhise Corporate today' : 'Ku biir Maandhise Corporate maanta'}
+              {language === 'en' ? 'Join SAHAL CARD today' : 'Ku biir SAHAL CARD maanta'}
             </p>
           </div>
 

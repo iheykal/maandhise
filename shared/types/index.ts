@@ -1,4 +1,4 @@
-// Shared TypeScript types for Maandhise Corporate
+// Shared TypeScript types for SAHAL CARD
 
 export interface User {
   _id: string;

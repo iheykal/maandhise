@@ -119,7 +119,7 @@ const VirtualSahalCard: React.FC<VirtualSahalCardProps> = ({
                 animate={{ opacity: showDetails ? 1 : 0.9 }}
                 transition={{ duration: 0.3 }}
               >
-                MAANDHISE CORPORATE SOMALIA
+                SAHAL CARD SOMALIA
               </motion.div>
               
               {/* Phone Number */}
@@ -230,7 +230,7 @@ const VirtualSahalCard: React.FC<VirtualSahalCardProps> = ({
                 SAHAL DISCOUNT CARD
               </div>
               <div className="text-blue-200 text-xs font-medium">
-                BY MAANDHISE CORPORATE
+                BY SAHAL CARD
               </div>
             </motion.div>
             
@@ -302,7 +302,7 @@ const VirtualSahalCard: React.FC<VirtualSahalCardProps> = ({
               <div>• Valid at participating merchants only</div>
               <div>• Cannot be combined with other offers</div>
               <div>• Subject to availability</div>
-              <div>• Maandhise Corporate reserves all rights</div>
+              <div>• SAHAL CARD reserves all rights</div>
             </div>
             
             {/* Customer Service */}
