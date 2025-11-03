@@ -279,11 +279,61 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   // Check if user is authenticated on app load
   useEffect(() => {
+    let isMounted = true;
+    let timeoutId: NodeJS.Timeout | null = null;
+
+    // Detect if on mobile device
+    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
+      typeof navigator !== 'undefined' ? navigator.userAgent : ''
+    );
+
     const checkAuth = async () => {
-      const token = localStorage.getItem('token');
-      if (token) {
-        try {
-          const user = await authService.getProfile();
+      // Try to get token from localStorage with error handling
+      let token: string | null = null;
+      try {
+        token = localStorage.getItem('token');
+      } catch (error) {
+        console.error('Error accessing localStorage:', error);
+        // If localStorage fails, immediately show login
+        if (isMounted) {
+          dispatch({ type: 'AUTH_LOGOUT' });
+        }
+        return;
+      }
+      
+      if (!token) {
+        // No token, immediately set loading to false
+        if (isMounted) {
+          dispatch({ type: 'AUTH_LOGOUT' });
+        }
+        return;
+      }
+
+      // Shorter timeout on mobile (5 seconds), longer on desktop (10 seconds)
+      const timeoutDuration = isMobile ? 5000 : 10000;
+      
+      timeoutId = setTimeout(() => {
+        if (isMounted) {
+          console.warn('Auth check timeout - clearing tokens and showing login');
+          try {
+            localStorage.removeItem('token');
+            localStorage.removeItem('refreshToken');
+          } catch (error) {
+            console.error('Error clearing localStorage:', error);
+          }
+          dispatch({ type: 'AUTH_LOGOUT' });
+        }
+      }, timeoutDuration);
+
+      try {
+        const user = await authService.getProfile();
+        
+        if (timeoutId) {
+          clearTimeout(timeoutId);
+          timeoutId = null;
+        }
+
+        if (isMounted) {
           dispatch({
             type: 'AUTH_SUCCESS',
             payload: {
@@ -292,18 +342,43 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
               refreshToken: localStorage.getItem('refreshToken') || '',
             },
           });
-        } catch (error) {
-          console.error('Auth check failed:', error);
-          localStorage.removeItem('token');
-          localStorage.removeItem('refreshToken');
+        }
+      } catch (error: any) {
+        if (timeoutId) {
+          clearTimeout(timeoutId);
+          timeoutId = null;
+        }
+
+        console.error('Auth check failed:', error);
+        
+        if (isMounted) {
+          // Clear tokens on error
+          try {
+            localStorage.removeItem('token');
+            localStorage.removeItem('refreshToken');
+          } catch (storageError) {
+            console.error('Error clearing localStorage on auth failure:', storageError);
+          }
           dispatch({ type: 'AUTH_LOGOUT' });
         }
-      } else {
-        dispatch({ type: 'AUTH_LOGOUT' });
       }
     };
 
-    checkAuth();
+    // Add a small delay to ensure DOM is ready (especially on mobile)
+    const initTimeout = setTimeout(() => {
+      checkAuth();
+    }, 100);
+
+    // Cleanup function
+    return () => {
+      isMounted = false;
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
+      if (initTimeout) {
+        clearTimeout(initTimeout);
+      }
+    };
   }, []);
 
   const login = async (phone: string, password: string) => {

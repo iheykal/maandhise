@@ -13,6 +13,7 @@ const LoginPage: React.FC = () => {
   });
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [loadingTimeout, setLoadingTimeout] = useState(false);
 
   const { login, isAuthenticated, isLoading: authLoading } = useAuth();
   const { language } = useTheme();
@@ -21,6 +22,27 @@ const LoginPage: React.FC = () => {
 
   // Get the redirect path from location state, default to dashboard
   const from = (location.state as any)?.from?.pathname || '/dashboard';
+
+  // Timeout fallback for loading state - shorter on mobile
+  useEffect(() => {
+    if (authLoading) {
+      // Detect if on mobile device
+      const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
+        typeof navigator !== 'undefined' ? navigator.userAgent : ''
+      );
+      
+      // Shorter timeout on mobile (3 seconds), longer on desktop (8 seconds)
+      const timeoutDuration = isMobile ? 3000 : 8000;
+      
+      const timeout = setTimeout(() => {
+        setLoadingTimeout(true);
+      }, timeoutDuration);
+
+      return () => clearTimeout(timeout);
+    } else {
+      setLoadingTimeout(false);
+    }
+  }, [authLoading]);
 
   // Redirect if already authenticated
   useEffect(() => {
@@ -51,8 +73,8 @@ const LoginPage: React.FC = () => {
     }
   };
 
-  // Show loading while checking authentication
-  if (authLoading) {
+  // Show loading while checking authentication (but allow timeout fallback)
+  if (authLoading && !loadingTimeout) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 via-blue-100 to-indigo-200 flex items-center justify-center px-4">
         <motion.div
@@ -65,10 +87,17 @@ const LoginPage: React.FC = () => {
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
           </div>
           <h3 className="text-lg font-medium text-gray-900 mb-2">
-            Checking authentication...
+            {language === 'en' ? 'Checking authentication...' : 'Hubinta ansaxnimada...'}
           </h3>
           <p className="text-gray-600">
-            Please wait while we verify your login status
+            {language === 'en' 
+              ? 'Please wait while we verify your login status'
+              : 'Fadlan sug markaan hubino xaaladdaada galitaanka'}
+          </p>
+          <p className="text-xs text-gray-500 mt-4">
+            {language === 'en' 
+              ? 'If this takes too long, the login form will appear automatically'
+              : 'Haddii ay ku dhawaato, foomka galitaanka ayaa si toos ah u muujaya'}
           </p>
         </motion.div>
       </div>

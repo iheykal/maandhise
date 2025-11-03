@@ -28,6 +28,7 @@ import { uploadService } from '../../services/uploadService.ts';
 import { useTheme } from '../../contexts/ThemeContext.tsx';
 import { companyService } from '../../services/companyService.ts';
 import { useNavigate } from 'react-router-dom';
+import CountdownTimer from '../../components/common/CountdownTimer.tsx';
 
 // const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://192.168.100.32:5000/api';
 
@@ -1967,6 +1968,16 @@ const DashboardPage: React.FC = () => {
                     </div>
                   </div>
                 </div>
+
+                {/* Countdown Timer Section */}
+                {selectedUserImage.user.validUntil && (
+                  <div className="mt-4">
+                    <CountdownTimer 
+                      endDate={selectedUserImage.user.validUntil} 
+                      language={language}
+                    />
+                  </div>
+                )}
               </div>
             </div>
           </div>
