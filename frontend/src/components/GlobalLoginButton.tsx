@@ -190,7 +190,21 @@ const GlobalLoginButton: React.FC = () => {
       
       // Handle different types of errors - prioritize network/timeout errors
       let errorMessage = '';
-      const currentApiUrl = process.env.REACT_APP_API_URL || 'https://maandhise252.onrender.com/api';
+      // Get API URL dynamically
+      const getApiUrl = () => {
+        if (process.env.REACT_APP_API_URL) {
+          return process.env.REACT_APP_API_URL;
+        }
+        if (typeof window !== 'undefined') {
+          const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+          if (isLocalhost) {
+            return 'http://localhost:5000/api';
+          }
+          return `${window.location.protocol}//${window.location.hostname}/api`;
+        }
+        return '/api';
+      };
+      const currentApiUrl = getApiUrl();
       const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
       
       // Check for network/timeout errors first (these don't have a response)

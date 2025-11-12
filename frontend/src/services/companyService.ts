@@ -22,8 +22,13 @@ const getApiBaseUrl = (): string => {
     }
   }
   
-  // Default to production API
-  return 'https://maandhise252.onrender.com/api';
+  // Default: use current hostname (works for custom domains)
+  if (typeof window !== 'undefined') {
+    return `${window.location.protocol}//${window.location.hostname}/api`;
+  }
+  
+  // Fallback for server-side rendering
+  return process.env.REACT_APP_API_URL || '/api';
 };
 
 const API_BASE_URL = getApiBaseUrl();

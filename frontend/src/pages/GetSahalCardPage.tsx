@@ -82,7 +82,9 @@ const GetSahalCardPage: React.FC = () => {
   const isLocalhost = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
   const defaultApiUrl = isLocalhost 
     ? 'http://localhost:5000/api' 
-    : 'https://maandhise252.onrender.com/api';
+    : (typeof window !== 'undefined' 
+        ? `${window.location.protocol}//${window.location.hostname}/api`
+        : '/api');
   const API_BASE_URL = process.env.REACT_APP_API_URL || defaultApiUrl;
   
   console.log('[GetSahalCardPage] API Config:', {

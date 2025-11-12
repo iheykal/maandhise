@@ -70,6 +70,8 @@ const allowedOrigins = [
   'https://maandhise.onrender.com', // Production frontend URL
   'https://maandhise-frontend.onrender.com', // Alternative frontend URL
   'https://maandhise252.onrender.com', // Current deployment URL
+  'https://sahalcard.com', // Custom domain
+  'https://www.sahalcard.com', // Custom domain with www
   process.env.APP_URL
 ].filter(Boolean);
 

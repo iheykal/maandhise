@@ -39,8 +39,10 @@ Your Render service is only serving the backend API because:
    FROM_EMAIL=noreply@maandhise.com
    FROM_NAME=SAHAL CARD
    APP_NAME=SAHAL CARD
-   APP_URL=https://maandhise252.onrender.com
-   API_URL=https://maandhise252.onrender.com
+   APP_URL=https://sahalcard.com
+   API_URL=https://sahalcard.com
+   REACT_APP_API_URL=https://sahalcard.com/api
+   REACT_APP_APP_URL=https://sahalcard.com
    SAHAL_CARD_YEARLY_FEE=1
    SAHAL_CARD_RENEWAL_FEE=0.5
    SAHAL_CARD_VALIDITY_DAYS=365
@@ -69,7 +71,7 @@ If you prefer not to use Docker:
 
 ## After Deployment
 
-1. **Visit**: `https://maandhise252.onrender.com`
+1. **Visit**: `https://sahalcard.com` (or your custom domain)
 2. **You should see**: The full SAHAL CARD web application
 3. **API endpoints**: Still available at `/api/*` routes
 

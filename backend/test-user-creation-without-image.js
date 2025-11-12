@@ -1,6 +1,11 @@
 const axios = require('axios');
 
-const API_BASE_URL = 'https://maandhise252.onrender.com/api';
+// Use environment variable or default to sahalcard.com
+const API_BASE_URL = process.env.API_URL 
+  ? `${process.env.API_URL}/api` 
+  : process.env.REACT_APP_API_URL 
+  ? process.env.REACT_APP_API_URL
+  : 'https://sahalcard.com/api';
 
 async function testUserCreationWithoutImage() {
   try {

@@ -47,15 +47,13 @@ services:
       - key: APP_NAME
         value: SAHAL CARD
       - key: APP_URL
-        fromService:
-          type: web
-          name: maandhise-corporate
-          property: host
+        value: https://sahalcard.com
       - key: API_URL
-        fromService:
-          type: web
-          name: maandhise-corporate
-          property: host
+        value: https://sahalcard.com
+      - key: REACT_APP_API_URL
+        value: https://sahalcard.com/api
+      - key: REACT_APP_APP_URL
+        value: https://sahalcard.com
       - key: SAHAL_CARD_YEARLY_FEE
         value: 1
       - key: SAHAL_CARD_RENEWAL_FEE
