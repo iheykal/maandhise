@@ -455,7 +455,7 @@ const CompanyManagementPage: React.FC = () => {
                       <option value="education">{language === 'en' ? 'Education' : 'Waxbarashada'}</option>
                       <option value="services">{language === 'en' ? 'Services' : 'Adeegyada'}</option>
                       <option value="telecommunication">{language === 'en' ? 'Telecommunication' : 'Isgaadhsiinta'}</option>
-                      <option value="travelagency">{language === 'en' ? 'Travel Agency' : 'Wakaalada Safarka'}</option>
+                      <option value="travelagency">{language === 'en' ? 'Cargo & Travel Agency' : 'Cargo iyo Wakaalada Safarka'}</option>
                       <option value="other">{language === 'en' ? 'Other' : 'Kale'}</option>
                     </select>
                   </div>
@@ -604,7 +604,7 @@ const CompanyManagementPage: React.FC = () => {
                       <option value="education">{language === 'en' ? 'Education' : 'Waxbarashada'}</option>
                       <option value="services">{language === 'en' ? 'Services' : 'Adeegyada'}</option>
                       <option value="telecommunication">{language === 'en' ? 'Telecommunication' : 'Isgaadhsiinta'}</option>
-                      <option value="travelagency">{language === 'en' ? 'Travel Agency' : 'Wakaalada Safarka'}</option>
+                      <option value="travelagency">{language === 'en' ? 'Cargo & Travel Agency' : 'Cargo iyo Wakaalada Safarka'}</option>
                       <option value="other">{language === 'en' ? 'Other' : 'Kale'}</option>
                     </select>
                   </div>

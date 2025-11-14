@@ -1012,7 +1012,7 @@ const GetSahalCardPage: React.FC = () => {
                     : 'bg-white text-gray-700 hover:bg-gray-100 shadow'
                 }`}
               >
-                {language === 'en' ? 'Travel Agency' : 'Wakaalada Safarka'}
+                {language === 'en' ? 'Cargo & Travel Agency' : 'Cargo iyo Wakaalada Safarka'}
               </button>
               <button
                 onClick={() => setSelectedCategory('other')}
