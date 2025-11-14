@@ -10,24 +10,14 @@ const GalleryPage: React.FC = () => {
   const [isPlaying, setIsPlaying] = useState(false);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Gallery images with random text and numbers (excluding specific named images)
+  // Gallery images - using icons 1 to 6
   const galleryImages = [
-    '489577276_1242317374568893_4520953705150057931_n.jpg',
-    '489776852_1243241001143197_2484832212153513724_n.jpg',
-    '491830696_1250859123714718_6104288111010466881_n.jpg',
-    '493272461_1260164816117482_3758469469945750571_n.jpg',
-    '493468150_1260164906117473_8939871710073352573_n.jpg',
-    '493737095_1260164909450806_6666939914771122798_n.jpg',
-    '494005379_1260164856117478_6368702701761718367_n.jpg',
-    '494090496_1260164956117468_2785811314254096813_n.jpg',
-    '494096869_1262457895888174_7346350511475005594_n.jpg',
-    '494584536_1262457962554834_7258760863938959064_n.jpg',
-    '494669375_1262457699221527_9135505405175271809_n.jpg',
-    '494764138_1262457705888193_7459558796317442054_n.jpg',
-    '499813782_1284139160386714_6859996329049751199_n.jpg',
-    '515299272_1320713926729237_2503452342838229368_n.jpg',
-    '8c907007-cf72-4d96-b91e-05026f758602.jpeg',
-    'c380bb4d-80b5-48ca-ba29-752e3bd67c17.jpeg'
+    '1.jpeg',
+    '2.jpeg',
+    '3.jpeg',
+    '4.jpeg',
+    '5.jpeg',
+    '6.jpeg'
   ];
 
   const openModal = (image: string, index: number) => {
@@ -191,8 +181,14 @@ const GalleryPage: React.FC = () => {
                 <img
                   src={`/icons/${image}`}
                   alt={`SAHAL CARD gallery ${index + 1} - showcasing our community events, achievements, and business activities`}
-                  className="w-full h-auto min-h-[20rem] sm:min-h-[24rem] md:min-h-[28rem] lg:min-h-[32rem] xl:min-h-[36rem] object-contain bg-gray-100 transition-transform duration-300 group-hover:scale-110"
+                  className="w-full h-auto min-h-[20rem] sm:min-h-[24rem] md:min-h-[28rem] lg:min-h-[32rem] xl:min-h-[36rem] object-cover bg-gradient-to-br from-blue-50 to-indigo-100 transition-transform duration-300 group-hover:scale-110"
                   loading="lazy"
+                  onError={(e) => {
+                    // Fallback if image fails to load
+                    const target = e.target as HTMLImageElement;
+                    target.src = `/icons/maandhise.jpg`; // Fallback image
+                    target.onerror = null; // Prevent infinite loop
+                  }}
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                   <div className="absolute bottom-4 left-4 right-4">
@@ -306,6 +302,12 @@ const GalleryPage: React.FC = () => {
                   alt={`SAHAL CARD gallery ${currentIndex + 1} - showcasing our community events and business achievements`}
                   className="max-w-full max-h-[90vh] object-contain rounded-2xl shadow-2xl select-none"
                   draggable={false}
+                  onError={(e) => {
+                    // Fallback if image fails to load
+                    const target = e.target as HTMLImageElement;
+                    target.src = `/icons/maandhise.jpg`; // Fallback image
+                    target.onerror = null; // Prevent infinite loop
+                  }}
                 />
               </motion.div>
               {/* Close Button */}

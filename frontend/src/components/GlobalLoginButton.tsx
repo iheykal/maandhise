@@ -96,31 +96,35 @@ const GlobalLoginButton: React.FC = () => {
       const maxRetries = isLocalhost ? 0 : 2; // No retries for localhost, 2 for production
       let attempt = 0;
       let loginSucceeded = false;
+      // Capture variables used in closures for loop safety
+      const currentLanguage = language;
+      const currentIsLocalhost = isLocalhost;
+      let currentAttempt = 0; // Initialize outside loop to ensure it's always defined
       
       while (attempt <= maxRetries && !loginSucceeded) {
         attempt++;
-        console.log(`Login attempt ${attempt} of ${maxRetries + 1}...`);
+        currentAttempt = attempt; // Update at loop level so it's accessible in catch
+        // Capture currentAttempt in a const to avoid unsafe closure reference
+        const attemptNumber = currentAttempt;
+        console.log(`Login attempt ${attemptNumber} of ${maxRetries + 1}...`);
         
         try {
           // Wrap in Promise.race with timeout as a safety measure
           const loginStartTime = Date.now();
-          // Capture all variables used in closure for loop safety
-          const currentAttempt = attempt;
-          const currentLanguage = language;
-          const currentIsLocalhost = isLocalhost;
           
-          console.log(`[Login Attempt ${currentAttempt}] Starting login promise...`);
+          console.log(`[Login Attempt ${attemptNumber}] Starting login promise...`);
           
           const loginPromise = login(fullPhoneNumber, loginData.password);
           const timeoutMs = currentIsLocalhost ? 15000 : 65000; // 15s for localhost, 65s for production
           
-          console.log(`[Login Attempt ${currentAttempt}] Timeout set to ${timeoutMs}ms`);
+          console.log(`[Login Attempt ${attemptNumber}] Timeout set to ${timeoutMs}ms`);
           
           let timeoutId: NodeJS.Timeout;
+          // eslint-disable-next-line no-loop-func
           const timeoutPromise = new Promise<never>((_, reject) => {
             timeoutId = setTimeout(() => {
               const elapsed = Date.now() - loginStartTime;
-              console.error(`[Login Attempt ${currentAttempt}] Timeout triggered after ${elapsed}ms`);
+              console.error(`[Login Attempt ${attemptNumber}] Timeout triggered after ${elapsed}ms`);
               const timeoutMsg = currentIsLocalhost
                 ? (currentLanguage === 'en' 
                     ? 'Backend server is not responding. Please make sure the server is running on http://localhost:5000' 
@@ -134,28 +138,28 @@ const GlobalLoginButton: React.FC = () => {
           
           // If loginPromise resolves (even with undefined), login succeeded
           try {
-            console.log(`[Login Attempt ${currentAttempt}] Waiting for Promise.race...`);
+            console.log(`[Login Attempt ${attemptNumber}] Waiting for Promise.race...`);
             await Promise.race([loginPromise, timeoutPromise]);
             const elapsed = Date.now() - loginStartTime;
             // Clear timeout if login succeeded before timeout
             if (timeoutId) clearTimeout(timeoutId);
-            console.log(`[Login Attempt ${currentAttempt}] Login successful after ${elapsed}ms`);
+            console.log(`[Login Attempt ${attemptNumber}] Login successful after ${elapsed}ms`);
             loginSucceeded = true;
             break; // Success, exit retry loop
           } catch (raceError: any) {
             const elapsed = Date.now() - loginStartTime;
             // Clear timeout on error too
             if (timeoutId) clearTimeout(timeoutId);
-            console.error(`[Login Attempt ${currentAttempt}] Promise.race failed after ${elapsed}ms:`, raceError.message);
+            console.error(`[Login Attempt ${attemptNumber}] Promise.race failed after ${elapsed}ms:`, raceError.message);
             throw raceError;
           }
         } catch (error: any) {
-          console.error(`Login attempt ${currentAttempt} failed:`, error.message);
+          console.error(`Login attempt ${attemptNumber} failed:`, error.message);
           
           // If it's a timeout and we have retries left (and not localhost), wait and retry
-          if (!currentIsLocalhost && (error.code === 'ECONNABORTED' || error.message?.includes('timeout')) && currentAttempt <= maxRetries) {
-            const waitTime = currentAttempt * 2000; // Wait 2s, 4s before retries
-            console.log(`Waiting ${waitTime}ms before retry ${currentAttempt + 1}...`);
+          if (!currentIsLocalhost && (error.code === 'ECONNABORTED' || error.message?.includes('timeout')) && attemptNumber <= maxRetries) {
+            const waitTime = attemptNumber * 2000; // Wait 2s, 4s before retries
+            console.log(`Waiting ${waitTime}ms before retry ${attemptNumber + 1}...`);
             await new Promise(resolve => setTimeout(resolve, waitTime));
             continue; // Retry
           }
@@ -207,8 +211,32 @@ const GlobalLoginButton: React.FC = () => {
       const currentApiUrl = getApiUrl();
       const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
       
-      // Check for network/timeout errors first (these don't have a response)
-      if (!error.response) {
+      // Get status code from error (check both error.status and error.response.status)
+      const statusCode = error.status || error.response?.status;
+      
+      // Check for HTTP response errors FIRST (before network errors)
+      // This ensures 401, 500, etc. are handled correctly
+      if (statusCode) {
+        if (statusCode === 401) {
+          errorMessage = language === 'en' 
+            ? 'Invalid phone number or password. Please check your credentials.' 
+            : 'Lambarka telefoonka ama furaha sirta ma sax ah. Fadlan hubi macluumaadkaaga.';
+        } else if (statusCode === 500) {
+          errorMessage = language === 'en' 
+            ? 'Server error. Please try again later.' 
+            : 'Qaladka server. Fadlan mar kale isku day waqtimo kale.';
+        } else if (error.response?.data?.message) {
+          errorMessage = `Login failed: ${error.response.data.message}`;
+        } else if (error.response?.data?.errors) {
+          errorMessage = `Validation failed: ${JSON.stringify(error.response.data.errors)}`;
+        } else {
+          errorMessage = language === 'en' 
+            ? `Login failed. Status: ${statusCode}` 
+            : `Gelitaan way ku fashilantay. Xaalada: ${statusCode}`;
+        }
+      }
+      // Check for network/timeout errors (these don't have a response or status)
+      else if (!error.response && !statusCode) {
         if (error.code === 'ECONNABORTED' || error.message?.includes('timeout')) {
           // Different messages for localhost vs production
           if (isLocalhost) {
@@ -240,27 +268,7 @@ const GlobalLoginButton: React.FC = () => {
             : 'Qaladka isku xirka. Fadlan hubi xiriirkaaga internetka oo mar kale isku day.';
         }
       } 
-      // Check for HTTP response errors
-      else if (error.response) {
-        if (error.response.status === 401) {
-          errorMessage = language === 'en' 
-            ? 'Invalid phone number or password. Please check your credentials.' 
-            : 'Lambarka telefoonka ama furaha sirta ma sax ah. Fadlan hubi macluumaadkaaga.';
-        } else if (error.response.status === 500) {
-          errorMessage = language === 'en' 
-            ? 'Server error. Please try again later.' 
-            : 'Qaladka server. Fadlan mar kale isku day waqtimo kale.';
-        } else if (error.response.data?.message) {
-          errorMessage = `Login failed: ${error.response.data.message}`;
-        } else if (error.response.data?.errors) {
-          errorMessage = `Validation failed: ${JSON.stringify(error.response.data.errors)}`;
-        } else {
-          errorMessage = language === 'en' 
-            ? `Login failed. Status: ${error.response.status}` 
-            : `Gelitaan way ku fashilantay. Xaalada: ${error.response.status}`;
-        }
-      } 
-      // Fallback for any other error
+      // Fallback for any other error (no status code and no network error)
       else {
         errorMessage = language === 'en' 
           ? 'Login failed. Please check your credentials and try again.' 

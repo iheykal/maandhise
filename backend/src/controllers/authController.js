@@ -21,13 +21,63 @@ const generateTokens = (userId) => {
   return { accessToken, refreshToken };
 };
 
+// Normalize phone number - handles different formats
+const normalizePhone = (phone) => {
+  if (!phone) return null;
+  
+  // Remove all whitespace
+  let normalized = phone.trim().replace(/\s+/g, '');
+  
+  // Remove all non-digit characters except +
+  normalized = normalized.replace(/[^\d+]/g, '');
+  
+  // Handle different formats
+  if (normalized.startsWith('+252')) {
+    // Already has +252 prefix
+    return normalized;
+  } else if (normalized.startsWith('252')) {
+    // Has 252 but missing +
+    return '+' + normalized;
+  } else if (normalized.length === 9 && /^\d{9}$/.test(normalized)) {
+    // Just the 9 digits - prepend +252
+    return '+252' + normalized;
+  } else if (normalized.length === 12 && /^252\d{9}$/.test(normalized)) {
+    // Has 252 without + and 9 digits
+    return '+' + normalized;
+  }
+  
+  // Return as is if it doesn't match expected patterns
+  return normalized;
+};
+
 // Register new user
 const register = async (req, res) => {
   try {
     const { fullName, phone, password, role = 'customer', idNumber } = req.body;
 
-    // Check if user already exists
-    const existingUser = await User.findByPhone(phone);
+    // Normalize phone number
+    const normalizedPhone = normalizePhone(phone);
+    
+    if (!normalizedPhone) {
+      return res.status(400).json({
+        success: false,
+        message: 'Please provide a valid phone number'
+      });
+    }
+
+    // Check if user already exists (try multiple formats)
+    let existingUser = await User.findByPhone(normalizedPhone);
+    
+    // Try alternative formats if not found
+    if (!existingUser) {
+      const phoneWithoutPlus = normalizedPhone.replace(/^\+/, '');
+      existingUser = await User.findOne({ phone: phoneWithoutPlus });
+    }
+    
+    if (!existingUser && normalizedPhone.startsWith('+252')) {
+      const localPhone = normalizedPhone.slice(4);
+      existingUser = await User.findOne({ phone: localPhone });
+    }
     if (existingUser) {
       return res.status(400).json({
         success: false,
@@ -52,7 +102,7 @@ const register = async (req, res) => {
     
     const user = new User({
       fullName,
-      phone,
+      phone: normalizedPhone, // Use normalized phone number
       password,
       role,
       canLogin
@@ -124,18 +174,77 @@ const login = async (req, res) => {
   try {
     const { phone, password } = req.body;
 
-    // Find user and include password for comparison
-    const user = await User.findOne({ phone }).select('+password');
+    if (!phone || !password) {
+      return res.status(400).json({
+        success: false,
+        message: 'Phone number and password are required'
+      });
+    }
+
+    // Normalize phone number
+    const normalizedPhone = normalizePhone(phone);
+    
+    console.log('[LOGIN] Attempt received:', {
+      originalPhone: phone ? phone.replace(/(\+252)(\d{6})(\d{3})/, '$1******$3') : 'missing',
+      normalizedPhone: normalizedPhone ? normalizedPhone.replace(/(\+252)(\d{6})(\d{3})/, '$1******$3') : 'missing',
+      hasPassword: !!password,
+      passwordLength: password ? password.length : 0,
+      timestamp: new Date().toISOString()
+    });
+
+    // Try to find user with normalized phone number
+    let user = await User.findOne({ phone: normalizedPhone }).select('+password');
+    
+    // If not found, try alternative formats
+    if (!user && normalizedPhone) {
+      // Try without + prefix
+      const phoneWithoutPlus = normalizedPhone.replace(/^\+/, '');
+      user = await User.findOne({ phone: phoneWithoutPlus }).select('+password');
+      
+      // Try with just the last 9 digits (local format)
+      if (!user && normalizedPhone.startsWith('+252')) {
+        const localPhone = normalizedPhone.slice(4); // Remove +252
+        user = await User.findOne({ phone: localPhone }).select('+password');
+      }
+      
+      // Try with 252 prefix (without +)
+      if (!user && normalizedPhone.startsWith('+252')) {
+        const phoneWith252 = normalizedPhone.slice(1); // Remove +
+        user = await User.findOne({ phone: phoneWith252 }).select('+password');
+      }
+    }
     
     if (!user) {
+      console.log('[LOGIN] User not found for phone:', normalizedPhone ? normalizedPhone.replace(/(\+252)(\d{6})(\d{3})/, '$1******$3') : 'missing');
+      // Try to find users with similar phone numbers for debugging
+      const lastDigits = normalizedPhone ? normalizedPhone.slice(-4) : '';
+      if (lastDigits) {
+        const similarUsers = await User.find({ phone: { $regex: lastDigits } }).select('phone role').limit(5);
+        if (similarUsers.length > 0) {
+          console.log('[LOGIN] Found similar phone numbers in DB:', similarUsers.map(u => ({
+            phone: u.phone.replace(/(\+252)(\d{6})(\d{3})/, '$1******$3'),
+            role: u.role,
+            exactMatch: u.phone === normalizedPhone
+          })));
+        }
+      }
       return res.status(401).json({
         success: false,
         message: 'Invalid phone number or password'
       });
     }
 
+    console.log('[LOGIN] User found:', {
+      userId: user._id,
+      fullName: user.fullName,
+      role: user.role,
+      canLogin: user.canLogin,
+      phone: user.phone.replace(/(\+252)(\d{6})(\d{3})/, '$1******$3')
+    });
+
     // Check if user can login
     if (!user.canLogin) {
+      console.log('[LOGIN] Login disabled for user:', user._id);
       return res.status(403).json({
         success: false,
         message: 'Login is disabled for this account. Please contact an administrator.'
@@ -145,11 +254,14 @@ const login = async (req, res) => {
     // Verify password
     const isPasswordValid = await user.comparePassword(password);
     if (!isPasswordValid) {
+      console.log('[LOGIN] Password mismatch for user:', user._id);
       return res.status(401).json({
         success: false,
         message: 'Invalid phone number or password'
       });
     }
+
+    console.log('[LOGIN] Password verified successfully for user:', user._id);
 
     // Update last login
     await user.updateLastLogin();
@@ -159,6 +271,8 @@ const login = async (req, res) => {
 
     // Save refresh token
     await user.addRefreshToken(refreshToken);
+
+    console.log('[LOGIN] Login successful for user:', user._id);
 
     res.json({
       success: true,
@@ -404,7 +518,29 @@ const forgotPassword = async (req, res) => {
   try {
     const { phone } = req.body;
 
-    const user = await User.findOne({ phone });
+    // Normalize phone number
+    const normalizedPhone = normalizePhone(phone);
+    
+    if (!normalizedPhone) {
+      return res.json({
+        success: true,
+        message: 'If the phone number exists, a password reset link has been sent.'
+      });
+    }
+
+    // Try to find user with normalized phone number
+    let user = await User.findOne({ phone: normalizedPhone });
+    
+    // Try alternative formats if not found
+    if (!user) {
+      const phoneWithoutPlus = normalizedPhone.replace(/^\+/, '');
+      user = await User.findOne({ phone: phoneWithoutPlus });
+    }
+    
+    if (!user && normalizedPhone.startsWith('+252')) {
+      const localPhone = normalizedPhone.slice(4);
+      user = await User.findOne({ phone: localPhone });
+    }
     if (!user) {
       // Don't reveal if phone exists or not
       return res.json({
@@ -497,8 +633,30 @@ const createUser = async (req, res) => {
   try {
     const { fullName, phone, role = 'customer', idNumber, profilePicUrl, idCardImageUrl, registrationDate, amount } = req.body;
 
-    // Check if user already exists with same phone
-    const existingUser = await User.findByPhone(phone);
+    // Normalize phone number
+    const normalizedPhone = normalizePhone(phone);
+    
+    if (!normalizedPhone) {
+      return res.status(400).json({
+        success: false,
+        message: 'Please provide a valid phone number'
+      });
+    }
+
+    // Check if user already exists with same phone (try multiple formats)
+    let existingUser = await User.findByPhone(normalizedPhone);
+    
+    // Try alternative formats if not found
+    if (!existingUser) {
+      const phoneWithoutPlus = normalizedPhone.replace(/^\+/, '');
+      existingUser = await User.findOne({ phone: phoneWithoutPlus });
+    }
+    
+    if (!existingUser && normalizedPhone.startsWith('+252')) {
+      const localPhone = normalizedPhone.slice(4);
+      existingUser = await User.findOne({ phone: localPhone });
+    }
+    
     if (existingUser) {
       return res.status(400).json({
         success: false,
@@ -534,7 +692,7 @@ const createUser = async (req, res) => {
 
     const user = new User({
       fullName,
-      phone,
+      phone: normalizedPhone, // Use normalized phone number
       password: defaultPassword,
       role,
       idNumber,

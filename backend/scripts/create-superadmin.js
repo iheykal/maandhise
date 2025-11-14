@@ -27,42 +27,64 @@ const createSuperadmin = async () => {
     await mongoose.connect(process.env.MONGODB_URI, options);
     console.log('✅ Connected to MongoDB Atlas');
 
-    // Check if superadmin already exists
-    const existingSuperadmin = await User.findOne({ 
-      $or: [
-        { phone: '+252613273911' },
-        { role: 'superadmin' }
-      ]
-    });
+    // Normalize phone number - user can login with 613273911, but we store as +252613273911
+    const phoneNumber = '+252613273911';
+    const loginPhone = '613273911'; // User can login with this
+    
+    // Check if superadmin already exists (try multiple phone formats)
+    let existingSuperadmin = await User.findOne({ phone: phoneNumber });
+    
+    // Try alternative formats
+    if (!existingSuperadmin) {
+      existingSuperadmin = await User.findOne({ phone: '252613273911' });
+    }
+    if (!existingSuperadmin) {
+      existingSuperadmin = await User.findOne({ phone: loginPhone });
+    }
+    // Also check by role if no phone match
+    if (!existingSuperadmin) {
+      existingSuperadmin = await User.findOne({ role: 'superadmin' });
+    }
 
     if (existingSuperadmin) {
       console.log('⚠️  Superadmin already exists:');
       console.log(`   Phone: ${existingSuperadmin.phone}`);
       console.log(`   Role: ${existingSuperadmin.role}`);
       console.log(`   Name: ${existingSuperadmin.fullName}`);
+      console.log(`   Can Login: ${existingSuperadmin.canLogin ? 'Yes' : 'No'}`);
       
-      // Update password and role
+      // Update password, role, and ensure login is enabled
       console.log('\n🔄 Updating superadmin information...');
-      existingSuperadmin.fullName = 'Abdullahi Abdi Elmi';
-      existingSuperadmin.phone = '+252613273911';
-      existingSuperadmin.idNumber = '001';
-      existingSuperadmin.location = 'Mogadishu';
+      existingSuperadmin.fullName = existingSuperadmin.fullName || 'Super Admin';
+      existingSuperadmin.phone = phoneNumber; // Normalize to +252 format
+      // Only set idNumber if it doesn't exist or is empty
+      if (!existingSuperadmin.idNumber) {
+        // Check if '001' is available
+        const idNumberExists = await User.findOne({ idNumber: '001', _id: { $ne: existingSuperadmin._id } });
+        existingSuperadmin.idNumber = idNumberExists ? null : '001';
+      }
+      existingSuperadmin.location = existingSuperadmin.location || 'Mogadishu';
       existingSuperadmin.password = 'maandhise11';
       existingSuperadmin.role = 'superadmin';
-      existingSuperadmin.isVerified = true;
+      existingSuperadmin.canLogin = true; // Ensure login is enabled
       await existingSuperadmin.save();
       console.log('✅ Superadmin information updated successfully');
     } else {
       // Create new superadmin
       console.log('🔄 Creating superadmin user...');
       
+      // Check if idNumber '001' is available
+      const idNumberExists = await User.findOne({ idNumber: '001' });
+      const idNumberToUse = idNumberExists ? null : '001'; // Use null if '001' is taken
+      
       const superadmin = new User({
-        fullName: 'Abdullahi Abdi Elmi',
-        phone: '+252613273911',
-        idNumber: '001',
+        fullName: 'Super Admin',
+        phone: phoneNumber, // Store as +252613273911
+        idNumber: idNumberToUse, // Use null if '001' is taken
         location: 'Mogadishu',
         password: 'maandhise11',
-        role: 'superadmin'
+        role: 'superadmin',
+        canLogin: true // Enable login
       });
 
       await superadmin.save();
@@ -70,21 +92,40 @@ const createSuperadmin = async () => {
     }
 
     // Display superadmin details
-    const superadmin = await User.findOne({ phone: '+252613273911' });
+    let superadmin = await User.findOne({ phone: phoneNumber }).select('+password');
+    if (!superadmin) {
+      // Try to find by alternative format
+      superadmin = await User.findOne({ phone: '252613273911' }).select('+password');
+    }
+    if (!superadmin) {
+      superadmin = await User.findOne({ phone: loginPhone }).select('+password');
+    }
+    
+    if (!superadmin) {
+      console.log('❌ Could not find superadmin after creation/update');
+      await mongoose.connection.close();
+      process.exit(1);
+    }
+
     console.log('\n📋 Superadmin Details:');
     console.log(`   Name: ${superadmin.fullName}`);
-    console.log(`   Phone: ${superadmin.phone}`);
-    console.log(`   ID Number: ${superadmin.idNumber}`);
-    console.log(`   Location: ${superadmin.location}`);
+    console.log(`   Phone (stored): ${superadmin.phone}`);
+    console.log(`   ID Number: ${superadmin.idNumber || 'N/A'}`);
+    console.log(`   Location: ${superadmin.location || 'N/A'}`);
     console.log(`   Role: ${superadmin.role}`);
+    console.log(`   Can Login: ${superadmin.canLogin ? '✅ Yes' : '❌ No'}`);
     console.log(`   Created: ${superadmin.createdAt}`);
+
+    // Test password
+    console.log('\n🔐 Testing password...');
+    const isPasswordValid = await superadmin.comparePassword('maandhise11');
+    console.log(`   Password Test: ${isPasswordValid ? '✅ Valid' : '❌ Invalid'}`);
 
     console.log('\n🎉 Superadmin setup completed successfully!');
     console.log('\n🔐 Login Credentials:');
-    console.log('   Phone: +252613273911');
+    console.log('   Phone: 613273911 (or +252613273911)');
     console.log('   Password: maandhise11');
-    console.log('\n📧 Contact Information:');
-    console.log('   Email: Maandhisecorporate@gmail.com');
+    console.log('\n💡 Note: You can login with phone "613273911" - the system will automatically add +252 prefix');
 
   } catch (error) {
     console.error('\n❌ Error creating superadmin:');

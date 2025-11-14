@@ -950,9 +950,9 @@ const DashboardPage: React.FC = () => {
                       <div className={`absolute top-4 right-4 px-3 py-1.5 rounded-full text-xs font-bold ${badgeClass} z-10`}>
                         {info.isValid ? (
                           <div className="flex items-center gap-1">
-                            {/* Animated Checkmark - Continuous Loop */}
+                            {/* Animated Checkmark - Simple and Stable */}
                             <motion.svg
-                              className="w-3 h-3"
+                              className="w-3 h-3 flex-shrink-0"
                               viewBox="0 0 24 24"
                               fill="none"
                               stroke="currentColor"
@@ -960,22 +960,16 @@ const DashboardPage: React.FC = () => {
                               strokeLinecap="round"
                               strokeLinejoin="round"
                             >
-                                <motion.path
-                                  d="M20 6L9 17l-5-5"
-                                  initial={{ pathLength: 0 }}
-                                  animate={{ 
-                                    pathLength: [0, 1, 1, 0],
-                                    opacity: [0, 1, 1, 0]
-                                  }}
-                                  transition={{ 
-                                    duration: 10, // Total cycle: 1.2s draw + 8s stay + 0.8s fade
-                                    delay: 0.5,
-                                    repeat: Infinity,
-                                    repeatType: "loop",
-                                    ease: "easeInOut",
-                                    times: [0, 0.12, 0.92, 1] // 0-12% draw, 12-92% stay, 92-100% fade
-                                  }}
-                                />
+                              <motion.path
+                                d="M20 6L9 17l-5-5"
+                                initial={{ pathLength: 0 }}
+                                animate={{ pathLength: 1 }}
+                                transition={{ 
+                                  duration: 0.6,
+                                  delay: 0.1,
+                                  ease: "easeOut"
+                                }}
+                              />
                             </motion.svg>
                             {/* Typewriter Animation for VALID */}
                             <motion.span

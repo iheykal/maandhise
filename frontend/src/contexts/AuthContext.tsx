@@ -417,10 +417,48 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       console.error('[AuthContext.login] Error caught:', {
         message: error.message,
         code: error.code,
-        status: error.response?.status,
+        status: error.status || error.response?.status,
         responseData: error.response?.data,
       });
-      const errorMessage = error.response?.data?.message || error.message || 'Login failed';
+      
+      // Get status code from error (check both error.status and error.response.status)
+      const statusCode = error.status || error.response?.status;
+      
+      // Get language from localStorage (default to 'en')
+      const currentLanguage = (typeof window !== 'undefined' ? localStorage.getItem('language') : null) || 'en';
+      
+      // Determine user-friendly error message
+      let errorMessage = '';
+      
+      if (statusCode === 401) {
+        errorMessage = error.response?.data?.message || 
+          (currentLanguage === 'en' 
+            ? 'Invalid phone number or password. Please check your credentials.' 
+            : 'Lambarka telefoonka ama furaha sirta ma sax ah. Fadlan hubi macluumaadkaaga.');
+      } else if (statusCode === 500) {
+        errorMessage = error.response?.data?.message || 
+          (currentLanguage === 'en' 
+            ? 'Server error. Please try again later.' 
+            : 'Qaladka server. Fadlan mar kale isku day waqtimo kale.');
+      } else if (error.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } else if (error.response?.data?.errors) {
+        errorMessage = `Validation failed: ${JSON.stringify(error.response.data.errors)}`;
+      } else if (error.code === 'ECONNABORTED' || error.message?.includes('timeout')) {
+        errorMessage = currentLanguage === 'en' 
+          ? 'Request timed out. Please try again.' 
+          : 'Waqtiga ayaa dhamaaday. Fadlan mar kale isku day.';
+      } else if (error.code === 'ERR_NETWORK' || error.message?.includes('Network Error')) {
+        errorMessage = currentLanguage === 'en' 
+          ? 'Network error. Please check your internet connection and try again.' 
+          : 'Qaladka xidhiidhka. Fadlan hubi xiriirkaaga internetka oo mar kale isku day.';
+      } else {
+        errorMessage = error.message || 
+          (currentLanguage === 'en' 
+            ? 'Login failed. Please check your credentials and try again.' 
+            : 'Gelitaan way ku fashilantay. Fadlan hubi macluumaadkaaga oo mar kale isku day.');
+      }
+      
       dispatch({ type: 'AUTH_FAILURE', payload: errorMessage });
       toast.error(errorMessage);
       throw error;

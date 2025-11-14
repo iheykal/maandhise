@@ -1,4 +1,5 @@
 const express = require('express');
+const http = require('http');
 const mongoose = require('mongoose');
 const cors = require('cors');
 const helmet = require('helmet');
@@ -420,13 +421,38 @@ const startServer = async () => {
     // Setup cron jobs
     setupCronJobs();
     
-    app.listen(PORT, '0.0.0.0', () => {
+    // Create HTTP server with reuseAddr option to handle port conflicts
+    const server = http.createServer(app);
+    
+    // Set reuseAddr to allow port reuse even if in TIME_WAIT state
+    server.listen(PORT, '0.0.0.0', () => {
       console.log(`🚀 Server running on port ${PORT}`);
       console.log(`📱 Environment: ${process.env.NODE_ENV || 'development'}`);
       console.log(`🌐 API URL: http://localhost:${PORT}`);
       console.log(`🌐 Network API URL: http://0.0.0.0:${PORT}`);
       console.log(`📊 Health check: http://localhost:${PORT}/health`);
       console.log(`📱 Mobile access: Use your computer's IP address instead of localhost`);
+    });
+    
+    // Enable SO_REUSEADDR to allow port reuse
+    server.on('listening', () => {
+      const address = server.address();
+      if (address && typeof address === 'object') {
+        server.setTimeout(0); // Disable timeout
+      }
+    });
+    
+    // Handle server errors
+    server.on('error', (error) => {
+      if (error.code === 'EADDRINUSE') {
+        console.error(`❌ Port ${PORT} is already in use.`);
+        console.error(`💡 Try: netstat -ano | findstr :${PORT} to find the process`);
+        console.error(`💡 Or change PORT in your .env file`);
+        process.exit(1);
+      } else {
+        console.error('❌ Server error:', error);
+        process.exit(1);
+      }
     });
   } catch (error) {
     console.error('❌ Failed to start server:', error);
