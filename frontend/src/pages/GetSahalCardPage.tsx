@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { Helmet } from 'react-helmet-async';
 import { ArrowLeft, CreditCard, Search, XCircle, Phone, Calendar, User, Trash2, X, Building2 } from 'lucide-react';
@@ -25,8 +25,77 @@ const GetSahalCardPage: React.FC = () => {
 
   // Companies state - load from database
   const [companies, setCompanies] = useState<any[]>([]);
+  const [allCompanies, setAllCompanies] = useState<any[]>([]); // Store all companies for client-side filtering
   const [companiesLoading, setCompaniesLoading] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  const [businessSearchQuery, setBusinessSearchQuery] = useState<string>('');
+  const [showNewlyAdded, setShowNewlyAdded] = useState<boolean>(false);
+
+  // Fuzzy search helper - calculates similarity between two strings
+  const calculateSimilarity = useCallback((str1: string, str2: string): number => {
+    const s1 = str1.toLowerCase();
+    const s2 = str2.toLowerCase();
+    
+    // Exact match
+    if (s1 === s2) return 1.0;
+    
+    // Contains match (high score)
+    if (s2.includes(s1) || s1.includes(s2)) return 0.9;
+    
+    // Calculate simple similarity based on common characters
+    let matches = 0;
+    const minLength = Math.min(s1.length, s2.length);
+    const maxLength = Math.max(s1.length, s2.length);
+    
+    // Check character matches (allowing for some position flexibility)
+    for (let i = 0; i < s1.length; i++) {
+      if (s2.includes(s1[i])) {
+        matches++;
+      }
+    }
+    
+    // Check for substring matches (handles typos like missing/extra characters)
+    let substringMatches = 0;
+    for (let i = 0; i <= s1.length - 3; i++) {
+      const substring = s1.substring(i, i + 3);
+      if (s2.includes(substring)) {
+        substringMatches++;
+      }
+    }
+    
+    // Calculate similarity score
+    const charScore = matches / maxLength;
+    const substringScore = substringMatches / Math.max(1, s1.length - 2);
+    const lengthScore = minLength / maxLength;
+    
+    return (charScore * 0.4 + substringScore * 0.4 + lengthScore * 0.2);
+  }, []);
+
+  // Check if company matches search query (with fuzzy matching)
+  const matchesSearch = useCallback((company: any, query: string): boolean => {
+    if (!query.trim()) return true;
+    
+    const searchTerm = query.toLowerCase().trim();
+    const businessName = (company.businessName || '').toLowerCase();
+    const description = (company.description || '').toLowerCase();
+    const address = (company.branches?.[0]?.address || '').toLowerCase();
+    
+    // Exact or contains match (highest priority)
+    if (businessName.includes(searchTerm) || 
+        description.includes(searchTerm) || 
+        address.includes(searchTerm)) {
+      return true;
+    }
+    
+    // Fuzzy matching - check similarity
+    const nameSimilarity = calculateSimilarity(searchTerm, businessName);
+    const descSimilarity = calculateSimilarity(searchTerm, description);
+    const addressSimilarity = calculateSimilarity(searchTerm, address);
+    
+    // Accept if similarity is above 0.5 (50% match) - allows for typos
+    const threshold = 0.5;
+    return nameSimilarity >= threshold || descSimilarity >= threshold || addressSimilarity >= threshold;
+  }, [calculateSimilarity]);
 
   // Load companies from database
   useEffect(() => {
@@ -34,21 +103,44 @@ const GetSahalCardPage: React.FC = () => {
       setCompaniesLoading(true);
       try {
         console.log('[GetSahalCardPage] Loading companies...', { category: selectedCategory });
-        const params: any = { limit: 100 };
+        const params: any = { limit: 200 }; // Load more to allow client-side fuzzy filtering
         if (selectedCategory !== 'all') {
           params.businessType = selectedCategory;
         }
+        // Don't send search to API - we'll do fuzzy matching client-side
         const response = await companyService.getPublicCompanies(params);
         console.log('[GetSahalCardPage] Response:', response);
         console.log('[GetSahalCardPage] Companies count:', response.companies?.length || 0);
         console.log('[GetSahalCardPage] Companies data:', response.companies);
-        setCompanies(response.companies || []);
+        const loadedCompanies = response.companies || [];
+        setAllCompanies(loadedCompanies);
+        
+        // Apply client-side filtering (fuzzy search + newly added)
+        let filtered = loadedCompanies;
+        
+        // Apply fuzzy search filter
+        if (businessSearchQuery.trim()) {
+          filtered = filtered.filter((company: any) => matchesSearch(company, businessSearchQuery));
+        }
+        
+        // Apply newly added filter
+        if (showNewlyAdded) {
+          const sevenDaysAgo = new Date();
+          sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+          filtered = filtered.filter((company: any) => {
+            const createdAt = new Date(company.createdAt);
+            return createdAt >= sevenDaysAgo;
+          });
+        }
+        
+        setCompanies(filtered);
       } catch (error: any) {
         console.error('[GetSahalCardPage] Failed to load companies:', error);
         console.error('[GetSahalCardPage] Error response:', error.response?.data);
         console.error('[GetSahalCardPage] Error message:', error.message);
         // If loading fails, companies array will remain empty
         setCompanies([]);
+        setAllCompanies([]);
       } finally {
         setCompaniesLoading(false);
       }
@@ -56,6 +148,28 @@ const GetSahalCardPage: React.FC = () => {
 
     loadCompanies();
   }, [selectedCategory]);
+
+  // Apply client-side filtering when search query or newly added filter changes
+  useEffect(() => {
+    let filtered = [...allCompanies];
+    
+    // Apply fuzzy search filter
+    if (businessSearchQuery.trim()) {
+      filtered = filtered.filter((company: any) => matchesSearch(company, businessSearchQuery));
+    }
+    
+    // Apply newly added filter
+    if (showNewlyAdded) {
+      const sevenDaysAgo = new Date();
+      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+      filtered = filtered.filter((company: any) => {
+        const createdAt = new Date(company.createdAt);
+        return createdAt >= sevenDaysAgo;
+      });
+    }
+    
+    setCompanies(filtered);
+  }, [showNewlyAdded, allCompanies, businessSearchQuery, matchesSearch]);
 
   // Get card colors based on business type
   const getCardColors = (businessType: string) => {
@@ -757,6 +871,43 @@ const GetSahalCardPage: React.FC = () => {
                 : 'Arag faa\'iidooyinka cajiibka ah ee aad ka heli kartid Kaarkaaga Sahal'
               }
             </p>
+          </div>
+
+          {/* Search Box and Newly Added Filter */}
+          <div className="mb-6 space-y-4">
+            <div className="max-w-md mx-auto">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                <input
+                  type="text"
+                  value={businessSearchQuery}
+                  onChange={(e) => setBusinessSearchQuery(e.target.value)}
+                  placeholder={language === 'en' ? 'Search businesses...' : 'Raadi ganacsiga...'}
+                  className="w-full pl-10 pr-10 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all duration-200 bg-white shadow-sm text-sm"
+                />
+                {businessSearchQuery && (
+                  <button
+                    onClick={() => setBusinessSearchQuery('')}
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                )}
+              </div>
+            </div>
+            {/* Newly Added Filter Toggle */}
+            <div className="flex justify-center">
+              <button
+                onClick={() => setShowNewlyAdded(!showNewlyAdded)}
+                className={`px-4 py-2 rounded-lg font-medium transition-all duration-200 text-sm ${
+                  showNewlyAdded
+                    ? 'bg-blue-500 text-white shadow-lg'
+                    : 'bg-white text-gray-700 hover:bg-gray-100 shadow border border-gray-300'
+                }`}
+              >
+                {language === 'en' ? '✨ Newly Added (Last 7 Days)' : '✨ Cusub (7 Maalmood ee Ugu Dambeeyay)'}
+              </button>
+            </div>
           </div>
 
           {/* Category Filter */}

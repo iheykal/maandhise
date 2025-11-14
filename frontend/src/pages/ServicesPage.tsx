@@ -102,23 +102,6 @@ const ServicesPage: React.FC = () => {
               </motion.div>
             ))}
           </div>
-
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8 }}
-            viewport={{ once: true }}
-            className="text-center"
-          >
-            <div className="glass-card p-8 max-w-4xl mx-auto">
-              <h3 className="text-2xl md:text-3xl font-bold gradient-text mb-4">
-                {language === 'en' 
-                  ? 'SAHAL CARD — Education, Consulting, and Savings for All.'
-                  : 'SAHAL CARD — Waxbarasho, La Taliye, iyo Keydin Dhammaan Dadka.'
-                }
-              </h3>
-            </div>
-          </motion.div>
         </div>
       </div>
     </>

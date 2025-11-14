@@ -42,7 +42,7 @@ Each page now has unique, optimized meta tags:
 
 #### Contact Page
 - **Title**: "Contact SAHAL CARD - Get in Touch | Mogadishu, Somalia"
-- **Description**: "Contact SAHAL CARD for Sahal Card orders, business inquiries, or support. Phone: +252 613 273 911, Email: Maandhisecorporate@gmail.com"
+- **Description**: "Contact SAHAL CARD for Sahal Card orders, business inquiries, or support. Phone: +252 613 273 911, Email: info@sahalcard.com"
 
 #### Get Sahal Card Page
 - **Title**: "Get Your Sahal Card - Order Now | SAHAL CARD"

@@ -289,24 +289,6 @@ const AboutPage: React.FC = () => {
       {/* Why Choose Maandhise Section */}
       <section className="py-20 bg-white/30">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8 }}
-            viewport={{ once: true }}
-            className="text-center mb-16"
-          >
-            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
-              {language === 'en' ? 'Why Choose SAHAL CARD' : 'Maxaad Dooranaysaa SAHAL CARD'}
-            </h2>
-            <p className="text-xl text-gray-600 max-w-4xl mx-auto leading-relaxed">
-              {language === 'en' 
-                ? 'SAHAL CARD is a leading Somali organization dedicated to innovation, business growth, and sustainable development. We focus on empowering entrepreneurs, creating jobs, and driving marketing excellence across all sectors.'
-                : 'SAHAL CARD waa urur Soomaali ah oo hore u socda oo u go\'an cusboonaysi, koritaanka ganacsiga, iyo horumarinta joogtada ah. Waxaan diirada saarnay awoodsiinta ganacsatada, abuurista shaqooyinka, iyo horumarinta heerka suuqgeynta dhammaan qaybaha.'
-              }
-            </p>
-          </motion.div>
-
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-12">
             {[
               {

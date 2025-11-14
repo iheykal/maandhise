@@ -18,8 +18,8 @@ const ContactPage: React.FC = () => {
     {
       icon: Mail,
       title: language === 'en' ? 'Email' : 'Email',
-      value: 'Maandhisecorporate@gmail.com',
-      link: 'mailto:Maandhisecorporate@gmail.com',
+      value: 'info@sahalcard.com',
+      link: 'mailto:info@sahalcard.com',
       description: language === 'en' ? 'Send us an email' : 'Noo dir email'
     },
     {
@@ -35,7 +35,7 @@ const ContactPage: React.FC = () => {
     <>
       <Helmet>
         <title>Contact SAHAL CARD - Get in Touch | Mogadishu, Somalia</title>
-        <meta name="description" content="Contact SAHAL CARD for Sahal Card orders, business inquiries, or support. Phone: +252 613 273 911, Email: Maandhisecorporate@gmail.com" />
+        <meta name="description" content="Contact SAHAL CARD for Sahal Card orders, business inquiries, or support. Phone: +252 613 273 911, Email: info@sahalcard.com" />
         <meta name="keywords" content="contact maandhise, somalia business contact, mogadishu office, sahacard support, business inquiries" />
         <meta name="author" content="SAHAL CARD" />
         
@@ -43,7 +43,7 @@ const ContactPage: React.FC = () => {
         <meta property="og:type" content="website" />
         <meta property="og:url" content="https://maandhise.com/contact" />
         <meta property="og:title" content="Contact SAHAL CARD - Get in Touch" />
-        <meta property="og:description" content="Contact SAHAL CARD for Sahal Card orders, business inquiries, or support. Phone: +252 613 273 911, Email: Maandhisecorporate@gmail.com" />
+        <meta property="og:description" content="Contact SAHAL CARD for Sahal Card orders, business inquiries, or support. Phone: +252 613 273 911, Email: info@sahalcard.com" />
         <meta property="og:image" content="https://maandhise.com/og-contact.png" />
         <meta property="og:site_name" content="SAHAL CARD" />
         
@@ -51,7 +51,7 @@ const ContactPage: React.FC = () => {
         <meta property="twitter:card" content="summary_large_image" />
         <meta property="twitter:url" content="https://maandhise.com/contact" />
         <meta property="twitter:title" content="Contact SAHAL CARD - Get in Touch" />
-        <meta property="twitter:description" content="Contact SAHAL CARD for Sahal Card orders, business inquiries, or support. Phone: +252 613 273 911, Email: Maandhisecorporate@gmail.com" />
+        <meta property="twitter:description" content="Contact SAHAL CARD for Sahal Card orders, business inquiries, or support. Phone: +252 613 273 911, Email: info@sahalcard.com" />
         <meta property="twitter:image" content="https://maandhise.com/og-contact.png" />
         
         {/* Canonical URL */}
