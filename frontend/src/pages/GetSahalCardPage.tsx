@@ -125,11 +125,11 @@ const GetSahalCardPage: React.FC = () => {
         
         // Apply newly added filter
         if (showNewlyAdded) {
-          const sevenDaysAgo = new Date();
-          sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+          const fifteenDaysAgo = new Date();
+          fifteenDaysAgo.setDate(fifteenDaysAgo.getDate() - 15);
           filtered = filtered.filter((company: any) => {
             const createdAt = new Date(company.createdAt);
-            return createdAt >= sevenDaysAgo;
+            return createdAt >= fifteenDaysAgo;
           });
         }
         
@@ -160,11 +160,11 @@ const GetSahalCardPage: React.FC = () => {
     
     // Apply newly added filter
     if (showNewlyAdded) {
-      const sevenDaysAgo = new Date();
-      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+      const fifteenDaysAgo = new Date();
+      fifteenDaysAgo.setDate(fifteenDaysAgo.getDate() - 15);
       filtered = filtered.filter((company: any) => {
         const createdAt = new Date(company.createdAt);
-        return createdAt >= sevenDaysAgo;
+        return createdAt >= fifteenDaysAgo;
       });
     }
     
@@ -905,7 +905,7 @@ const GetSahalCardPage: React.FC = () => {
                     : 'bg-white text-gray-700 hover:bg-gray-100 shadow border border-gray-300'
                 }`}
               >
-                {language === 'en' ? '✨ Newly Added (Last 7 Days)' : '✨ Cusub (7 Maalmood ee Ugu Dambeeyay)'}
+                {language === 'en' ? '✨ Newly Added (Last 15 Days)' : '✨ Cusub (15 Maalmood ee Ugu Dambeeyay)'}
               </button>
             </div>
           </div>
