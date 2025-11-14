@@ -61,7 +61,7 @@ const companySchema = new mongoose.Schema({
     enum: [
       'pharmacy', 'supermarket', 'restaurant', 'clothing', 'electronics',
       'beauty', 'healthcare', 'automotive', 'education', 'services', 
-      'telecommunication', 'other'
+      'telecommunication', 'travelagency', 'other'
     ]
   },
   description: {

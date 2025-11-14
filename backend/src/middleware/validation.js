@@ -122,7 +122,8 @@ const validateCompanyRegistration = [
   body('businessType')
     .isIn([
       'pharmacy', 'supermarket', 'restaurant', 'clothing', 'electronics',
-      'beauty', 'healthcare', 'automotive', 'education', 'services', 'other'
+      'beauty', 'healthcare', 'automotive', 'education', 'services', 
+      'telecommunication', 'travelagency', 'other'
     ])
     .withMessage('Invalid business type'),
   

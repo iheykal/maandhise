@@ -185,6 +185,7 @@ const GetSahalCardPage: React.FC = () => {
       education: { from: 'from-cyan-500', to: 'to-cyan-600' },
       services: { from: 'from-amber-500', to: 'to-amber-600' },
       telecommunication: { from: 'from-violet-500', to: 'to-violet-600' },
+      travelagency: { from: 'from-emerald-500', to: 'to-emerald-600' },
       other: { from: 'from-gray-500', to: 'to-gray-600' }
     };
     
@@ -1002,6 +1003,16 @@ const GetSahalCardPage: React.FC = () => {
                 }`}
               >
                 {language === 'en' ? 'Telecommunication' : 'Isgaadhsiinta'}
+              </button>
+              <button
+                onClick={() => setSelectedCategory('travelagency')}
+                className={`px-4 py-2 rounded-lg font-medium transition-all duration-200 ${
+                  selectedCategory === 'travelagency'
+                    ? 'bg-emerald-500 text-white shadow-lg scale-105'
+                    : 'bg-white text-gray-700 hover:bg-gray-100 shadow'
+                }`}
+              >
+                {language === 'en' ? 'Travel Agency' : 'Wakaalada Safarka'}
               </button>
               <button
                 onClick={() => setSelectedCategory('other')}
