@@ -9,6 +9,10 @@ const rateLimit = require('express-rate-limit');
 const cron = require('node-cron');
 require('dotenv').config();
 
+console.log('📦 Server module loading...');
+console.log('📋 Node version:', process.version);
+console.log('📋 NODE_ENV:', process.env.NODE_ENV || 'not set');
+
 // Import routes
 const authRoutes = require('./routes/auth');
 const sahacardRoutes = require('./routes/sahalCard');
@@ -365,7 +369,10 @@ const connectDB = async () => {
     console.log('   3. Ensure your database user has proper permissions');
     console.log('   4. Verify your cluster is running and accessible');
     
-    process.exit(1);
+    // Don't exit - let server start without database (for graceful degradation)
+    // The server will still start but database operations will fail
+    console.log('⚠️  Server will start without database connection. Database operations will fail.');
+    throw error; // Re-throw to be handled by startServer
   }
 };
 
@@ -417,11 +424,28 @@ const setupCronJobs = () => {
 };
 
 const startServer = async () => {
+  console.log('🚀 Starting server...');
+  console.log(`📋 Environment: ${process.env.NODE_ENV || 'development'}`);
+  console.log(`🔌 Port: ${PORT}`);
+  console.log(`🌐 MongoDB URI configured: ${process.env.MONGODB_URI ? 'Yes' : 'No'}`);
+  
   try {
-    await connectDB();
+    // Try to connect to database, but don't fail if it doesn't work
+    try {
+      await connectDB();
+    } catch (dbError) {
+      console.error('⚠️  Database connection failed, but continuing to start server...');
+      console.error('   Database-dependent routes will not work until MongoDB is connected.');
+      console.error('   Error:', dbError.message);
+      // Continue to start server anyway
+    }
     
-    // Setup cron jobs
-    setupCronJobs();
+    // Setup cron jobs (only if database is connected)
+    if (mongoose.connection.readyState === 1) {
+      setupCronJobs();
+    } else {
+      console.log('⚠️  Skipping cron jobs setup - database not connected');
+    }
     
     // Create HTTP server with reuseAddr option to handle port conflicts
     const server = http.createServer(app);
@@ -434,6 +458,9 @@ const startServer = async () => {
       console.log(`🌐 Network API URL: http://0.0.0.0:${PORT}`);
       console.log(`📊 Health check: http://localhost:${PORT}/health`);
       console.log(`📱 Mobile access: Use your computer's IP address instead of localhost`);
+      if (mongoose.connection.readyState !== 1) {
+        console.log(`⚠️  WARNING: Database is not connected. Some features may not work.`);
+      }
     });
     
     // Enable SO_REUSEADDR to allow port reuse
@@ -458,19 +485,27 @@ const startServer = async () => {
     });
   } catch (error) {
     console.error('❌ Failed to start server:', error);
+    console.error('Error details:', error.message);
+    console.error('Stack trace:', error.stack);
     process.exit(1);
   }
 };
 
 // Handle unhandled promise rejections
 process.on('unhandledRejection', (err, promise) => {
-  console.error('Unhandled Promise Rejection:', err);
+  console.error('❌ Unhandled Promise Rejection:', err);
+  console.error('Error message:', err?.message);
+  console.error('Error stack:', err?.stack);
+  console.error('This will cause the application to exit.');
   process.exit(1);
 });
 
 // Handle uncaught exceptions
 process.on('uncaughtException', (err) => {
-  console.error('Uncaught Exception:', err);
+  console.error('❌ Uncaught Exception:', err);
+  console.error('Error message:', err?.message);
+  console.error('Error stack:', err?.stack);
+  console.error('This will cause the application to exit.');
   process.exit(1);
 });
 
