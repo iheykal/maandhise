@@ -1,25 +1,100 @@
-// Immediate log to verify file is executing
+// Immediate log to verify file is executing - use process.stdout.write for immediate output
+process.stdout.write('========================================\n');
+process.stdout.write('🚀 SERVER.JS FILE IS EXECUTING\n');
+process.stdout.write('========================================\n');
+process.stdout.write(`Node version: ${process.version}\n`);
+process.stdout.write(`Working directory: ${process.cwd()}\n`);
+process.stdout.write(`__dirname: ${__dirname}\n`);
+process.stdout.write(`__filename: ${__filename}\n`);
+
+// Also use console.log for compatibility
 console.log('========================================');
 console.log('🚀 SERVER.JS FILE IS EXECUTING');
 console.log('========================================');
 
-const express = require('express');
-const http = require('http');
-const mongoose = require('mongoose');
-const cors = require('cors');
-const helmet = require('helmet');
-const compression = require('compression');
-const morgan = require('morgan');
-const rateLimit = require('express-rate-limit');
-const cron = require('node-cron');
+console.log('📦 Loading core dependencies...');
 
-console.log('📦 Loading dependencies...');
+let express, http, mongoose, cors, helmet, compression, morgan, rateLimit, cron;
 
+try {
+  express = require('express');
+  console.log('✅ express loaded');
+} catch (e) {
+  console.error('❌ express failed:', e);
+  process.exit(1);
+}
+
+try {
+  http = require('http');
+  console.log('✅ http loaded');
+} catch (e) {
+  console.error('❌ http failed:', e);
+  process.exit(1);
+}
+
+try {
+  mongoose = require('mongoose');
+  console.log('✅ mongoose loaded');
+} catch (e) {
+  console.error('❌ mongoose failed:', e);
+  process.exit(1);
+}
+
+try {
+  cors = require('cors');
+  console.log('✅ cors loaded');
+} catch (e) {
+  console.error('❌ cors failed:', e);
+  process.exit(1);
+}
+
+try {
+  helmet = require('helmet');
+  console.log('✅ helmet loaded');
+} catch (e) {
+  console.error('❌ helmet failed:', e);
+  process.exit(1);
+}
+
+try {
+  compression = require('compression');
+  console.log('✅ compression loaded');
+} catch (e) {
+  console.error('❌ compression failed:', e);
+  process.exit(1);
+}
+
+try {
+  morgan = require('morgan');
+  console.log('✅ morgan loaded');
+} catch (e) {
+  console.error('❌ morgan failed:', e);
+  process.exit(1);
+}
+
+try {
+  rateLimit = require('express-rate-limit');
+  console.log('✅ express-rate-limit loaded');
+} catch (e) {
+  console.error('❌ express-rate-limit failed:', e);
+  process.exit(1);
+}
+
+try {
+  cron = require('node-cron');
+  console.log('✅ node-cron loaded');
+} catch (e) {
+  console.error('❌ node-cron failed:', e);
+  process.exit(1);
+}
+
+console.log('📦 Loading dotenv...');
 try {
   require('dotenv').config();
   console.log('✅ dotenv loaded');
 } catch (e) {
   console.error('❌ dotenv failed:', e);
+  // Don't exit - dotenv is optional
 }
 
 console.log('📦 Server module loading...');
