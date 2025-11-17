@@ -58,11 +58,8 @@ const companySchema = new mongoose.Schema({
   businessType: {
     type: String,
     required: [true, 'Business type is required'],
-    enum: [
-      'pharmacy', 'supermarket', 'restaurant', 'clothing', 'electronics',
-      'beauty', 'healthcare', 'automotive', 'education', 'services', 
-      'telecommunication', 'travelagency', 'other'
-    ]
+    trim: true,
+    lowercase: true
   },
   description: {
     type: String,

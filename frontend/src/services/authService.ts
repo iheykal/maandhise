@@ -1,17 +1,24 @@
 import axios from 'axios';
 
 // Helper function to get API base URL dynamically
+// Works for both desktop and mobile devices on the same network
 const getApiBaseUrl = (): string => {
   // Check if environment variable is set
   if (process.env.REACT_APP_API_URL) {
     return process.env.REACT_APP_API_URL;
   }
   
-  // Auto-detect localhost in development
+  // Auto-detect localhost and local network IPs (for mobile devices on same network)
   if (typeof window !== 'undefined') {
-    const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-    if (isLocalhost) {
-      return 'http://localhost:5000/api';
+    const hostname = window.location.hostname;
+    const isLocalhost = hostname === 'localhost' || hostname === '127.0.0.1';
+    const isLocalNetwork = hostname.startsWith('192.168.') || hostname.startsWith('10.0.') || hostname.startsWith('172.16.');
+    
+    // For localhost or local network (including mobile devices on same network)
+    if (isLocalhost || isLocalNetwork) {
+      // Use the same hostname as the frontend, but port 5000 for backend
+      // This allows mobile devices on the same network to access the backend
+      return `${window.location.protocol}//${hostname}:5000/api`;
     }
   }
   
@@ -27,8 +34,10 @@ const getApiBaseUrl = (): string => {
 // Helper function to get timeout dynamically
 const getApiTimeout = (): number => {
   if (typeof window !== 'undefined') {
-    const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-    return isLocalhost ? 10000 : 60000; // 10s for localhost, 60s for production
+    const hostname = window.location.hostname;
+    const isLocalhost = hostname === 'localhost' || hostname === '127.0.0.1';
+    const isLocalNetwork = hostname.startsWith('192.168.') || hostname.startsWith('10.0.') || hostname.startsWith('172.16.');
+    return (isLocalhost || isLocalNetwork) ? 10000 : 60000; // 10s for localhost/local network, 60s for production
   }
   return 60000; // Default to production timeout
 };
@@ -38,9 +47,13 @@ const API_TIMEOUT = getApiTimeout();
 
 // Log configuration (only in browser)
 if (typeof window !== 'undefined') {
+  const hostname = window.location.hostname;
+  const isLocalhost = hostname === 'localhost' || hostname === '127.0.0.1';
+  const isLocalNetwork = hostname.startsWith('192.168.') || hostname.startsWith('10.0.') || hostname.startsWith('172.16.');
   console.log('[API Config]', {
-    hostname: window.location.hostname,
-    isLocalhost: window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1',
+    hostname: hostname,
+    isLocalhost: isLocalhost,
+    isLocalNetwork: isLocalNetwork,
     apiUrl: API_BASE_URL,
     timeout: API_TIMEOUT,
     envApiUrl: process.env.REACT_APP_API_URL,

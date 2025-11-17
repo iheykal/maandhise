@@ -180,9 +180,70 @@ const refreshImageUrl = async (req, res) => {
   }
 };
 
+/**
+ * Proxy image and return as base64 data URL (bypasses CORS)
+ */
+const proxyImage = async (req, res) => {
+  try {
+    const { fileUrl } = req.body;
+    const axios = require('axios');
+
+    if (!fileUrl) {
+      return res.status(400).json({
+        success: false,
+        message: 'File URL is required'
+      });
+    }
+
+    // First try to get a fresh signed URL
+    let imageUrl = fileUrl;
+    try {
+      imageUrl = await R2Service.generateFreshSignedUrl(fileUrl);
+    } catch (e) {
+      // If refresh fails, use original URL
+      console.warn('Failed to refresh URL, using original:', e);
+    }
+
+    // Fetch the image using axios
+    const response = await axios.get(imageUrl, {
+      responseType: 'arraybuffer',
+      timeout: 10000
+    });
+    
+    if (!response.data) {
+      return res.status(404).json({
+        success: false,
+        message: 'Image not found'
+      });
+    }
+
+    const buffer = Buffer.from(response.data);
+    const base64 = buffer.toString('base64');
+    const contentType = response.headers['content-type'] || 'image/jpeg';
+    const dataUrl = `data:${contentType};base64,${base64}`;
+
+    res.status(200).json({
+      success: true,
+      data: {
+        dataUrl,
+        contentType
+      }
+    });
+
+  } catch (error) {
+    console.error('Proxy image error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to proxy image',
+      error: error.message
+    });
+  }
+};
+
 module.exports = {
   uploadFile,
   generateUploadUrl,
   deleteFile,
-  refreshImageUrl
+  refreshImageUrl,
+  proxyImage
 };

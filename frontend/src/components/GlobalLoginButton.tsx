@@ -194,22 +194,25 @@ const GlobalLoginButton: React.FC = () => {
       
       // Handle different types of errors - prioritize network/timeout errors
       let errorMessage = '';
-      // Get API URL dynamically
+      // Get API URL dynamically - works for both desktop and mobile devices on the same network
       const getApiUrl = () => {
         if (process.env.REACT_APP_API_URL) {
           return process.env.REACT_APP_API_URL;
         }
         if (typeof window !== 'undefined') {
-          const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-          if (isLocalhost) {
-            return 'http://localhost:5000/api';
+          const hostname = window.location.hostname;
+          const isLocalhost = hostname === 'localhost' || hostname === '127.0.0.1';
+          const isLocalNetwork = hostname.startsWith('192.168.') || hostname.startsWith('10.0.') || hostname.startsWith('172.16.');
+          if (isLocalhost || isLocalNetwork) {
+            return `${window.location.protocol}//${hostname}:5000/api`;
           }
-          return `${window.location.protocol}//${window.location.hostname}/api`;
+          return `${window.location.protocol}//${hostname}/api`;
         }
         return '/api';
       };
       const currentApiUrl = getApiUrl();
-      const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+      const hostname = typeof window !== 'undefined' ? window.location.hostname : '';
+      const isLocalhost = hostname === 'localhost' || hostname === '127.0.0.1';
       
       // Get status code from error (check both error.status and error.response.status)
       const statusCode = error.status || error.response?.status;

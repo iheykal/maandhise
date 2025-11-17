@@ -10,7 +10,9 @@
     "build:start": "npm run build && npm start",
     "prestart": "npm run build",
     "test": "jest",
-    "test:mongodb": "node scripts/test-mongodb.js"
+    "test:mongodb": "node scripts/test-mongodb.js",
+    "seed:categories": "node scripts/seed-categories.js",
+    "update:category-colors": "node scripts/update-category-colors.js"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.908.0",

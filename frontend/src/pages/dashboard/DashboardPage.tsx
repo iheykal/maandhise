@@ -21,7 +21,8 @@ import {
   AlertCircle,
   X,
   User,
-  Clock
+  Clock,
+  Download
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext.tsx';
 import { uploadService } from '../../services/uploadService.ts';
@@ -29,6 +30,7 @@ import { useTheme } from '../../contexts/ThemeContext.tsx';
 import { companyService } from '../../services/companyService.ts';
 import { useNavigate } from 'react-router-dom';
 import CountdownTimer from '../../components/common/CountdownTimer.tsx';
+import html2canvas from 'html2canvas';
 
 // const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://192.168.100.32:5000/api';
 
@@ -494,6 +496,453 @@ const DashboardPage: React.FC = () => {
     setDeleteConfirmation({ user });
   }, []);
 
+  // Download ID card as image
+  const handleDownloadCard = useCallback(async (user: any, event: React.MouseEvent) => {
+    event.stopPropagation();
+    
+    // Log to verify correct user is being passed
+    console.log('handleDownloadCard called with user:', user.fullName, user._id, user.idNumber);
+    
+    try {
+      // Create a hidden card element specifically for download (without buttons)
+      const downloadCard = document.createElement('div');
+      downloadCard.style.position = 'fixed';
+      downloadCard.style.left = '-9999px';
+      downloadCard.style.top = '0';
+      downloadCard.style.width = '400px';
+      downloadCard.style.backgroundColor = 'white';
+      downloadCard.style.borderRadius = '24px';
+      downloadCard.style.overflow = 'hidden';
+      downloadCard.style.boxShadow = '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)';
+      
+      const isValid = user.validUntil && new Date() <= new Date(user.validUntil);
+      const isExpired = user.validUntil && new Date() > new Date(user.validUntil);
+      
+      // Load profile image and convert to data URL using backend proxy (bypasses CORS)
+      let profileImageDataUrl = '';
+      
+      if (user.profilePicUrl && user.profilePicUrl.trim() !== '') {
+        try {
+          // Use backend proxy to get image as data URL (bypasses CORS completely)
+          const proxyResponse = await fetch('/api/upload/proxy-image', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${localStorage.getItem('token')}`
+            },
+            body: JSON.stringify({ fileUrl: user.profilePicUrl })
+          });
+          
+          if (proxyResponse.ok) {
+            const proxyData = await proxyResponse.json();
+            profileImageDataUrl = proxyData.data.dataUrl;
+          } else {
+            // Fallback: try to load fallback image
+            profileImageDataUrl = await new Promise<string>((resolve) => {
+              const fallback = new Image();
+              fallback.crossOrigin = 'anonymous';
+              fallback.onload = () => {
+                try {
+                  const canvas = document.createElement('canvas');
+                  canvas.width = fallback.naturalWidth || 200;
+                  canvas.height = fallback.naturalHeight || 200;
+                  const ctx = canvas.getContext('2d');
+                  if (ctx) {
+                    ctx.drawImage(fallback, 0, 0);
+                    resolve(canvas.toDataURL('image/png', 0.95));
+                  } else {
+                    resolve('/icons/founder.jpeg');
+                  }
+                } catch (e) {
+                  resolve('/icons/founder.jpeg');
+                }
+              };
+              fallback.onerror = () => resolve('/icons/founder.jpeg');
+              fallback.src = '/icons/founder.jpeg';
+            });
+          }
+        } catch (e) {
+          console.error('Error loading profile image via proxy:', e);
+          // Final fallback
+          profileImageDataUrl = '/icons/founder.jpeg';
+        }
+      }
+      
+      // Create the card structure
+      const cardWrapper = document.createElement('div');
+      cardWrapper.style.width = '400px';
+      cardWrapper.style.background = 'white';
+      cardWrapper.style.borderRadius = '24px';
+      cardWrapper.style.overflow = 'hidden';
+      cardWrapper.style.position = 'relative';
+      
+      // Header
+      const header = document.createElement('div');
+      header.style.height = '120px';
+      header.style.background = isExpired 
+        ? 'linear-gradient(135deg, #ef4444 0%, #dc2626 50%, #b91c1c 100%)' 
+        : 'linear-gradient(135deg, #3b82f6 0%, #6366f1 50%, #9333ea 100%)';
+      header.style.position = 'relative';
+      header.style.overflow = 'hidden';
+      
+      const overlay = document.createElement('div');
+      overlay.style.position = 'absolute';
+      overlay.style.inset = '0';
+      overlay.style.background = isExpired 
+        ? 'linear-gradient(90deg, rgba(239, 68, 68, 0.2) 0%, rgba(220, 38, 38, 0.2) 100%)' 
+        : 'linear-gradient(90deg, rgba(59, 130, 246, 0.2) 0%, rgba(147, 51, 234, 0.2) 100%)';
+      header.appendChild(overlay);
+      
+      // Badge
+      const badge = document.createElement('div');
+      badge.style.position = 'absolute';
+      badge.style.top = '16px';
+      badge.style[isExpired ? 'left' : 'right'] = '16px';
+      if (isExpired) badge.style.transform = 'translateX(-50%)';
+      badge.style.zIndex = '20';
+      const badgeInner = document.createElement('div');
+      badgeInner.style.background = isExpired ? '#dc2626' : '#16a34a';
+      badgeInner.style.color = 'white';
+      badgeInner.style.padding = '8px 16px';
+      badgeInner.style.borderRadius = '9999px';
+      badgeInner.style.fontWeight = 'bold';
+      badgeInner.style.fontSize = '12px';
+      badgeInner.style.boxShadow = '0 10px 15px -3px rgba(0, 0, 0, 0.1)';
+      badgeInner.textContent = isExpired ? 'INVALID' : 'VALID';
+      badge.appendChild(badgeInner);
+      header.appendChild(badge);
+      
+      cardWrapper.appendChild(header);
+      
+      // Avatar section
+      const avatarSection = document.createElement('div');
+      avatarSection.style.position = 'relative';
+      avatarSection.style.marginTop = '-64px';
+      avatarSection.style.padding = '0 24px 24px 24px';
+      
+      const avatarContainer = document.createElement('div');
+      avatarContainer.style.display = 'flex';
+      avatarContainer.style.justifyContent = 'center';
+      avatarContainer.style.width = '100%';
+      
+      const avatarWrapper = document.createElement('div');
+      avatarWrapper.style.position = 'relative';
+      
+      // Create image element properly - use data URL to avoid CORS issues
+      if (profileImageDataUrl) {
+        const img = document.createElement('img');
+        img.src = profileImageDataUrl;
+        img.alt = user.fullName || 'User';
+        img.style.width = '112px';
+        img.style.height = '112px';
+        img.style.borderRadius = '9999px';
+        img.style.objectFit = 'cover';
+        img.style.border = '4px solid white';
+        img.style.boxShadow = '0 20px 25px -5px rgba(0, 0, 0, 0.1)';
+        // No need for crossOrigin when using data URL
+        img.onerror = () => {
+          // If data URL fails, try to load fallback
+          const fallbackImg = new Image();
+          fallbackImg.onload = () => {
+            const canvas = document.createElement('canvas');
+            canvas.width = fallbackImg.naturalWidth;
+            canvas.height = fallbackImg.naturalHeight;
+            const ctx = canvas.getContext('2d');
+            if (ctx) {
+              ctx.drawImage(fallbackImg, 0, 0);
+              img.src = canvas.toDataURL('image/png');
+            }
+          };
+          fallbackImg.src = '/icons/founder.jpeg';
+        };
+        avatarWrapper.appendChild(img);
+      } else {
+        const placeholder = document.createElement('div');
+        placeholder.style.width = '112px';
+        placeholder.style.height = '112px';
+        placeholder.style.borderRadius = '9999px';
+        placeholder.style.background = 'linear-gradient(135deg, #3b82f6 0%, #6366f1 100%)';
+        placeholder.style.border = '4px solid white';
+        placeholder.style.boxShadow = '0 20px 25px -5px rgba(0, 0, 0, 0.1)';
+        placeholder.style.display = 'flex';
+        placeholder.style.alignItems = 'center';
+        placeholder.style.justifyContent = 'center';
+        placeholder.innerHTML = '<svg style="width: 48px; height: 48px; color: white;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>';
+        avatarWrapper.appendChild(placeholder);
+      }
+      
+      // Status indicator
+      const statusIndicator = document.createElement('div');
+      statusIndicator.style.position = 'absolute';
+      statusIndicator.style.bottom = '-4px';
+      statusIndicator.style.right = '-4px';
+      statusIndicator.style.width = '32px';
+      statusIndicator.style.height = '32px';
+      statusIndicator.style.borderRadius = '9999px';
+      statusIndicator.style.border = '4px solid white';
+      statusIndicator.style.background = isExpired ? '#ef4444' : '#22c55e';
+      statusIndicator.style.display = 'flex';
+      statusIndicator.style.alignItems = 'center';
+      statusIndicator.style.justifyContent = 'center';
+      const statusDot = document.createElement('div');
+      statusDot.style.width = '12px';
+      statusDot.style.height = '12px';
+      statusDot.style.background = 'white';
+      statusDot.style.borderRadius = '9999px';
+      statusIndicator.appendChild(statusDot);
+      avatarWrapper.appendChild(statusIndicator);
+      
+      avatarContainer.appendChild(avatarWrapper);
+      avatarSection.appendChild(avatarContainer);
+      
+      // User Information section
+      const infoSection = document.createElement('div');
+      infoSection.style.marginTop = '16px';
+      
+      // Name
+      const nameContainer = document.createElement('div');
+      nameContainer.style.textAlign = 'center';
+      nameContainer.style.marginBottom = '16px';
+      const nameWrapper = document.createElement('div');
+      nameWrapper.style.display = 'flex';
+      nameWrapper.style.alignItems = 'center';
+      nameWrapper.style.justifyContent = 'center';
+      nameWrapper.style.gap = '8px';
+      const nameHeading = document.createElement('h3');
+      nameHeading.style.fontSize = '18px';
+      nameHeading.style.fontWeight = 'bold';
+      nameHeading.style.color = '#111827';
+      nameHeading.style.margin = '0';
+      nameHeading.textContent = user.fullName || 'N/A';
+      nameWrapper.appendChild(nameHeading);
+      if (isValid) {
+        // Convert check icon to data URL to avoid CORS issues
+        const checkIconDataUrl = await new Promise<string>((resolve) => {
+          const checkImg = new Image();
+          checkImg.crossOrigin = 'anonymous';
+          checkImg.onload = () => {
+            try {
+              const canvas = document.createElement('canvas');
+              canvas.width = checkImg.naturalWidth;
+              canvas.height = checkImg.naturalHeight;
+              const ctx = canvas.getContext('2d');
+              if (ctx) {
+                ctx.drawImage(checkImg, 0, 0);
+                resolve(canvas.toDataURL('image/png'));
+              } else {
+                resolve('/icons/check.png');
+              }
+            } catch (e) {
+              resolve('/icons/check.png');
+            }
+          };
+          checkImg.onerror = () => resolve('/icons/check.png');
+          checkImg.src = '/icons/check.png';
+          setTimeout(() => resolve('/icons/check.png'), 3000);
+        });
+        
+        const checkImg = document.createElement('img');
+        checkImg.src = checkIconDataUrl;
+        checkImg.alt = 'Valid';
+        checkImg.style.width = '20px';
+        checkImg.style.height = '20px';
+        nameWrapper.appendChild(checkImg);
+      }
+      nameContainer.appendChild(nameWrapper);
+      infoSection.appendChild(nameContainer);
+      
+      // Information Grid
+      const infoGrid = document.createElement('div');
+      infoGrid.style.display = 'flex';
+      infoGrid.style.flexDirection = 'column';
+      infoGrid.style.gap = '8px';
+      
+      // Phone Number
+      const phoneRow = document.createElement('div');
+      phoneRow.style.display = 'flex';
+      phoneRow.style.alignItems = 'center';
+      phoneRow.style.justifyContent = 'space-between';
+      phoneRow.style.background = '#f9fafb';
+      phoneRow.style.borderRadius = '8px';
+      phoneRow.style.padding = '8px 12px';
+      const phoneLabel = document.createElement('span');
+      phoneLabel.style.color = '#4b5563';
+      phoneLabel.style.fontWeight = '500';
+      phoneLabel.style.fontSize = '14px';
+      phoneLabel.style.display = 'flex';
+      phoneLabel.style.alignItems = 'center';
+      phoneLabel.style.gap = '8px';
+      phoneLabel.innerHTML = `<svg style="width: 16px; height: 16px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"></path></svg>${language === 'en' ? 'Number' : 'Lambar'}`;
+      const phoneValue = document.createElement('span');
+      phoneValue.style.color = '#111827';
+      phoneValue.style.fontWeight = '600';
+      phoneValue.style.fontSize = '14px';
+      phoneValue.textContent = user.phone || 'N/A';
+      phoneRow.appendChild(phoneLabel);
+      phoneRow.appendChild(phoneValue);
+      infoGrid.appendChild(phoneRow);
+      
+      // ID Number
+      if (user.idNumber) {
+        const idRow = document.createElement('div');
+        idRow.style.display = 'flex';
+        idRow.style.alignItems = 'center';
+        idRow.style.justifyContent = 'space-between';
+        idRow.style.background = '#f9fafb';
+        idRow.style.borderRadius = '8px';
+        idRow.style.padding = '8px 12px';
+        const idLabel = document.createElement('span');
+        idLabel.style.color = '#4b5563';
+        idLabel.style.fontWeight = '500';
+        idLabel.style.fontSize = '14px';
+        idLabel.style.display = 'flex';
+        idLabel.style.alignItems = 'center';
+        idLabel.style.gap = '8px';
+        idLabel.innerHTML = `<svg style="width: 16px; height: 16px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-4 0V5a2 2 0 114 0v1m-4 0a2 2 0 104 0m-5 8a2 2 0 100-4 2 2 0 000 4zm0 0c1.306 0 2.417.835 2.83 2M9 14a3.001 3.001 0 00-2.83 2M15 11h3m-3 4h2"></path></svg>${language === 'en' ? 'ID' : 'Aqoonsi'}`;
+        const idValue = document.createElement('span');
+        idValue.style.color = '#111827';
+        idValue.style.fontWeight = '600';
+        idValue.style.fontSize = '14px';
+        idValue.textContent = user.idNumber;
+        idRow.appendChild(idLabel);
+        idRow.appendChild(idValue);
+        infoGrid.appendChild(idRow);
+      }
+      
+      // Registration Date
+      if (user.createdAt) {
+        const dateRow = document.createElement('div');
+        dateRow.style.display = 'flex';
+        dateRow.style.alignItems = 'flex-start';
+        dateRow.style.justifyContent = 'space-between';
+        dateRow.style.background = isExpired ? '#fef2f2' : '#eff6ff';
+        dateRow.style.borderRadius = '8px';
+        dateRow.style.padding = '8px 12px';
+        const dateLabel = document.createElement('span');
+        dateLabel.style.color = isExpired ? '#dc2626' : '#2563eb';
+        dateLabel.style.fontWeight = '500';
+        dateLabel.style.fontSize = '12px';
+        dateLabel.style.display = 'flex';
+        dateLabel.style.alignItems = 'center';
+        dateLabel.style.gap = '8px';
+        dateLabel.innerHTML = `<svg style="width: 12px; height: 12px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>${language === 'en' ? 'Registered' : 'Diiwaangashan'}`;
+        const dateValue = document.createElement('span');
+        dateValue.style.color = isExpired ? '#991b1b' : '#1e40af';
+        dateValue.style.fontWeight = 'bold';
+        dateValue.style.fontSize = '12px';
+        dateValue.style.textAlign = 'right';
+        dateValue.textContent = new Date(user.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+        dateRow.appendChild(dateLabel);
+        dateRow.appendChild(dateValue);
+        infoGrid.appendChild(dateRow);
+      }
+      
+      // Expiration Date
+      if (user.validUntil) {
+        const expiryRow = document.createElement('div');
+        expiryRow.style.display = 'flex';
+        expiryRow.style.alignItems = 'flex-start';
+        expiryRow.style.justifyContent = 'space-between';
+        expiryRow.style.background = isExpired ? '#fef2f2' : '#f0fdf4';
+        expiryRow.style.borderRadius = '8px';
+        expiryRow.style.padding = '8px 12px';
+        const expiryLabel = document.createElement('span');
+        expiryLabel.style.color = isExpired ? '#dc2626' : '#16a34a';
+        expiryLabel.style.fontWeight = '500';
+        expiryLabel.style.fontSize = '12px';
+        expiryLabel.style.display = 'flex';
+        expiryLabel.style.alignItems = 'center';
+        expiryLabel.style.gap = '8px';
+        expiryLabel.innerHTML = `<svg style="width: 12px; height: 12px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>${language === 'en' ? 'Expires' : 'Dhamaan'}`;
+        const expiryValue = document.createElement('span');
+        expiryValue.style.color = isExpired ? '#991b1b' : '#14532d';
+        expiryValue.style.fontWeight = 'bold';
+        expiryValue.style.fontSize = '12px';
+        expiryValue.style.textAlign = 'right';
+        expiryValue.textContent = new Date(user.validUntil).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+        expiryRow.appendChild(expiryLabel);
+        expiryRow.appendChild(expiryValue);
+        infoGrid.appendChild(expiryRow);
+      }
+      
+      infoSection.appendChild(infoGrid);
+      avatarSection.appendChild(infoSection);
+      cardWrapper.appendChild(avatarSection);
+      downloadCard.appendChild(cardWrapper);
+      
+      document.body.appendChild(downloadCard);
+      
+      // Wait for images to load (data URLs load instantly, but wait for rendering)
+      if (profileImageDataUrl) {
+        const img = downloadCard.querySelector('img');
+        if (img) {
+          await new Promise((resolve) => {
+            if (img.complete && img.naturalWidth > 0) {
+              resolve(null);
+            } else {
+              img.onload = () => resolve(null);
+              img.onerror = () => resolve(null);
+              setTimeout(() => resolve(null), 2000);
+            }
+          });
+        }
+      }
+      
+      // Additional wait for rendering
+      await new Promise(resolve => setTimeout(resolve, 200));
+      
+      // Configure html2canvas options for better quality and image handling
+      const canvas = await html2canvas(downloadCard, {
+        backgroundColor: '#ffffff',
+        scale: 3, // Higher scale for better quality
+        logging: false,
+        useCORS: false, // Not needed since we're using data URLs
+        allowTaint: false,
+        foreignObjectRendering: false, // Disable for better compatibility
+        imageTimeout: 5000,
+        removeContainer: true,
+        width: 400,
+        height: downloadCard.offsetHeight,
+        onclone: (clonedDoc) => {
+          // Ensure all images in cloned document are loaded
+          const clonedImages = clonedDoc.querySelectorAll('img');
+          clonedImages.forEach((img: HTMLImageElement) => {
+            if (img.src && img.src.startsWith('data:')) {
+              // Data URLs are already loaded
+              return;
+            }
+          });
+        }
+      });
+
+      // Remove the temporary element
+      document.body.removeChild(downloadCard);
+
+      // Convert canvas to blob
+      canvas.toBlob((blob) => {
+        if (!blob) {
+          console.error('Failed to create blob');
+          alert(language === 'en' ? 'Failed to create image. Please try again.' : 'Waxaa dhacay khalad markii la abuurnayay sawirka. Fadlan mar kale isku day.');
+          return;
+        }
+
+        // Create download link
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        const fileName = `${(user.fullName || 'User').replace(/[^a-z0-9]/gi, '_')}_Sahal_Card_${user.idNumber || user._id}.png`;
+        link.download = fileName;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+      }, 'image/png', 1.0);
+    } catch (error) {
+      console.error('Error downloading card:', error);
+      alert(language === 'en' ? 'Failed to download card. Please try again.' : 'Waxaa dhacay khalad markii la soo dejinayay kaarka. Fadlan mar kale isku day.');
+    }
+  }, [language]);
+
   // Handle payment click
   const handlePaymentClick = useCallback((user: any) => {
     setPaymentModal({ user });
@@ -803,7 +1252,11 @@ const DashboardPage: React.FC = () => {
   ), [addedUsers, language, companiesCount, navigate]);
 
   // Users Tab Component - Memoized to prevent recreation
-  const UsersTab = useMemo(() => (
+  const UsersTab = useMemo(() => {
+    // Check if logged-in user is admin or superadmin
+    const isAdmin = user?.role === 'admin' || user?.role === 'superadmin';
+    
+    return (
     <motion.div 
       className="space-y-8"
       initial={{ opacity: 0, y: 20 }}
@@ -924,6 +1377,7 @@ const DashboardPage: React.FC = () => {
               <motion.div
                 key={user._id}
                 data-user-card
+                data-user-unique-id={user._id}
                 data-user-name={user.fullName}
                 data-user-phone={user.phone}
                 data-user-id={user.idNumber}
@@ -1129,6 +1583,22 @@ const DashboardPage: React.FC = () => {
                         <Eye className="w-3 h-3" />
                         <span>{language === 'en' ? 'View' : 'Fiiri'}</span>
                       </button>
+                      {/* Download button - only for admin/superadmin */}
+                      {isAdmin && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            // Explicitly capture the current user from the map iteration
+                            const currentUser = user;
+                            console.log('Download button clicked for user:', currentUser.fullName, currentUser._id, currentUser.idNumber);
+                            handleDownloadCard(currentUser, e);
+                          }}
+                          className="inline-flex items-center justify-center gap-1 px-2 py-1 bg-green-100 text-green-700 rounded-md hover:bg-green-200 transition-colors text-xs font-medium"
+                        >
+                          <Download className="w-3 h-3" />
+                          <span>{language === 'en' ? 'Download' : 'Soo Deji'}</span>
+                        </button>
+                      )}
                       <button
                       onClick={() => handleDeleteClick(user)}
                         className="inline-flex items-center justify-center gap-1 px-2 py-1 bg-red-100 text-red-700 rounded-md hover:bg-red-200 transition-colors text-xs font-medium"
@@ -1145,7 +1615,8 @@ const DashboardPage: React.FC = () => {
       </motion.div>
       </motion.div>
     </motion.div>
-  ), [filteredUsers, isLoading, language, addedUsers, getValidityInfo, handleDeleteClick, handleImageClick, handleRoleChange, inputValue, roleFilter]);
+    );
+  }, [filteredUsers, isLoading, language, addedUsers, getValidityInfo, handleDeleteClick, handleImageClick, handleDownloadCard, handleRoleChange, inputValue, roleFilter, user]);
 
   // Payments Tab Component - Memoized to prevent recreation
   const PaymentsTab = useMemo(() => (
@@ -1239,6 +1710,7 @@ const DashboardPage: React.FC = () => {
               <motion.div
                 key={user._id}
                 data-user-card
+                data-user-unique-id={user._id}
                 data-user-name={user.fullName}
                 data-user-phone={user.phone}
                 data-user-id={user.idNumber}

@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { uploadFile, generateUploadUrl, deleteFile, refreshImageUrl } = require('../controllers/uploadController');
+const { uploadFile, generateUploadUrl, deleteFile, refreshImageUrl, proxyImage } = require('../controllers/uploadController');
 const R2Service = require('../services/r2Service');
 const { authenticateToken } = require('../middleware/auth');
 
@@ -34,5 +34,12 @@ router.delete('/file', deleteFile);
  * @access  Private (Admin/Superadmin)
  */
 router.post('/refresh-url', refreshImageUrl);
+
+/**
+ * @route   POST /api/upload/proxy-image
+ * @desc    Proxy image and return as base64 data URL (bypasses CORS)
+ * @access  Private (Admin/Superadmin)
+ */
+router.post('/proxy-image', proxyImage);
 
 module.exports = router;

@@ -16,6 +16,7 @@ const uploadRoutes = require('./routes/uploadRoutes');
 const paymentRoutes = require('./routes/payment');
 const simplePaymentRoutes = require('./routes/simplePayment');
 const companyRoutes = require('./routes/company');
+const categoryRoutes = require('./routes/category');
 
 const app = express();
 
@@ -159,6 +160,7 @@ app.use('/api/upload', uploadRoutes);
 app.use('/api/payments', paymentRoutes);
 app.use('/api/simple-payments', simplePaymentRoutes);
 app.use('/api/companies', companyRoutes);
+app.use('/api/categories', categoryRoutes);
 
 // 404 handler - serve React app for client-side routing
 app.use('*', (req, res) => {

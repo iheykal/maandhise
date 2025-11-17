@@ -5,6 +5,7 @@ import { ArrowLeft, CreditCard, Search, XCircle, Phone, Calendar, User, Trash2, 
 import { useTheme } from '../contexts/ThemeContext.tsx';
 import { useNavigate } from 'react-router-dom';
 import { companyService } from '../services/companyService.ts';
+import { categoryService, Category } from '../services/categoryService.ts';
 
 const GetSahalCardPage: React.FC = () => {
   const { language } = useTheme();
@@ -30,6 +31,10 @@ const GetSahalCardPage: React.FC = () => {
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [businessSearchQuery, setBusinessSearchQuery] = useState<string>('');
   const [showNewlyAdded, setShowNewlyAdded] = useState<boolean>(false);
+  
+  // Categories state
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [categoriesLoading, setCategoriesLoading] = useState(false);
 
   // Fuzzy search helper - calculates similarity between two strings
   const calculateSimilarity = useCallback((str1: string, str2: string): number => {
@@ -114,26 +119,6 @@ const GetSahalCardPage: React.FC = () => {
         console.log('[GetSahalCardPage] Companies data:', response.companies);
         const loadedCompanies = response.companies || [];
         setAllCompanies(loadedCompanies);
-        
-        // Apply client-side filtering (fuzzy search + newly added)
-        let filtered = loadedCompanies;
-        
-        // Apply fuzzy search filter
-        if (businessSearchQuery.trim()) {
-          filtered = filtered.filter((company: any) => matchesSearch(company, businessSearchQuery));
-        }
-        
-        // Apply newly added filter
-        if (showNewlyAdded) {
-          const fifteenDaysAgo = new Date();
-          fifteenDaysAgo.setDate(fifteenDaysAgo.getDate() - 15);
-          filtered = filtered.filter((company: any) => {
-            const createdAt = new Date(company.createdAt);
-            return createdAt >= fifteenDaysAgo;
-          });
-        }
-        
-        setCompanies(filtered);
       } catch (error: any) {
         console.error('[GetSahalCardPage] Failed to load companies:', error);
         console.error('[GetSahalCardPage] Error response:', error.response?.data);
@@ -171,40 +156,52 @@ const GetSahalCardPage: React.FC = () => {
     setCompanies(filtered);
   }, [showNewlyAdded, allCompanies, businessSearchQuery, matchesSearch]);
 
-  // Get card colors based on business type
-  const getCardColors = (businessType: string) => {
-    const colorMap: { [key: string]: { from: string; to: string } } = {
-      supermarket: { from: 'from-green-500', to: 'to-green-600' },
-      pharmacy: { from: 'from-blue-500', to: 'to-blue-600' },
-      restaurant: { from: 'from-red-500', to: 'to-red-600' },
-      clothing: { from: 'from-purple-500', to: 'to-purple-600' },
-      electronics: { from: 'from-indigo-500', to: 'to-indigo-600' },
-      beauty: { from: 'from-pink-500', to: 'to-pink-600' },
-      healthcare: { from: 'from-teal-500', to: 'to-teal-600' },
-      automotive: { from: 'from-orange-500', to: 'to-orange-600' },
-      education: { from: 'from-cyan-500', to: 'to-cyan-600' },
-      services: { from: 'from-amber-500', to: 'to-amber-600' },
-      telecommunication: { from: 'from-violet-500', to: 'to-violet-600' },
-      travelagency: { from: 'from-emerald-500', to: 'to-emerald-600' },
-      other: { from: 'from-gray-500', to: 'to-gray-600' }
+  // Load categories on mount - load all categories
+  useEffect(() => {
+    const loadCategories = async () => {
+      try {
+        setCategoriesLoading(true);
+        const response = await categoryService.getCategories(false); // Get all categories (including inactive)
+        setCategories(response.categories);
+      } catch (error) {
+        console.error('Failed to load categories:', error);
+        setCategories([]);
+      } finally {
+        setCategoriesLoading(false);
+      }
     };
-    
-    return colorMap[businessType] || { from: 'from-green-500', to: 'to-green-600' };
+    loadCategories();
+  }, []);
+
+  // Get card colors based on business type (from category or default)
+  const getCardColors = (businessType: string) => {
+    const category = categories.find(cat => cat.name === businessType.toLowerCase());
+    if (category) {
+      return { from: category.color.from, to: category.color.to };
+    }
+    // Default fallback - strong gray gradient
+    return { from: 'from-gray-700', to: 'to-gray-900' };
   };
 
 
-  // Auto-detect localhost in development
-  const isLocalhost = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
-  const defaultApiUrl = isLocalhost 
-    ? 'http://localhost:5000/api' 
+
+  // Auto-detect localhost and local network IPs (for mobile devices on same network)
+  const hostname = typeof window !== 'undefined' ? window.location.hostname : '';
+  const isLocalhost = typeof window !== 'undefined' && (hostname === 'localhost' || hostname === '127.0.0.1');
+  const isLocalNetwork = typeof window !== 'undefined' && (hostname.startsWith('192.168.') || hostname.startsWith('10.0.') || hostname.startsWith('172.16.'));
+  const defaultApiUrl = (isLocalhost || isLocalNetwork)
+    ? (typeof window !== 'undefined' 
+        ? `${window.location.protocol}//${hostname}:5000/api`
+        : '/api')
     : (typeof window !== 'undefined' 
-        ? `${window.location.protocol}//${window.location.hostname}/api`
+        ? `${window.location.protocol}//${hostname}/api`
         : '/api');
   const API_BASE_URL = process.env.REACT_APP_API_URL || defaultApiUrl;
   
   console.log('[GetSahalCardPage] API Config:', {
-    hostname: typeof window !== 'undefined' ? window.location.hostname : 'server',
+    hostname: typeof window !== 'undefined' ? hostname : 'server',
     isLocalhost,
+    isLocalNetwork,
     apiUrl: API_BASE_URL,
   });
 
@@ -363,16 +360,16 @@ const GetSahalCardPage: React.FC = () => {
       </Helmet>
       
       <div className="min-h-screen bg-gradient-to-br from-blue-50 via-blue-100 to-indigo-200">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+      <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8 py-6 sm:py-8 md:py-12">
         {/* Back Button */}
         <motion.button
           initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.5 }}
           onClick={() => navigate(-1)}
-          className="flex items-center gap-2 text-blue-600 hover:text-blue-700 font-medium mb-8 transition-colors duration-300"
+          className="flex items-center gap-2 text-blue-600 hover:text-blue-700 font-medium mb-4 sm:mb-6 md:mb-8 transition-colors duration-300 text-sm sm:text-base"
         >
-          <ArrowLeft className="w-5 h-5" />
+          <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5" />
           {language === 'en' ? 'Back' : 'Dib u Noqo'}
         </motion.button>
 
@@ -381,26 +378,26 @@ const GetSahalCardPage: React.FC = () => {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.05 }}
-          className="mb-16"
+          className="mb-8 sm:mb-12 md:mb-16"
         >
-          <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-visible">
-            <div className="bg-gradient-to-r from-blue-50 to-indigo-100 px-6 py-6 border-b border-gray-200">
-              <div className="flex items-center space-x-3">
-                <div className="p-2 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg">
-                  <Search className="w-6 h-6 text-white" />
+          <div className="bg-white rounded-xl sm:rounded-2xl shadow-lg border border-gray-100 overflow-visible">
+            <div className="bg-gradient-to-r from-blue-50 to-indigo-100 px-4 sm:px-5 md:px-6 py-4 sm:py-5 md:py-6 border-b border-gray-200">
+              <div className="flex items-center space-x-2 sm:space-x-3">
+                <div className="p-1.5 sm:p-2 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg flex-shrink-0">
+                  <Search className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 text-white" />
                 </div>
-                <div>
-                  <h2 className="text-2xl font-bold text-gray-800">
+                <div className="min-w-0 flex-1">
+                  <h2 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-800">
                     {language === 'en' ? 'Search for Your Card' : 'Raadi Kaarkaaga'}
                   </h2>
-                  <p className="text-gray-600">
+                  <p className="text-xs sm:text-sm md:text-base text-gray-600 mt-0.5 sm:mt-1">
                     {language === 'en' ? 'Search user by ID to get their Sahal Card information' : 'Raadi isticmaale si aad u hesho macluumaadka Sahal Card-ka'}
                   </p>
                 </div>
               </div>
             </div>
 
-            <div className="p-6 pb-12">
+            <div className="p-4 sm:p-5 md:p-6 pb-8 sm:pb-10 md:pb-12">
               {/* Search Input */}
               <div className="mb-6">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -860,13 +857,13 @@ const GetSahalCardPage: React.FC = () => {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.2 }}
-          className="mb-16"
+          className="mb-8 sm:mb-12 md:mb-16"
         >
-          <div className="text-center mb-10">
-            <h2 className="text-3xl md:text-4xl font-bold gradient-text mb-4">
+          <div className="text-center mb-6 sm:mb-8 md:mb-10">
+            <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold gradient-text mb-3 sm:mb-4 px-2">
               {language === 'en' ? 'Discount Offers' : 'Qiimo Dhimis'}
             </h2>
-            <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+            <p className="text-base sm:text-lg md:text-xl text-gray-600 max-w-2xl mx-auto px-4">
               {language === 'en' 
                 ? 'See the amazing discounts you can get with your Sahal Card'
                 : 'Arag faa\'iidooyinka cajiibka ah ee aad ka heli kartid Kaarkaaga Sahal'
@@ -875,23 +872,23 @@ const GetSahalCardPage: React.FC = () => {
           </div>
 
           {/* Search Box and Newly Added Filter */}
-          <div className="mb-6 space-y-4">
-            <div className="max-w-md mx-auto">
+          <div className="mb-4 sm:mb-6 space-y-3 sm:space-y-4 px-2">
+            <div className="max-w-md mx-auto w-full">
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 text-gray-400" />
                 <input
                   type="text"
                   value={businessSearchQuery}
                   onChange={(e) => setBusinessSearchQuery(e.target.value)}
                   placeholder={language === 'en' ? 'Search businesses...' : 'Raadi ganacsiga...'}
-                  className="w-full pl-10 pr-10 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all duration-200 bg-white shadow-sm text-sm"
+                  className="w-full pl-9 sm:pl-10 pr-9 sm:pr-10 py-2.5 sm:py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all duration-200 bg-white shadow-sm text-sm sm:text-base"
                 />
                 {businessSearchQuery && (
                   <button
                     onClick={() => setBusinessSearchQuery('')}
                     className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
                   >
-                    <X className="w-4 h-4" />
+                    <X className="w-4 h-4 sm:w-5 sm:h-5" />
                   </button>
                 )}
               </div>
@@ -900,7 +897,7 @@ const GetSahalCardPage: React.FC = () => {
             <div className="flex justify-center">
               <button
                 onClick={() => setShowNewlyAdded(!showNewlyAdded)}
-                className={`px-4 py-2 rounded-lg font-medium transition-all duration-200 text-sm ${
+                className={`px-4 sm:px-5 py-2 sm:py-2.5 rounded-lg font-medium transition-all duration-200 text-xs sm:text-sm ${
                   showNewlyAdded
                     ? 'bg-blue-500 text-white shadow-lg'
                     : 'bg-white text-gray-700 hover:bg-gray-100 shadow border border-gray-300'
@@ -912,11 +909,11 @@ const GetSahalCardPage: React.FC = () => {
           </div>
 
           {/* Category Filter */}
-          <div className="mb-6">
-            <div className="flex flex-wrap gap-2 justify-center">
+          <div className="mb-4 sm:mb-6">
+            <div className="flex flex-wrap gap-2 sm:gap-2.5 justify-center px-2">
               <button
                 onClick={() => setSelectedCategory('all')}
-                className={`px-4 py-2 rounded-lg font-medium transition-all duration-200 ${
+                className={`px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg font-medium transition-all duration-200 text-xs sm:text-sm ${
                   selectedCategory === 'all'
                     ? 'bg-blue-500 text-white shadow-lg scale-105'
                     : 'bg-white text-gray-700 hover:bg-gray-100 shadow'
@@ -924,121 +921,73 @@ const GetSahalCardPage: React.FC = () => {
               >
                 {language === 'en' ? 'All Categories' : 'Dhammaan Noocyada'}
               </button>
-              <button
-                onClick={() => setSelectedCategory('supermarket')}
-                className={`px-4 py-2 rounded-lg font-medium transition-all duration-200 ${
-                  selectedCategory === 'supermarket'
-                    ? 'bg-green-500 text-white shadow-lg scale-105'
-                    : 'bg-white text-gray-700 hover:bg-gray-100 shadow'
-                }`}
-              >
-                {language === 'en' ? 'Supermarket' : 'Bakaarad'}
-              </button>
-              <button
-                onClick={() => setSelectedCategory('pharmacy')}
-                className={`px-4 py-2 rounded-lg font-medium transition-all duration-200 ${
-                  selectedCategory === 'pharmacy'
-                    ? 'bg-blue-500 text-white shadow-lg scale-105'
-                    : 'bg-white text-gray-700 hover:bg-gray-100 shadow'
-                }`}
-              >
-                {language === 'en' ? 'Pharmacy' : 'Dhakhtarka'}
-              </button>
-              <button
-                onClick={() => setSelectedCategory('restaurant')}
-                className={`px-4 py-2 rounded-lg font-medium transition-all duration-200 ${
-                  selectedCategory === 'restaurant'
-                    ? 'bg-red-500 text-white shadow-lg scale-105'
-                    : 'bg-white text-gray-700 hover:bg-gray-100 shadow'
-                }`}
-              >
-                {language === 'en' ? 'Restaurant' : 'Maqaaxa'}
-              </button>
-              <button
-                onClick={() => setSelectedCategory('clothing')}
-                className={`px-4 py-2 rounded-lg font-medium transition-all duration-200 ${
-                  selectedCategory === 'clothing'
-                    ? 'bg-purple-500 text-white shadow-lg scale-105'
-                    : 'bg-white text-gray-700 hover:bg-gray-100 shadow'
-                }`}
-              >
-                {language === 'en' ? 'Clothing' : 'Dharka'}
-              </button>
-              <button
-                onClick={() => setSelectedCategory('electronics')}
-                className={`px-4 py-2 rounded-lg font-medium transition-all duration-200 ${
-                  selectedCategory === 'electronics'
-                    ? 'bg-indigo-500 text-white shadow-lg scale-105'
-                    : 'bg-white text-gray-700 hover:bg-gray-100 shadow'
-                }`}
-              >
-                {language === 'en' ? 'Electronics' : 'Elektroonikada'}
-              </button>
-              <button
-                onClick={() => setSelectedCategory('beauty')}
-                className={`px-4 py-2 rounded-lg font-medium transition-all duration-200 ${
-                  selectedCategory === 'beauty'
-                    ? 'bg-pink-500 text-white shadow-lg scale-105'
-                    : 'bg-white text-gray-700 hover:bg-gray-100 shadow'
-                }`}
-              >
-                {language === 'en' ? 'Beauty' : 'Qurxinta'}
-              </button>
-              <button
-                onClick={() => setSelectedCategory('healthcare')}
-                className={`px-4 py-2 rounded-lg font-medium transition-all duration-200 ${
-                  selectedCategory === 'healthcare'
-                    ? 'bg-teal-500 text-white shadow-lg scale-105'
-                    : 'bg-white text-gray-700 hover:bg-gray-100 shadow'
-                }`}
-              >
-                {language === 'en' ? 'Healthcare' : 'Caafimaadka'}
-              </button>
-              <button
-                onClick={() => setSelectedCategory('telecommunication')}
-                className={`px-4 py-2 rounded-lg font-medium transition-all duration-200 ${
-                  selectedCategory === 'telecommunication'
-                    ? 'bg-violet-500 text-white shadow-lg scale-105'
-                    : 'bg-white text-gray-700 hover:bg-gray-100 shadow'
-                }`}
-              >
-                {language === 'en' ? 'Telecommunication' : 'Isgaadhsiinta'}
-              </button>
-              <button
-                onClick={() => setSelectedCategory('travelagency')}
-                className={`px-4 py-2 rounded-lg font-medium transition-all duration-200 ${
-                  selectedCategory === 'travelagency'
-                    ? 'bg-emerald-500 text-white shadow-lg scale-105'
-                    : 'bg-white text-gray-700 hover:bg-gray-100 shadow'
-                }`}
-              >
-                {language === 'en' ? 'Cargo & Travel Agency' : 'Cargo iyo Wakaalada Safarka'}
-              </button>
-              <button
-                onClick={() => setSelectedCategory('other')}
-                className={`px-4 py-2 rounded-lg font-medium transition-all duration-200 ${
-                  selectedCategory === 'other'
-                    ? 'bg-gray-500 text-white shadow-lg scale-105'
-                    : 'bg-white text-gray-700 hover:bg-gray-100 shadow'
-                }`}
-              >
-                {language === 'en' ? 'Other' : 'Kale'}
-              </button>
+              {categoriesLoading ? (
+                <div className="px-3 sm:px-4 py-1.5 sm:py-2 text-gray-500 text-xs sm:text-sm">
+                  {language === 'en' ? 'Loading categories...' : 'Soo gelaya noocyada...'}
+                </div>
+              ) : (
+                categories
+                  .filter(cat => cat.isActive) // Only show active categories in filter buttons
+                  .sort((a, b) => (a.order || 0) - (b.order || 0))
+                  .map((category) => {
+                    const colors = getCardColors(category.name);
+                    // Map Tailwind color classes to actual color values for active state (stronger colors)
+                    const colorMap: { [key: string]: string } = {
+                      'from-green-500': 'bg-green-600',
+                      'from-green-600': 'bg-green-700',
+                      'from-blue-500': 'bg-blue-600',
+                      'from-blue-600': 'bg-blue-700',
+                      'from-red-500': 'bg-red-600',
+                      'from-red-600': 'bg-red-700',
+                      'from-purple-500': 'bg-purple-600',
+                      'from-purple-600': 'bg-purple-700',
+                      'from-indigo-500': 'bg-indigo-600',
+                      'from-indigo-600': 'bg-indigo-700',
+                      'from-pink-500': 'bg-pink-600',
+                      'from-pink-600': 'bg-pink-700',
+                      'from-teal-500': 'bg-teal-600',
+                      'from-teal-600': 'bg-teal-700',
+                      'from-orange-500': 'bg-orange-600',
+                      'from-orange-600': 'bg-orange-700',
+                      'from-cyan-500': 'bg-cyan-600',
+                      'from-cyan-600': 'bg-cyan-700',
+                      'from-amber-500': 'bg-amber-600',
+                      'from-violet-500': 'bg-violet-600',
+                      'from-emerald-500': 'bg-emerald-600',
+                      'from-gray-500': 'bg-gray-600',
+                      'from-gray-700': 'bg-gray-800'
+                    };
+                    const activeBgClass = colorMap[colors.from] || 'bg-gray-800';
+                    return (
+                      <button
+                        key={category._id}
+                        onClick={() => setSelectedCategory(category.name)}
+                        className={`px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg font-medium transition-all duration-200 text-xs sm:text-sm ${
+                          selectedCategory === category.name
+                            ? `${activeBgClass} text-white shadow-lg scale-105`
+                            : 'bg-white text-gray-700 hover:bg-gray-100 shadow'
+                        }`}
+                      >
+                        {language === 'en' ? category.displayName.en : category.displayName.so}
+                      </button>
+                    );
+                  })
+              )}
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-5 lg:gap-6">
             {companiesLoading ? (
-              <div className="col-span-full text-center py-12">
-                <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
-                <p className="mt-4 text-gray-600">
+              <div className="col-span-full text-center py-16 sm:py-20">
+                <div className="inline-block animate-spin rounded-full h-12 w-12 sm:h-16 sm:w-16 border-4 border-blue-500 border-t-transparent"></div>
+                <p className="mt-4 sm:mt-6 text-gray-600 text-sm sm:text-base">
                   {language === 'en' ? 'Loading companies...' : 'Soo gelaya shirkadaha...'}
                 </p>
               </div>
             ) : companies.length === 0 ? (
-              <div className="col-span-full text-center py-12">
-                <Building2 className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-                <p className="text-gray-600">
+              <div className="col-span-full text-center py-16 sm:py-20">
+                <Building2 className="w-16 h-16 sm:w-20 sm:h-20 text-gray-400 mx-auto mb-4" />
+                <p className="text-gray-600 text-sm sm:text-base">
                   {language === 'en' ? 'No companies available yet.' : 'Shirkado ma jiraan hada.'}
                 </p>
               </div>
@@ -1048,22 +997,45 @@ const GetSahalCardPage: React.FC = () => {
                   key={company._id}
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.6, delay: index * 0.1 }}
-                  whileHover={{ y: -5 }}
-                  className={`group relative overflow-hidden rounded-2xl bg-gradient-to-br ${getCardColors(company.businessType).from} ${getCardColors(company.businessType).to} shadow-xl hover:shadow-2xl transition-all duration-300`}
+                  transition={{ duration: 0.5, delay: index * 0.05 }}
+                  whileHover={{ y: -8, scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  className={`group relative overflow-hidden rounded-2xl sm:rounded-3xl bg-gradient-to-br ${getCardColors(company.businessType).from} ${getCardColors(company.businessType).to} shadow-lg hover:shadow-2xl transition-all duration-300 cursor-pointer`}
                 >
-                  <div className="relative p-6 text-white">
-                    <div className="flex items-center justify-between mb-4">
-                      <div className="w-36 h-36 flex items-center justify-center relative">
+                  {/* Decorative background pattern - using gradient colors instead of white */}
+                  <div className="absolute inset-0 opacity-20">
+                    <div className="absolute top-0 right-0 w-32 h-32 sm:w-40 sm:h-40 bg-gradient-to-br from-white/30 to-transparent rounded-full -mr-16 -mt-16 sm:-mr-20 sm:-mt-20 blur-2xl"></div>
+                    <div className="absolute bottom-0 left-0 w-24 h-24 sm:w-32 sm:h-32 bg-gradient-to-tr from-white/20 to-transparent rounded-full -ml-12 -mb-12 sm:-ml-16 sm:-mb-16 blur-2xl"></div>
+                  </div>
+
+                  {/* Discount Badge - Top Right */}
+                  <div className="absolute top-3 sm:top-4 right-3 sm:right-4 z-10">
+                    <div className="bg-white/95 backdrop-blur-sm rounded-full px-3 py-1.5 sm:px-4 sm:py-2 shadow-lg">
+                      <div className="flex flex-col items-center">
+                        <span className="text-lg sm:text-xl lg:text-2xl font-black text-gray-900 leading-none">
+                          {company.discountRate}%
+                        </span>
+                        <span className="text-[10px] sm:text-xs font-bold text-gray-600 uppercase tracking-wide">
+                          {language === 'en' ? 'OFF' : 'DHIMIS'}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Card Content */}
+                  <div className="relative p-4 sm:p-5 lg:p-6 text-white min-h-[280px] sm:min-h-[320px] flex flex-col">
+                    {/* Logo Section */}
+                    <div className="flex-1 flex items-center justify-center mb-3 sm:mb-4">
+                      <div className="w-32 h-32 sm:w-40 sm:h-40 lg:w-48 lg:h-48 flex items-center justify-center relative bg-black/10 backdrop-blur-sm rounded-2xl sm:rounded-3xl p-4 sm:p-5 lg:p-6 group-hover:bg-black/20 transition-all duration-300 border border-white/10">
                         {company.logo && company.logo.trim() !== '' ? (
                           <img
                             src={company.logo}
                             alt={`${company.businessName} logo`}
-                            className="w-full h-full object-contain"
+                            className="w-full h-full object-contain transition-transform duration-300 group-hover:scale-110"
                             style={{
                               backgroundColor: 'transparent',
                               imageRendering: 'auto',
-                              filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.1))',
+                              filter: 'drop-shadow(0 4px 8px rgba(0,0,0,0.2))',
                               mixBlendMode: 'normal'
                             }}
                             onLoad={(e) => {
@@ -1076,26 +1048,42 @@ const GetSahalCardPage: React.FC = () => {
                               const parent = e.currentTarget.parentElement;
                               if (parent) {
                                 const icon = document.createElement('div');
-                                icon.innerHTML = '<svg class="w-24 h-24 text-white/80" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>';
+                                icon.className = 'w-full h-full flex items-center justify-center';
+                                icon.innerHTML = '<svg class="w-24 h-24 sm:w-32 sm:h-32 lg:w-40 lg:h-40 text-white/80" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>';
                                 parent.appendChild(icon);
                               }
                             }}
                           />
                         ) : (
-                          <Building2 className="w-24 h-24 text-white/80" />
+                          <Building2 className="w-24 h-24 sm:w-32 sm:h-32 lg:w-40 lg:h-40 text-white/80" />
                         )}
                       </div>
-                      <div className="text-right">
-                        <div className="text-3xl font-bold">{company.discountRate}%</div>
-                        <div className="text-sm opacity-90">{language === 'en' ? 'OFF' : 'DHIMIS'}</div>
+                    </div>
+
+                    {/* Company Info */}
+                    <div className="flex-shrink-0">
+                      <h3 className="text-lg sm:text-xl lg:text-2xl font-bold mb-2 sm:mb-3 line-clamp-2 leading-tight">
+                        {company.businessName}
+                      </h3>
+                      
+                      {company.description && (
+                        <p className="text-white text-xs sm:text-sm mb-3 sm:mb-4 line-clamp-2 leading-relaxed opacity-95">
+                          {company.description}
+                        </p>
+                      )}
+
+                      {/* Location */}
+                      <div className="flex items-start gap-1.5 sm:gap-2 pt-2 sm:pt-3 border-t border-white/30">
+                        <span className="text-base sm:text-lg flex-shrink-0">📍</span>
+                        <span className="text-xs sm:text-sm text-white leading-relaxed line-clamp-2 flex-1 font-medium">
+                          {company.branches?.[0]?.address || company.location || 'Mogadishu'}
+                        </span>
                       </div>
                     </div>
-                    <h3 className="text-xl font-bold mb-2">{company.businessName}</h3>
-                    <p className="text-white/90 text-sm mb-4">{company.description}</p>
-                    <div className="flex items-center justify-between text-xs opacity-80">
-                      <span>📍 {company.branches?.[0]?.address || company.location || 'Mogadishu'}</span>
-                    </div>
                   </div>
+
+                  {/* Hover overlay effect - subtle darkening */}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"></div>
                 </motion.div>
               ))
             )}

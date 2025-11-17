@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Helmet } from 'react-helmet-async';
-import { Plus, X, Upload, Building2, Edit, Trash2 } from 'lucide-react';
+import { Plus, X, Upload, Building2, Edit, Trash2, Tag } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext.tsx';
 import { useTheme } from '../contexts/ThemeContext.tsx';
 import { companyService, CreateCompanyData } from '../services/companyService.ts';
 import { uploadService } from '../services/uploadService.ts';
+import { categoryService, Category, CreateCategoryData } from '../services/categoryService.ts';
 import { useNavigate } from 'react-router-dom';
 
 const CompanyManagementPage: React.FC = () => {
@@ -47,9 +48,29 @@ const CompanyManagementPage: React.FC = () => {
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [logoPreview, setLogoPreview] = useState<string>('');
 
-  // Load companies on mount
+  // Category management state
+  const [activeTab, setActiveTab] = useState<'companies' | 'categories'>('companies');
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [categoriesLoading, setCategoriesLoading] = useState(false);
+  const [showCategoryForm, setShowCategoryForm] = useState(false);
+  const [editingCategory, setEditingCategory] = useState<Category | null>(null);
+  const [deletingCategory, setDeletingCategory] = useState<Category | null>(null);
+  const [categoryFormData, setCategoryFormData] = useState<CreateCategoryData>({
+    name: '',
+    displayName: { en: '', so: '' },
+    color: { from: 'from-gray-500', to: 'to-gray-600' },
+    order: 0
+  });
+  
+  // Quick-add category state (for company form)
+  const [showQuickAddCategory, setShowQuickAddCategory] = useState(false);
+  const [quickAddCategoryName, setQuickAddCategoryName] = useState('');
+  const [quickAddCategoryLoading, setQuickAddCategoryLoading] = useState(false);
+
+  // Load companies and categories on mount
   useEffect(() => {
     loadCompanies();
+    loadCategories();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -339,24 +360,198 @@ const CompanyManagementPage: React.FC = () => {
   };
 
 
-  // Get card colors based on business type
+  // Load categories
+  const loadCategories = async () => {
+    try {
+      setCategoriesLoading(true);
+      const response = await categoryService.getCategories(false); // Get all categories including inactive
+      setCategories(response.categories);
+    } catch (error: any) {
+      console.error('Failed to load categories:', error);
+      // If categories fail to load, continue with empty array
+      setCategories([]);
+    } finally {
+      setCategoriesLoading(false);
+    }
+  };
+
+  // Get card colors based on business type (from category or default)
   const getCardColors = (businessType: string) => {
-    const colorMap: { [key: string]: { from: string; to: string } } = {
-      supermarket: { from: 'from-green-500', to: 'to-green-600' },
-      pharmacy: { from: 'from-blue-500', to: 'to-blue-600' },
-      restaurant: { from: 'from-red-500', to: 'to-red-600' },
-      clothing: { from: 'from-purple-500', to: 'to-purple-600' },
-      electronics: { from: 'from-indigo-500', to: 'to-indigo-600' },
-      beauty: { from: 'from-pink-500', to: 'to-pink-600' },
-      healthcare: { from: 'from-teal-500', to: 'to-teal-600' },
-      automotive: { from: 'from-orange-500', to: 'to-orange-600' },
-      education: { from: 'from-cyan-500', to: 'to-cyan-600' },
-      services: { from: 'from-amber-500', to: 'to-amber-600' },
-      telecommunication: { from: 'from-violet-500', to: 'to-violet-600' },
-      other: { from: 'from-gray-500', to: 'to-gray-600' }
-    };
+    const category = categories.find(cat => cat.name === businessType.toLowerCase());
+    if (category) {
+      return { from: category.color.from, to: category.color.to };
+    }
+    // Default fallback
+    return { from: 'from-gray-500', to: 'to-gray-600' };
+  };
+
+  // Category form handlers
+  const handleCategoryInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const { name, value } = e.target;
+    if (name.startsWith('displayName.')) {
+      const lang = name.split('.')[1] as 'en' | 'so';
+      setCategoryFormData(prev => ({
+        ...prev,
+        displayName: {
+          ...prev.displayName,
+          [lang]: value
+        }
+      }));
+    } else if (name.startsWith('color.')) {
+      const colorProp = name.split('.')[1] as 'from' | 'to';
+      setCategoryFormData(prev => ({
+        ...prev,
+        color: {
+          ...prev.color,
+          [colorProp]: value
+        }
+      }));
+    } else if (name === 'name') {
+      // Auto-convert category name to lowercase and replace spaces/spaces with hyphens
+      const formattedValue = value
+        .toLowerCase()
+        .replace(/\s+/g, '-') // Replace spaces with hyphens
+        .replace(/[^a-z0-9-]/g, ''); // Remove any invalid characters
+      setCategoryFormData(prev => ({
+        ...prev,
+        [name]: formattedValue
+      }));
+    } else {
+      setCategoryFormData(prev => ({
+        ...prev,
+        [name]: name === 'order' ? parseInt(value) || 0 : value
+      }));
+    }
+  };
+
+  const handleCategorySubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+
+    try {
+      // Only send the category name - backend will auto-generate displayName and use defaults for color
+      const categoryData = {
+        name: categoryFormData.name
+      };
+
+      if (editingCategory) {
+        // For editing, send all existing data to preserve displayName and color
+        await categoryService.updateCategory(editingCategory._id, categoryFormData);
+        alert(language === 'en' ? 'Category updated successfully!' : 'Nooca waa la cusbooneysiiyay!');
+      } else {
+        // For creating, only send name - backend will auto-generate the rest
+        await categoryService.createCategory(categoryData);
+        alert(language === 'en' ? 'Category created successfully!' : 'Nooca waa la sameeyay!');
+      }
+      
+      setShowCategoryForm(false);
+      setEditingCategory(null);
+      setCategoryFormData({
+        name: '',
+        displayName: { en: '', so: '' },
+        color: { from: 'from-gray-500', to: 'to-gray-600' },
+        order: 0
+      });
+      await loadCategories();
+      await loadCompanies(); // Reload companies to refresh category references
+    } catch (error: any) {
+      console.error('Category save error:', error);
+      alert(error.message || (language === 'en' ? 'Failed to save category.' : 'Waxay ku fashilantay in la keydiyo nooca.'));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCategoryEdit = (category: Category) => {
+    setEditingCategory(category);
+    setCategoryFormData({
+      name: category.name,
+      displayName: category.displayName,
+      color: category.color,
+      order: category.order
+    });
+    setShowCategoryForm(true);
+  };
+
+  const handleCategoryDelete = async () => {
+    if (!deletingCategory) return;
     
-    return colorMap[businessType] || { from: 'from-green-500', to: 'to-green-600' };
+    setLoading(true);
+    try {
+      await categoryService.deleteCategory(deletingCategory._id);
+      alert(language === 'en' ? 'Category deleted successfully!' : 'Nooca waa la tirtiray!');
+      setDeletingCategory(null);
+      await loadCategories();
+      await loadCompanies();
+    } catch (error: any) {
+      console.error('Delete category error:', error);
+      alert(error.message || (language === 'en' ? 'Failed to delete category.' : 'Waxay ku fashilantay in la tirtiro nooca.'));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Quick-add category handler (creates category with just name)
+  const handleQuickAddCategory = async () => {
+    if (!quickAddCategoryName.trim()) {
+      alert(language === 'en' ? 'Please enter a category name' : 'Fadlan geli magaca nooca');
+      return;
+    }
+
+    setQuickAddCategoryLoading(true);
+    try {
+      // Format the name (lowercase, replace spaces with hyphens)
+      const formattedName = quickAddCategoryName
+        .toLowerCase()
+        .replace(/\s+/g, '-')
+        .replace(/[^a-z0-9-]/g, '');
+
+      if (!formattedName) {
+        alert(language === 'en' ? 'Invalid category name' : 'Magaca nooca ma saxna');
+        setQuickAddCategoryLoading(false);
+        return;
+      }
+
+      // Check if category already exists
+      const existingCategory = categories.find(cat => cat.name === formattedName);
+      if (existingCategory) {
+        alert(language === 'en' ? 'Category already exists' : 'Nooca horeyba waa jiraa');
+        setFormData(prev => ({ ...prev, businessType: formattedName }));
+        setShowQuickAddCategory(false);
+        setQuickAddCategoryName('');
+        setQuickAddCategoryLoading(false);
+        return;
+      }
+
+      // Create category with auto-generated display names and default colors
+      const categoryData: CreateCategoryData = {
+        name: formattedName,
+        displayName: {
+          en: quickAddCategoryName.trim(),
+          so: quickAddCategoryName.trim() // Use same name for Somali (can be edited later)
+        },
+        color: {
+          from: 'from-gray-500',
+          to: 'to-gray-600'
+        },
+        order: categories.length
+      };
+
+      await categoryService.createCategory(categoryData);
+      
+      // Reload categories and set the new category as selected
+      await loadCategories();
+      setFormData(prev => ({ ...prev, businessType: formattedName }));
+      setShowQuickAddCategory(false);
+      setQuickAddCategoryName('');
+      
+      alert(language === 'en' ? 'Category created successfully!' : 'Nooca waa la sameeyay!');
+    } catch (error: any) {
+      console.error('Quick-add category error:', error);
+      alert(error.message || (language === 'en' ? 'Failed to create category.' : 'Waxay ku fashilantay in la sameeyo nooca.'));
+    } finally {
+      setQuickAddCategoryLoading(false);
+    }
   };
 
   if (!user || user.role !== 'superadmin') {
@@ -377,20 +572,49 @@ const CompanyManagementPage: React.FC = () => {
               {language === 'en' ? 'Company Management' : 'Maamulka Shirkadaha'}
             </h1>
             <p className="text-gray-600">
-              {language === 'en' ? 'Manage partner companies and discounts' : 'Maamul shirkadaha iyo dhimistaada'}
+              {language === 'en' ? 'Manage partner companies and categories' : 'Maamul shirkadaha iyo noocyada'}
             </p>
           </div>
 
-          {/* Add Company Button */}
-          <div className="mb-6">
+          {/* Tabs */}
+          <div className="mb-6 flex gap-4 border-b border-gray-200">
             <button
-              onClick={() => setShowAddForm(true)}
-              className="inline-flex items-center gap-2 px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium"
+              onClick={() => setActiveTab('companies')}
+              className={`px-6 py-3 font-medium transition-colors border-b-2 ${
+                activeTab === 'companies'
+                  ? 'border-green-600 text-green-600'
+                  : 'border-transparent text-gray-600 hover:text-gray-900'
+              }`}
             >
-              <Plus className="w-5 h-5" />
-              {language === 'en' ? 'Add New Company' : 'Ku Dar Shirkad Cusub'}
+              <Building2 className="w-5 h-5 inline-block mr-2" />
+              {language === 'en' ? 'Companies' : 'Shirkadaha'}
+            </button>
+            <button
+              onClick={() => setActiveTab('categories')}
+              className={`px-6 py-3 font-medium transition-colors border-b-2 ${
+                activeTab === 'categories'
+                  ? 'border-green-600 text-green-600'
+                  : 'border-transparent text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              <Tag className="w-5 h-5 inline-block mr-2" />
+              {language === 'en' ? 'Categories' : 'Noocyada'}
             </button>
           </div>
+
+          {/* Companies Tab Content */}
+          {activeTab === 'companies' && (
+            <>
+              {/* Add Company Button */}
+              <div className="mb-6">
+                <button
+                  onClick={() => setShowAddForm(true)}
+                  className="inline-flex items-center gap-2 px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium"
+                >
+                  <Plus className="w-5 h-5" />
+                  {language === 'en' ? 'Add New Company' : 'Ku Dar Shirkad Cusub'}
+                </button>
+              </div>
 
           {/* Add Company Form Modal */}
           {showAddForm && (
@@ -437,27 +661,94 @@ const CompanyManagementPage: React.FC = () => {
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       {language === 'en' ? 'Business Type' : 'Nooca Ganacsiga'} *
                     </label>
-                    <select
-                      name="businessType"
-                      value={formData.businessType}
-                      onChange={handleInputChange}
-                      required
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                    >
-                      <option value="supermarket">{language === 'en' ? 'Supermarket' : 'Suuqa Weyn'}</option>
-                      <option value="pharmacy">{language === 'en' ? 'Pharmacy' : 'Farmashii'}</option>
-                      <option value="restaurant">{language === 'en' ? 'Restaurant' : 'Meydka'}</option>
-                      <option value="clothing">{language === 'en' ? 'Clothing' : 'Dharada'}</option>
-                      <option value="electronics">{language === 'en' ? 'Electronics' : 'Elektroonigga'}</option>
-                      <option value="beauty">{language === 'en' ? 'Beauty' : 'Quruxda'}</option>
-                      <option value="healthcare">{language === 'en' ? 'Healthcare' : 'Caafimaadka'}</option>
-                      <option value="automotive">{language === 'en' ? 'Automotive' : 'Baabuurta'}</option>
-                      <option value="education">{language === 'en' ? 'Education' : 'Waxbarashada'}</option>
-                      <option value="services">{language === 'en' ? 'Services' : 'Adeegyada'}</option>
-                      <option value="telecommunication">{language === 'en' ? 'Telecommunication' : 'Isgaadhsiinta'}</option>
-                      <option value="travelagency">{language === 'en' ? 'Cargo & Travel Agency' : 'Cargo iyo Wakaalada Safarka'}</option>
-                      <option value="other">{language === 'en' ? 'Other' : 'Kale'}</option>
-                    </select>
+                    {!showQuickAddCategory ? (
+                      <div className="space-y-2">
+                        <select
+                          name="businessType"
+                          value={formData.businessType}
+                          onChange={(e) => {
+                            if (e.target.value === '__add_new__') {
+                              setShowQuickAddCategory(true);
+                            } else {
+                              handleInputChange(e);
+                            }
+                          }}
+                          required
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                        >
+                          {categoriesLoading ? (
+                            <option value="">{language === 'en' ? 'Loading categories...' : 'Soo gelaya noocyada...'}</option>
+                          ) : categories.length > 0 ? (
+                            <>
+                              {categories
+                                .sort((a, b) => (a.order || 0) - (b.order || 0))
+                                .map(category => (
+                                  <option key={category._id} value={category.name}>
+                                    {language === 'en' ? category.displayName.en : category.displayName.so}
+                                    {!category.isActive && ` (${language === 'en' ? 'Inactive' : 'Firfircoon'})`}
+                                  </option>
+                                ))}
+                              <option value="__add_new__" className="font-bold text-green-600">
+                                + {language === 'en' ? 'Add New Category' : 'Ku Dar Nooc Cusub'}
+                              </option>
+                            </>
+                          ) : (
+                            <>
+                              <option value="">{language === 'en' ? 'No categories available' : 'Noocyada ma jiraan'}</option>
+                              <option value="__add_new__" className="font-bold text-green-600">
+                                + {language === 'en' ? 'Add New Category' : 'Ku Dar Nooc Cusub'}
+                              </option>
+                            </>
+                          )}
+                        </select>
+                      </div>
+                    ) : (
+                      <div className="space-y-2">
+                        <div className="flex gap-2">
+                          <input
+                            type="text"
+                            value={quickAddCategoryName}
+                            onChange={(e) => setQuickAddCategoryName(e.target.value)}
+                            placeholder={language === 'en' ? 'Enter category name...' : 'Geli magaca nooca...'}
+                            className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                            onKeyPress={(e) => {
+                              if (e.key === 'Enter') {
+                                e.preventDefault();
+                                handleQuickAddCategory();
+                              }
+                            }}
+                            autoFocus
+                          />
+                          <button
+                            type="button"
+                            onClick={handleQuickAddCategory}
+                            disabled={quickAddCategoryLoading || !quickAddCategoryName.trim()}
+                            className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                            {quickAddCategoryLoading ? (
+                              <span className="inline-block animate-spin rounded-full h-4 w-4 border-b-2 border-white"></span>
+                            ) : (
+                              language === 'en' ? 'Add' : 'Ku Dar'
+                            )}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setShowQuickAddCategory(false);
+                              setQuickAddCategoryName('');
+                            }}
+                            className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
+                          >
+                            <X className="w-5 h-5" />
+                          </button>
+                        </div>
+                        <p className="text-xs text-gray-500">
+                          {language === 'en' 
+                            ? 'Enter a category name. Display names and colors can be edited later in Categories tab.' 
+                            : 'Geli magaca nooca. Magacyada iyo midabyada waxaa la beddeli karaa tabka Noocyada.'}
+                        </p>
+                      </div>
+                    )}
                   </div>
 
                   {/* Description */}
@@ -558,6 +849,8 @@ const CompanyManagementPage: React.FC = () => {
                       setEditingCompany(null);
                       setLogoPreview('');
                       setLogoFile(null);
+                      setShowQuickAddCategory(false);
+                      setQuickAddCategoryName('');
                     }}
                     className="text-gray-400 hover:text-gray-600"
                   >
@@ -586,27 +879,94 @@ const CompanyManagementPage: React.FC = () => {
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       {language === 'en' ? 'Business Type' : 'Nooca Ganacsiga'} *
                     </label>
-                    <select
-                      name="businessType"
-                      value={formData.businessType}
-                      onChange={handleInputChange}
-                      required
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                    >
-                      <option value="supermarket">{language === 'en' ? 'Supermarket' : 'Suuqa Weyn'}</option>
-                      <option value="pharmacy">{language === 'en' ? 'Pharmacy' : 'Farmashii'}</option>
-                      <option value="restaurant">{language === 'en' ? 'Restaurant' : 'Meydka'}</option>
-                      <option value="clothing">{language === 'en' ? 'Clothing' : 'Dharada'}</option>
-                      <option value="electronics">{language === 'en' ? 'Electronics' : 'Elektroonigga'}</option>
-                      <option value="beauty">{language === 'en' ? 'Beauty' : 'Quruxda'}</option>
-                      <option value="healthcare">{language === 'en' ? 'Healthcare' : 'Caafimaadka'}</option>
-                      <option value="automotive">{language === 'en' ? 'Automotive' : 'Baabuurta'}</option>
-                      <option value="education">{language === 'en' ? 'Education' : 'Waxbarashada'}</option>
-                      <option value="services">{language === 'en' ? 'Services' : 'Adeegyada'}</option>
-                      <option value="telecommunication">{language === 'en' ? 'Telecommunication' : 'Isgaadhsiinta'}</option>
-                      <option value="travelagency">{language === 'en' ? 'Cargo & Travel Agency' : 'Cargo iyo Wakaalada Safarka'}</option>
-                      <option value="other">{language === 'en' ? 'Other' : 'Kale'}</option>
-                    </select>
+                    {!showQuickAddCategory ? (
+                      <div className="space-y-2">
+                        <select
+                          name="businessType"
+                          value={formData.businessType}
+                          onChange={(e) => {
+                            if (e.target.value === '__add_new__') {
+                              setShowQuickAddCategory(true);
+                            } else {
+                              handleInputChange(e);
+                            }
+                          }}
+                          required
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                        >
+                          {categoriesLoading ? (
+                            <option value="">{language === 'en' ? 'Loading categories...' : 'Soo gelaya noocyada...'}</option>
+                          ) : categories.length > 0 ? (
+                            <>
+                              {categories
+                                .sort((a, b) => (a.order || 0) - (b.order || 0))
+                                .map(category => (
+                                  <option key={category._id} value={category.name}>
+                                    {language === 'en' ? category.displayName.en : category.displayName.so}
+                                    {!category.isActive && ` (${language === 'en' ? 'Inactive' : 'Firfircoon'})`}
+                                  </option>
+                                ))}
+                              <option value="__add_new__" className="font-bold text-green-600">
+                                + {language === 'en' ? 'Add New Category' : 'Ku Dar Nooc Cusub'}
+                              </option>
+                            </>
+                          ) : (
+                            <>
+                              <option value="">{language === 'en' ? 'No categories available' : 'Noocyada ma jiraan'}</option>
+                              <option value="__add_new__" className="font-bold text-green-600">
+                                + {language === 'en' ? 'Add New Category' : 'Ku Dar Nooc Cusub'}
+                              </option>
+                            </>
+                          )}
+                        </select>
+                      </div>
+                    ) : (
+                      <div className="space-y-2">
+                        <div className="flex gap-2">
+                          <input
+                            type="text"
+                            value={quickAddCategoryName}
+                            onChange={(e) => setQuickAddCategoryName(e.target.value)}
+                            placeholder={language === 'en' ? 'Enter category name...' : 'Geli magaca nooca...'}
+                            className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                            onKeyPress={(e) => {
+                              if (e.key === 'Enter') {
+                                e.preventDefault();
+                                handleQuickAddCategory();
+                              }
+                            }}
+                            autoFocus
+                          />
+                          <button
+                            type="button"
+                            onClick={handleQuickAddCategory}
+                            disabled={quickAddCategoryLoading || !quickAddCategoryName.trim()}
+                            className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                            {quickAddCategoryLoading ? (
+                              <span className="inline-block animate-spin rounded-full h-4 w-4 border-b-2 border-white"></span>
+                            ) : (
+                              language === 'en' ? 'Add' : 'Ku Dar'
+                            )}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setShowQuickAddCategory(false);
+                              setQuickAddCategoryName('');
+                            }}
+                            className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
+                          >
+                            <X className="w-5 h-5" />
+                          </button>
+                        </div>
+                        <p className="text-xs text-gray-500">
+                          {language === 'en' 
+                            ? 'Enter a category name. Display names and colors can be edited later in Categories tab.' 
+                            : 'Geli magaca nooca. Magacyada iyo midabyada waxaa la beddeli karaa tabka Noocyada.'}
+                        </p>
+                      </div>
+                    )}
                   </div>
 
                   {/* Description */}
@@ -841,6 +1201,210 @@ const CompanyManagementPage: React.FC = () => {
             <div className="text-center py-12 text-gray-500">
               {language === 'en' ? 'No companies found. Add your first company!' : 'Shirkado lama helo. Ku dar shirkaddaada ugu horeysa!'}
             </div>
+          )}
+            </>
+          )}
+
+          {/* Categories Tab Content */}
+          {activeTab === 'categories' && (
+            <>
+              {/* Add Category Button */}
+              <div className="mb-6">
+                <button
+                  onClick={() => {
+                    setShowCategoryForm(true);
+                    setEditingCategory(null);
+                    setCategoryFormData({
+                      name: '',
+                      displayName: { en: '', so: '' },
+                      color: { from: 'from-gray-500', to: 'to-gray-600' },
+                      order: 0
+                    });
+                  }}
+                  className="inline-flex items-center gap-2 px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium"
+                >
+                  <Plus className="w-5 h-5" />
+                  {language === 'en' ? 'Add New Category' : 'Ku Dar Nooc Cusub'}
+                </button>
+              </div>
+
+              {/* Categories List */}
+              {categoriesLoading ? (
+                <div className="text-center py-12">
+                  <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mb-4"></div>
+                  <p className="text-gray-600">
+                    {language === 'en' ? 'Loading categories...' : 'Soo gelaya noocyada...'}
+                  </p>
+                </div>
+              ) : categories.length === 0 ? (
+                <div className="text-center py-12 text-gray-500">
+                  {language === 'en' ? 'No categories found. Add your first category!' : 'Noocyada lama helo. Ku dar noocaada ugu horeysa!'}
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {categories
+                    .sort((a, b) => (a.order || 0) - (b.order || 0))
+                    .map((category) => (
+                      <motion.div
+                        key={category._id}
+                        className={`relative overflow-hidden rounded-2xl bg-gradient-to-br ${category.color.from} ${category.color.to} shadow-xl hover:shadow-2xl transition-all duration-300`}
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                      >
+                        <div className="relative p-6 text-white">
+                          <div className="flex items-center justify-between mb-4">
+                            <Tag className="w-12 h-12" />
+                            {!category.isActive && (
+                              <span className="px-2 py-1 bg-red-500/80 rounded text-xs font-medium">
+                                {language === 'en' ? 'Inactive' : 'Firfircoon maaha'}
+                              </span>
+                            )}
+                          </div>
+                          <h3 className="text-xl font-bold mb-2">
+                            {language === 'en' ? category.displayName.en : category.displayName.so}
+                          </h3>
+                          <p className="text-white/90 text-sm mb-2">
+                            <span className="font-medium">{language === 'en' ? 'Slug:' : 'Magaca:'}</span> {category.name}
+                          </p>
+                          <p className="text-white/90 text-sm mb-4">
+                            <span className="font-medium">{language === 'en' ? 'Order:' : 'Tartibka:'}</span> {category.order || 0}
+                          </p>
+                          <div className="flex gap-2 mt-4 pt-4 border-t border-white/20">
+                            <button
+                              onClick={() => handleCategoryEdit(category)}
+                              className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-white/20 hover:bg-white/30 text-white rounded-lg transition-colors text-sm font-medium"
+                            >
+                              <Edit className="w-4 h-4" />
+                              {language === 'en' ? 'Edit' : 'Wax ka beddel'}
+                            </button>
+                            <button
+                              onClick={() => setDeletingCategory(category)}
+                              className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-red-500/80 hover:bg-red-600 text-white rounded-lg transition-colors text-sm font-medium"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                              {language === 'en' ? 'Delete' : 'Tirtir'}
+                            </button>
+                          </div>
+                        </div>
+                      </motion.div>
+                    ))}
+                </div>
+              )}
+
+              {/* Category Form Modal */}
+              {showCategoryForm && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto"
+                  >
+                    <div className="p-6 border-b border-gray-200 flex items-center justify-between">
+                      <h2 className="text-2xl font-bold text-gray-900">
+                        {editingCategory
+                          ? (language === 'en' ? 'Edit Category' : 'Wax ka beddel Nooca')
+                          : (language === 'en' ? 'Add New Category' : 'Ku Dar Nooc Cusub')}
+                      </h2>
+                      <button
+                        onClick={() => {
+                          setShowCategoryForm(false);
+                          setEditingCategory(null);
+                        }}
+                        className="text-gray-400 hover:text-gray-600"
+                      >
+                        <X className="w-6 h-6" />
+                      </button>
+                    </div>
+
+                    <form onSubmit={handleCategorySubmit} className="p-6 space-y-4">
+                      {/* Category Name (Slug) */}
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          {language === 'en' ? 'Category Name' : 'Magaca Nooca'} *
+                        </label>
+                        <input
+                          type="text"
+                          name="name"
+                          value={categoryFormData.name}
+                          onChange={handleCategoryInputChange}
+                          required
+                          disabled={!!editingCategory}
+                          pattern="[a-z0-9-]+"
+                          placeholder={language === 'en' ? 'e.g., student-adsl or supermarket' : 'tusaale: student-adsl ama supermarket'}
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 disabled:bg-gray-100"
+                        />
+                        <p className="text-xs text-gray-500 mt-1">
+                          {language === 'en' 
+                            ? 'Lowercase letters, numbers, and hyphens only. Spaces will be converted to hyphens. Display name will be auto-generated from this. Cannot be changed after creation.'
+                            : 'Xarfaha hoose, tirooyinka, iyo qalabyada kaliya. Meelaha bannaan waa la beddeli doonaa qalabyada. Magaca muujinta ayaa si toos ah loo sameyn doonaa. Lama beddeli karo ka dib sameynta.'}
+                        </p>
+                      </div>
+
+                      {/* Submit Button */}
+                      <div className="flex gap-4 pt-4">
+                        <button
+                          type="submit"
+                          disabled={loading}
+                          className="flex-1 px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+                        >
+                          {loading
+                            ? (language === 'en' ? 'Saving...' : 'La keydinayaa...')
+                            : (editingCategory
+                                ? (language === 'en' ? 'Update Category' : 'Cusbooneysii Nooca')
+                                : (language === 'en' ? 'Create Category' : 'Samee Nooca'))}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setShowCategoryForm(false);
+                            setEditingCategory(null);
+                          }}
+                          className="px-6 py-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 font-medium"
+                        >
+                          {language === 'en' ? 'Cancel' : 'Jooji'}
+                        </button>
+                      </div>
+                    </form>
+                  </motion.div>
+                </div>
+              )}
+
+              {/* Delete Category Confirmation Modal */}
+              {deletingCategory && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6"
+                  >
+                    <h2 className="text-2xl font-bold text-gray-900 mb-4">
+                      {language === 'en' ? 'Delete Category' : 'Tirtir Nooca'}
+                    </h2>
+                    <p className="text-gray-600 mb-6">
+                      {language === 'en' 
+                        ? `Are you sure you want to delete "${deletingCategory.displayName.en}"? This action cannot be undone. If any companies use this category, you must update or delete them first.`
+                        : `Ma hubtaa inaad tirtirto "${deletingCategory.displayName.so}"? Tallaabaddan lama dib u soo celin karo. Haddii shirkado ay isticmaalaan noocan, waa inaad hore u cusbooneysiisaa ama tirtirtaa.`}
+                    </p>
+                    <div className="flex gap-4">
+                      <button
+                        onClick={handleCategoryDelete}
+                        disabled={loading}
+                        className="flex-1 px-6 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+                      >
+                        {loading ? (language === 'en' ? 'Deleting...' : 'La tirtirayaa...') : (language === 'en' ? 'Delete' : 'Tirtir')}
+                      </button>
+                      <button
+                        onClick={() => setDeletingCategory(null)}
+                        disabled={loading}
+                        className="px-6 py-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 font-medium"
+                      >
+                        {language === 'en' ? 'Cancel' : 'Jooji'}
+                      </button>
+                    </div>
+                  </motion.div>
+                </div>
+              )}
+            </>
           )}
         </div>
       </div>
