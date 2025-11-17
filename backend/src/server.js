@@ -1,3 +1,8 @@
+// Immediate log to verify file is executing
+console.log('========================================');
+console.log('🚀 SERVER.JS FILE IS EXECUTING');
+console.log('========================================');
+
 const express = require('express');
 const http = require('http');
 const mongoose = require('mongoose');
@@ -7,20 +12,81 @@ const compression = require('compression');
 const morgan = require('morgan');
 const rateLimit = require('express-rate-limit');
 const cron = require('node-cron');
-require('dotenv').config();
+
+console.log('📦 Loading dependencies...');
+
+try {
+  require('dotenv').config();
+  console.log('✅ dotenv loaded');
+} catch (e) {
+  console.error('❌ dotenv failed:', e);
+}
 
 console.log('📦 Server module loading...');
 console.log('📋 Node version:', process.version);
 console.log('📋 NODE_ENV:', process.env.NODE_ENV || 'not set');
+console.log('📋 Working directory:', process.cwd());
+console.log('📋 __dirname:', __dirname);
 
 // Import routes
-const authRoutes = require('./routes/auth');
-const sahacardRoutes = require('./routes/sahalCard');
-const uploadRoutes = require('./routes/uploadRoutes');
-const paymentRoutes = require('./routes/payment');
-const simplePaymentRoutes = require('./routes/simplePayment');
-const companyRoutes = require('./routes/company');
-const categoryRoutes = require('./routes/category');
+console.log('📦 Loading routes...');
+let authRoutes, sahacardRoutes, uploadRoutes, paymentRoutes, simplePaymentRoutes, companyRoutes, categoryRoutes;
+
+try {
+  authRoutes = require('./routes/auth');
+  console.log('✅ auth routes loaded');
+} catch (e) {
+  console.error('❌ Failed to load auth routes:', e);
+  throw e;
+}
+
+try {
+  sahacardRoutes = require('./routes/sahalCard');
+  console.log('✅ sahalCard routes loaded');
+} catch (e) {
+  console.error('❌ Failed to load sahalCard routes:', e);
+  throw e;
+}
+
+try {
+  uploadRoutes = require('./routes/uploadRoutes');
+  console.log('✅ upload routes loaded');
+} catch (e) {
+  console.error('❌ Failed to load upload routes:', e);
+  throw e;
+}
+
+try {
+  paymentRoutes = require('./routes/payment');
+  console.log('✅ payment routes loaded');
+} catch (e) {
+  console.error('❌ Failed to load payment routes:', e);
+  throw e;
+}
+
+try {
+  simplePaymentRoutes = require('./routes/simplePayment');
+  console.log('✅ simplePayment routes loaded');
+} catch (e) {
+  console.error('❌ Failed to load simplePayment routes:', e);
+  throw e;
+}
+
+try {
+  companyRoutes = require('./routes/company');
+  console.log('✅ company routes loaded');
+} catch (e) {
+  console.error('❌ Failed to load company routes:', e);
+  throw e;
+}
+
+try {
+  categoryRoutes = require('./routes/category');
+  console.log('✅ category routes loaded');
+} catch (e) {
+  console.error('❌ Failed to load category routes:', e);
+  throw e;
+}
 
 const app = express();
 
@@ -526,6 +592,24 @@ process.on('SIGINT', () => {
   });
 });
 
-startServer();
+console.log('========================================');
+console.log('🚀 CALLING startServer()');
+console.log('========================================');
+
+// Wrap in try-catch to catch any synchronous errors
+try {
+  startServer().catch((error) => {
+    console.error('❌ startServer() promise rejected:', error);
+    console.error('Error message:', error?.message);
+    console.error('Error stack:', error?.stack);
+    // Don't exit immediately - let the error handlers deal with it
+  });
+  console.log('✅ startServer() called successfully');
+} catch (error) {
+  console.error('❌ Synchronous error calling startServer():', error);
+  console.error('Error message:', error?.message);
+  console.error('Error stack:', error?.stack);
+  process.exit(1);
+}
 
 module.exports = app;
