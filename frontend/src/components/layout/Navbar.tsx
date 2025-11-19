@@ -90,24 +90,38 @@ const Navbar: React.FC = () => {
           ? 'bg-white/80 backdrop-blur-lg shadow-lg border-b border-white/20'
           : 'bg-transparent'
       }`}
+      style={{ position: 'fixed', top: 0, left: 0, right: 0 }}
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="relative flex justify-between items-center h-20">
-          {/* Desktop Navigation - Left */}
-          <div className="hidden md:flex items-center space-x-8">
-            {navItems.map((item) => (
-              <button
-                key={item.href}
-                onClick={() => handleNavClick(item)}
-                className="nav-link"
-              >
-                {item.name}
-              </button>
-            ))}
+        <div className="relative flex justify-between items-center h-32 md:h-40 lg:h-48">
+          {/* Left Side - Logo and Desktop Navigation */}
+          <div className="flex items-center space-x-8">
+            {/* Logo - Fixed Position */}
+            <Link to="/" className="flex items-center flex-shrink-0 relative z-10">
+              <img
+                src="/icons/sehal.png"
+                alt="Sahal Card Logo"
+                className="h-32 md:h-48 lg:h-56 xl:h-64 w-auto object-contain"
+                style={{ position: 'relative', zIndex: 10 }}
+              />
+            </Link>
+
+            {/* Desktop Navigation */}
+            <div className="hidden md:flex items-center space-x-8">
+              {navItems.map((item) => (
+                <button
+                  key={item.href}
+                  onClick={() => handleNavClick(item)}
+                  className="nav-link"
+                >
+                  {item.name}
+                </button>
+              ))}
+            </div>
           </div>
 
           {/* Right Side Actions */}
-          <div className="flex items-center space-x-4 ml-auto">
+          <div className="flex items-center space-x-4">
 
             {/* Authentication */}
             {isAuthenticated && (
@@ -208,6 +222,16 @@ const Navbar: React.FC = () => {
             className="md:hidden bg-white/90 backdrop-blur-lg border-t border-white/20"
           >
             <div className="px-4 py-4 space-y-2">
+              {/* Mobile Logo */}
+              <Link to="/" className="flex items-center justify-center py-2" onClick={() => setIsOpen(false)}>
+                <img
+                  src="/icons/sehal.png"
+                  alt="Sahal Card Logo"
+                  className="h-40 w-auto object-contain"
+                />
+              </Link>
+              <hr className="my-2 border-gray-200" />
+              
               {navItems.map((item) => (
                 <button
                   key={item.href}
