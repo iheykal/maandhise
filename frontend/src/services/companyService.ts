@@ -7,26 +7,26 @@ const getApiBaseUrl = (): string => {
   if (process.env.REACT_APP_API_URL) {
     return process.env.REACT_APP_API_URL;
   }
-  
+
   // Auto-detect localhost and local network IPs (for mobile devices on same network)
   if (typeof window !== 'undefined') {
     const hostname = window.location.hostname;
     const isLocalhost = hostname === 'localhost' || hostname === '127.0.0.1';
     const isLocalNetwork = hostname.startsWith('192.168.') || hostname.startsWith('10.0.') || hostname.startsWith('172.16.');
-    
+
     // For localhost or local network (including mobile devices on same network)
     if (isLocalhost || isLocalNetwork) {
-      // Use the same hostname as the frontend, but port 5000 for backend
+      // Use the same hostname as the frontend, but port 5001 for backend
       // This allows mobile devices on the same network to access the backend
-      return `${window.location.protocol}//${hostname}:5000/api`;
+      return `${window.location.protocol}//${hostname}:5001/api`;
     }
   }
-  
+
   // Default: use current hostname (works for custom domains)
   if (typeof window !== 'undefined') {
     return `${window.location.protocol}//${window.location.hostname}/api`;
   }
-  
+
   // Fallback for server-side rendering
   return process.env.REACT_APP_API_URL || '/api';
 };
@@ -153,7 +153,7 @@ export const companyService = {
       // Use the same API base URL logic to work on mobile devices
       const publicApiBaseUrl = getApiBaseUrl();
       console.log('[Public Companies API] Using URL:', publicApiBaseUrl);
-      
+
       const publicApi = axios.create({
         baseURL: publicApiBaseUrl,
         headers: {
@@ -161,26 +161,26 @@ export const companyService = {
         },
         timeout: 30000,
       });
-      
+
       const response = await publicApi.get('/companies/public/all', { params });
       console.log('[Public Companies] Full response:', response.data);
-      
+
       // Check response structure
       if (!response.data || !response.data.success) {
         console.error('[Public Companies] Invalid response structure:', response.data);
         throw new Error('Invalid API response');
       }
-      
+
       const data = response.data.data;
       console.log('[Public Companies] Response data:', data);
       console.log('[Public Companies] Companies count:', data?.companies?.length || 0);
       console.log('[Public Companies] Companies:', data?.companies);
-      
+
       if (!data || !data.companies) {
         console.error('[Public Companies] No companies in response');
         return { companies: [], pagination: { current: 1, pages: 0, total: 0 } };
       }
-      
+
       console.log('[Public Companies] Loaded:', data.companies.length, 'companies');
       return data;
     } catch (error: any) {

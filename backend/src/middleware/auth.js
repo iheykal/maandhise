@@ -7,7 +7,14 @@ const authenticateToken = async (req, res, next) => {
     const authHeader = req.headers.authorization;
     const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
 
+    // DEBUG LOGS
+    console.log('[AUTH DEBUG] Request:', req.path);
+    console.log('[AUTH DEBUG] Auth Header:', authHeader ? 'Present' : 'Missing');
+    console.log('[AUTH DEBUG] Token:', token ? token.substring(0, 10) + '...' : 'Missing');
+    console.log('[AUTH DEBUG] JWT_SECRET:', process.env.JWT_SECRET ? process.env.JWT_SECRET.substring(0, 3) + '...' : 'Missing');
+
     if (!token) {
+      console.log('[AUTH DEBUG] No token provided');
       return res.status(401).json({
         success: false,
         message: 'Access token required'
@@ -15,11 +22,36 @@ const authenticateToken = async (req, res, next) => {
     }
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    
+    console.log('[AUTH DEBUG] Token verified for user:', decoded.userId);
+
     // Get user from database
-    const user = await User.findById(decoded.userId).select('-password');
-    
+    // Explicitly cast to ObjectId to ensure query works
+    const mongoose = require('mongoose');
+    let userId = decoded.userId;
+
+    try {
+      if (typeof userId === 'string') {
+        userId = new mongoose.Types.ObjectId(userId);
+      }
+    } catch (e) {
+      console.log('[AUTH DEBUG] Error casting ID:', e.message);
+    }
+
+    const user = await User.findById(userId);
+
     if (!user) {
+      console.log('[AUTH DEBUG] User not found by ID:', userId);
+      console.log('[AUTH DEBUG] DB Name:', mongoose.connection.name);
+      console.log('[AUTH DEBUG] User Collection:', User.collection.name);
+
+      // Fallback: Try to find by phone if ID fails (to debug if it's an ID issue)
+      // We need to decode the token again to get other fields if available, 
+      // but standard JWT only has userId. 
+
+      // Let's try to list ALL users to see what IDs look like (limit 1)
+      const anyUser = await User.findOne();
+      console.log('[AUTH DEBUG] Sample user ID from DB:', anyUser ? anyUser._id.toString() : 'No users found');
+
       return res.status(401).json({
         success: false,
         message: 'User not found'
@@ -38,7 +70,7 @@ const authenticateToken = async (req, res, next) => {
         message: 'Invalid token'
       });
     }
-    
+
     if (error.name === 'TokenExpiredError') {
       return res.status(401).json({
         success: false,
@@ -92,7 +124,7 @@ const authorizeOwnerOrAdmin = (resourceUserIdField = 'userId') => {
 
     // Check if user owns the resource
     const resourceUserId = req.params[resourceUserIdField] || req.body[resourceUserIdField];
-    
+
     if (resourceUserId && resourceUserId.toString() !== req.user._id.toString()) {
       return res.status(403).json({
         success: false,
@@ -113,7 +145,7 @@ const optionalAuth = async (req, res, next) => {
     if (token) {
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
       const user = await User.findById(decoded.userId).select('-password');
-      
+
       if (user && user.isActive) {
         req.user = user;
       }
@@ -144,7 +176,7 @@ const requireActiveCard = async (req, res, next) => {
     }
 
     const SahalCard = require('../models/SahalCard');
-    const card = await SahalCard.findOne({ 
+    const card = await SahalCard.findOne({
       userId: req.user._id,
       isActive: true,
       status: 'active'

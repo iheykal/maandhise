@@ -15,6 +15,14 @@ const s3Client = new S3Client({
   forcePathStyle: true, // Required for R2
 });
 
+console.log('[R2Service] Initialized with:', {
+  endpoint: process.env.CLOUDFLARE_ENDPOINT,
+  bucket: process.env.CLOUDFLARE_BUCKET_NAME,
+  hasAccessKey: !!process.env.CLOUDFLARE_ACCESS_KEY_ID,
+  hasSecretKey: !!process.env.CLOUDFLARE_SECRET_ACCESS_KEY,
+  publicUrl: process.env.CLOUDFLARE_PUBLIC_URL
+});
+
 const BUCKET_NAME = process.env.CLOUDFLARE_BUCKET_NAME || 'maandhise';
 
 
@@ -46,7 +54,7 @@ class R2Service {
   static async uploadFile(fileBuffer, fileName, contentType) {
     try {
       const key = `uploads/${Date.now()}-${fileName}`;
-      
+
       const command = new PutObjectCommand({
         Bucket: BUCKET_NAME,
         Key: key,
@@ -55,12 +63,20 @@ class R2Service {
         // ACL removed for Cloudflare R2 compatibility
       });
 
+      console.log('[R2Service] Uploading file:', {
+        key,
+        bucket: BUCKET_NAME,
+        size: fileBuffer.length,
+        contentType
+      });
+
       const result = await s3Client.send(command);
-      
+      console.log('[R2Service] Upload successful:', result);
+
       // Generate public URL instead of signed URL for permanent access
       const publicUrlBase = process.env.CLOUDFLARE_PUBLIC_URL;
       let publicUrl;
-      
+
       if (publicUrlBase) {
         // Use the configured public URL base
         publicUrl = `${publicUrlBase}/${key}`;
@@ -70,7 +86,7 @@ class R2Service {
         const bucketName = BUCKET_NAME;
         publicUrl = `https://pub-${accountId}.r2.dev/${bucketName}/${key}`;
       }
-      
+
       return publicUrl;
     } catch (error) {
       console.error('R2 upload error:', error);
@@ -88,7 +104,7 @@ class R2Service {
       // Extract key from URL
       const urlParts = fileUrl.split('/');
       const key = urlParts.slice(-2).join('/'); // Get 'uploads/filename'
-      
+
       const command = new DeleteObjectCommand({
         Bucket: BUCKET_NAME,
         Key: key,
@@ -111,7 +127,7 @@ class R2Service {
   static async generatePresignedUploadUrl(fileName, contentType) {
     try {
       const key = `uploads/${Date.now()}-${fileName}`;
-      
+
       const command = new PutObjectCommand({
         Bucket: BUCKET_NAME,
         Key: key,
@@ -120,11 +136,11 @@ class R2Service {
       });
 
       const uploadUrl = await getSignedUrl(s3Client, command, { expiresIn: 3600 }); // 1 hour
-      
+
       // Use the public URL from environment variable if available, otherwise construct it
       const publicUrlBase = process.env.CLOUDFLARE_PUBLIC_URL;
       let publicUrl;
-      
+
       if (publicUrlBase) {
         // Use the configured public URL base
         publicUrl = `${publicUrlBase}/${key}`;
@@ -134,7 +150,7 @@ class R2Service {
         const bucketName = BUCKET_NAME;
         publicUrl = `https://pub-${accountId}.r2.dev/${bucketName}/${key}`;
       }
-      
+
       return { uploadUrl, publicUrl };
     } catch (error) {
       console.error('Error generating presigned URL:', error);
@@ -155,21 +171,21 @@ class R2Service {
         // It's already a public URL, return as-is
         return fileUrl;
       }
-      
+
       // Extract key from URL
       const urlParts = fileUrl.split('/');
       const key = urlParts.slice(-2).join('/'); // Get 'uploads/filename'
-      
+
       const getObjectCommand = new GetObjectCommand({
         Bucket: BUCKET_NAME,
         Key: key,
       });
-      
+
       // Generate fresh signed URL that expires in 7 days
-      const signedUrl = await getSignedUrl(s3Client, getObjectCommand, { 
+      const signedUrl = await getSignedUrl(s3Client, getObjectCommand, {
         expiresIn: 7 * 24 * 60 * 60 // 7 days
       });
-      
+
       return signedUrl;
     } catch (error) {
       console.error('Error generating fresh signed URL:', error);

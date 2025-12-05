@@ -6,16 +6,16 @@ const getApiBaseUrl = (): string => {
   if (process.env.REACT_APP_API_URL) {
     return process.env.REACT_APP_API_URL;
   }
-  
+
   if (typeof window !== 'undefined') {
     const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
     if (isLocalhost) {
-      return 'http://localhost:5000/api';
+      return 'http://localhost:5001/api';
     }
     // Use current hostname for production/custom domains
     return `${window.location.protocol}//${window.location.hostname}/api`;
   }
-  
+
   return '/api';
 };
 
@@ -71,6 +71,7 @@ const SimplePaymentManager: React.FC = () => {
 
   const fetchUsers = async (status?: string) => {
     try {
+      setLoading(true);
       const url = new URL(`${API_BASE_URL}/simple-payments/status`);
       if (status) {
         url.searchParams.append('status', status);
@@ -123,7 +124,7 @@ const SimplePaymentManager: React.FC = () => {
     return 'text-gray-900';
   };
 
-  if (loading) {
+  if (loading && !users.length) {
     return (
       <div className="p-6">
         <div className="flex items-center justify-center h-64">

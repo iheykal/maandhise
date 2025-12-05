@@ -6,20 +6,20 @@ const getApiBaseUrl = (): string => {
   if (process.env.REACT_APP_API_URL) {
     return process.env.REACT_APP_API_URL;
   }
-  
+
   // Auto-detect localhost in development
   if (typeof window !== 'undefined') {
     const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
     if (isLocalhost) {
-      return 'http://localhost:5000/api';
+      return 'http://localhost:5001/api';
     }
   }
-  
+
   // Default: use current hostname (works for custom domains)
   if (typeof window !== 'undefined') {
     return `${window.location.protocol}//${window.location.hostname}/api`;
   }
-  
+
   // Fallback for server-side rendering
   return process.env.REACT_APP_API_URL || '/api';
 };
@@ -148,21 +148,31 @@ export const authService = {
   // Login user
   login: async (phone: string, password: string): Promise<LoginResponse> => {
     const startTime = Date.now();
-    console.log('[authService.login] Starting login request...', { 
-      phone, 
-      endpoint: '/auth/login', 
+    console.log('[authService.login] Starting login request...', {
+      phone,
+      endpoint: '/auth/login',
       baseURL: API_BASE_URL,
       timeout: API_TIMEOUT,
       timestamp: new Date().toISOString(),
     });
-    
+
     // Create abort controller as additional safety
     const controller = new AbortController();
     const timeoutId = setTimeout(() => {
-      console.warn('[authService.login] Timeout reached, aborting request...');
+      console.warn('[authService.login] ⚠️ Timeout reached, aborting request...', {
+        timeout: API_TIMEOUT,
+        elapsed: Date.now() - startTime
+      });
       controller.abort();
     }, API_TIMEOUT);
-    
+
+    console.log('[authService.login] Request configuration:', {
+      url: '/auth/login',
+      method: 'POST',
+      timeout: API_TIMEOUT,
+      headers: api.defaults.headers
+    });
+
     try {
       const response = await api.post('/auth/login', { phone, password }, {
         signal: controller.signal
@@ -182,16 +192,21 @@ export const authService = {
     } catch (error: any) {
       clearTimeout(timeoutId);
       const elapsed = Date.now() - startTime;
-      
+
       // Check if aborted
-      if (error.name === 'AbortError' || error.name === 'CanceledError') {
-        console.error('[authService.login] Request was aborted after timeout:', elapsed);
+      if (error.name === 'AbortError' || error.name === 'CanceledError' || axios.isCancel(error)) {
+        console.error('[authService.login] 🛑 Request was ABORTED:', {
+          elapsed: `${elapsed}ms`,
+          errorName: error.name,
+          errorMessage: error.message,
+          stack: error.stack
+        });
         const timeoutError = new Error('Request timed out');
         (timeoutError as any).code = 'ECONNABORTED';
         throw timeoutError;
       }
-      
-      console.error('[authService.login] Error occurred:', {
+
+      console.error('[authService.login] ❌ Error occurred:', {
         message: error.message,
         code: error.code,
         status: error.response?.status,
@@ -201,6 +216,13 @@ export const authService = {
         timeout: API_TIMEOUT,
         isTimeout: error.code === 'ECONNABORTED',
         errorName: error.name,
+        stack: error.stack,
+        config: {
+          url: error.config?.url,
+          method: error.config?.method,
+          baseURL: error.config?.baseURL,
+          timeout: error.config?.timeout
+        }
       });
       throw error;
     }

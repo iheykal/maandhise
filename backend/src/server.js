@@ -57,6 +57,11 @@ const limiter = rateLimit({
   message: {
     success: false,
     message: 'Too many requests from this IP, please try again later.'
+  },
+  // Use custom keyGenerator to avoid trust proxy validation issues
+  keyGenerator: (req) => {
+    // Safely get IP address without triggering trust proxy validation
+    return req.ip || req.connection.remoteAddress || 'unknown';
   }
 });
 
@@ -82,13 +87,13 @@ console.log('Allowed CORS origins:', allowedOrigins);
 app.use(cors({
   origin: function (origin, callback) {
     console.log('CORS request from origin:', origin);
-    
+
     // Allow requests with no origin (like mobile apps, curl, or same-origin requests)
     if (!origin) {
       console.log('CORS allowed for no origin (same-origin request)');
       return callback(null, true);
     }
-    
+
     // Allow all origins for now to fix the issue
     console.log('CORS allowed for origin:', origin);
     callback(null, true);
@@ -123,7 +128,7 @@ const indexPath = path.join(frontendBuildPath, 'index.html');
 // Check if frontend build exists
 if (fs.existsSync(frontendBuildPath)) {
   app.use(express.static(frontendBuildPath));
-  
+
   // Root endpoint - serve React app
   app.get('/', (req, res) => {
     res.sendFile(indexPath);
@@ -234,7 +239,7 @@ app.use((error, req, res, next) => {
 const connectDB = async () => {
   try {
     const mongoURI = process.env.MONGODB_URI;
-    
+
     // Check if MongoDB URI is configured
     if (!mongoURI) {
       console.log('⚠️  MongoDB not configured. Using in-memory database for development.');
@@ -242,7 +247,7 @@ const connectDB = async () => {
       console.log('   Example: MONGODB_URI=mongodb+srv://username:password@cluster0.xxxxx.mongodb.net/maandhise?retryWrites=true&w=majority');
       return; // Skip MongoDB connection for now
     }
-    
+
     // MongoDB Atlas connection options
     const options = {
       maxPoolSize: 10, // Maintain up to 10 socket connections
@@ -257,13 +262,13 @@ const connectDB = async () => {
     console.log('✅ MongoDB Atlas connected successfully');
     console.log(`📊 Database: ${mongoose.connection.name}`);
     console.log(`🌐 Host: ${mongoose.connection.host}`);
-    
+
     // Create indexes for better performance
     try {
       // Get all existing indexes
       const existingIndexes = await mongoose.connection.db.collection('users').indexes();
       console.log('📋 Existing user indexes:', existingIndexes.map(idx => idx.name));
-      
+
       // Try to drop the old phone index if it exists (to recreate with sparse)
       const phoneIndex = existingIndexes.find(idx => idx.name === 'phone_1' || idx.key?.phone === 1);
       if (phoneIndex && !phoneIndex.sparse) {
@@ -275,7 +280,7 @@ const connectDB = async () => {
           // If drop fails, try to recreate anyway (it will error if needed)
         }
       }
-      
+
       // Create phone index with sparse option (allows multiple null values for companies)
       try {
         await mongoose.connection.db.collection('users').createIndex({ phone: 1 }, { unique: true, sparse: true, name: 'phone_1' });
@@ -295,15 +300,15 @@ const connectDB = async () => {
           throw createError;
         }
       }
-      
+
       await mongoose.connection.db.collection('sahacards').createIndex({ cardNumber: 1 }, { unique: true });
       await mongoose.connection.db.collection('sahacards').createIndex({ userId: 1 });
-      
+
       // Fix companies userId index - make it sparse to allow multiple null values
       try {
         const companyIndexes = await mongoose.connection.db.collection('companies').indexes();
         console.log('📋 Existing company indexes:', companyIndexes.map(idx => idx.name));
-        
+
         const userIdIndex = companyIndexes.find(idx => idx.name === 'userId_1' || idx.key?.userId === 1);
         if (userIdIndex && userIdIndex.unique && !userIdIndex.sparse) {
           try {
@@ -313,7 +318,7 @@ const connectDB = async () => {
             console.log('⚠️  Could not drop userId index:', dropError.message);
           }
         }
-        
+
         // Create sparse index on userId (or don't create unique index at all)
         // Since userId is now optional and can be null for all companies, we don't need a unique index
         // If you want to keep the index for queries but allow nulls, make it sparse
@@ -330,11 +335,11 @@ const connectDB = async () => {
       } catch (companyIndexError) {
         console.log('⚠️  Error fixing company userId index:', companyIndexError.message);
       }
-      
+
       await mongoose.connection.db.collection('companies').createIndex({ businessName: 'text' });
       await mongoose.connection.db.collection('transactions').createIndex({ customerId: 1, createdAt: -1 });
       await mongoose.connection.db.collection('notifications').createIndex({ userId: 1, createdAt: -1 });
-      
+
       console.log('✅ Database indexes created successfully');
     } catch (indexError) {
       console.log('⚠️  Index creation error:', indexError.message);
@@ -345,10 +350,10 @@ const connectDB = async () => {
         console.error('   3. Restart this server');
       }
     }
-    
+
   } catch (error) {
     console.error('❌ MongoDB Atlas connection error:', error.message);
-    
+
     if (error.message.includes('authentication failed')) {
       console.error('🔐 Authentication failed. Please check your MongoDB Atlas username and password.');
     } else if (error.message.includes('network')) {
@@ -356,13 +361,13 @@ const connectDB = async () => {
     } else if (error.message.includes('timeout')) {
       console.error('⏰ Connection timeout. Please check your MongoDB Atlas cluster is running.');
     }
-    
+
     console.log('💡 Troubleshooting tips:');
     console.log('   1. Verify your MongoDB Atlas connection string');
     console.log('   2. Check if your IP address is whitelisted in MongoDB Atlas');
     console.log('   3. Ensure your database user has proper permissions');
     console.log('   4. Verify your cluster is running and accessible');
-    
+
     process.exit(1);
   }
 };
@@ -417,13 +422,13 @@ const setupCronJobs = () => {
 const startServer = async () => {
   try {
     await connectDB();
-    
+
     // Setup cron jobs
     setupCronJobs();
-    
+
     // Create HTTP server with reuseAddr option to handle port conflicts
     const server = http.createServer(app);
-    
+
     // Set reuseAddr to allow port reuse even if in TIME_WAIT state
     server.listen(PORT, '0.0.0.0', () => {
       console.log(`🚀 Server running on port ${PORT}`);
@@ -433,7 +438,7 @@ const startServer = async () => {
       console.log(`📊 Health check: http://localhost:${PORT}/health`);
       console.log(`📱 Mobile access: Use your computer's IP address instead of localhost`);
     });
-    
+
     // Enable SO_REUSEADDR to allow port reuse
     server.on('listening', () => {
       const address = server.address();
@@ -441,7 +446,7 @@ const startServer = async () => {
         server.setTimeout(0); // Disable timeout
       }
     });
-    
+
     // Handle server errors
     server.on('error', (error) => {
       if (error.code === 'EADDRINUSE') {

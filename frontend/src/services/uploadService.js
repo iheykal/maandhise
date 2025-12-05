@@ -8,16 +8,16 @@ const getApiBaseUrl = () => {
   if (process.env.REACT_APP_API_URL) {
     return process.env.REACT_APP_API_URL;
   }
-  
+
   if (typeof window !== 'undefined') {
     const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
     if (isLocalhost) {
-      return 'http://localhost:5000/api';
+      return 'http://localhost:5001/api';
     }
     // Use current hostname for production/custom domains
     return `${window.location.protocol}//${window.location.hostname}/api`;
   }
-  
+
   return '/api';
 };
 
@@ -51,25 +51,25 @@ export const uploadService = {
       type: file.type,
       lastModified: file.lastModified
     });
-    
+
     const formData = new FormData();
     formData.append('file', file);
-    
+
     console.log('FormData created, sending request...');
     console.log('API base URL:', API_BASE_URL);
     console.log('Request URL:', `${API_BASE_URL}/upload/file`);
-    
+
     try {
       const response = await api.post('/upload/file', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
       });
-      
+
       console.log('Upload response:', response);
       console.log('Response data:', response.data);
       console.log('=== FRONTEND UPLOAD SUCCESS ===');
-      
+
       return response.data;
     } catch (error) {
       console.error('=== FRONTEND UPLOAD ERROR ===');

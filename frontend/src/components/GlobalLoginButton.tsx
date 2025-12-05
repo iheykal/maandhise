@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { 
+import {
   LogIn,
   X,
   Eye,
@@ -11,6 +11,21 @@ import {
 import { useTheme } from '../contexts/ThemeContext.tsx';
 import { useAuth } from '../contexts/AuthContext.tsx';
 import LoadingSpinner from './common/LoadingSpinner.tsx';
+
+// Get API URL dynamically
+const getApiUrl = (): string => {
+  if (process.env.REACT_APP_API_URL) {
+    return process.env.REACT_APP_API_URL;
+  }
+  if (typeof window !== 'undefined') {
+    const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+    if (isLocalhost) {
+      return 'http://localhost:5001/api';
+    }
+    return `${window.location.protocol}//${window.location.hostname}/api`;
+  }
+  return '/api';
+};
 
 const GlobalLoginButton: React.FC = () => {
   const { language } = useTheme();
@@ -50,10 +65,10 @@ const GlobalLoginButton: React.FC = () => {
     try {
       // Clean and format phone number for mobile compatibility
       let cleanPhone = loginData.phone.trim();
-      
+
       // Remove all non-digit characters except +
       cleanPhone = cleanPhone.replace(/[^\d+]/g, '');
-      
+
       // Handle different mobile input scenarios
       if (cleanPhone.startsWith('+252')) {
         // Already has +252 prefix
@@ -65,14 +80,14 @@ const GlobalLoginButton: React.FC = () => {
         // Just the number part (9 digits for Somali numbers) - prepend +252
         fullPhoneNumber = '+252' + cleanPhone;
       }
-      
+
       // Validate format: should be +252 followed by 9 digits
       if (!/^\+252\d{9}$/.test(fullPhoneNumber)) {
-        throw new Error(language === 'en' 
-          ? 'Invalid phone number format. Please enter a valid Somali phone number (+252XXXXXXXXX)' 
+        throw new Error(language === 'en'
+          ? 'Invalid phone number format. Please enter a valid Somali phone number (+252XXXXXXXXX)'
           : 'Foomka lambarka telefoonka ma sax ah. Fadlan geli lambar Somali ah (+252XXXXXXXXX)');
       }
-      
+
       console.log('=== LOGIN DEBUG ===');
       console.log('User Agent:', navigator.userAgent);
       console.log('Platform:', navigator.platform);
@@ -88,10 +103,10 @@ const GlobalLoginButton: React.FC = () => {
       const maskedPhone = fullPhoneNumber.replace(/^(\+252)(\d{6})(\d{3})$/, '$1******$3');
       console.log('Final phone number:', `"${maskedPhone}"`);
       console.log('Login attempt:', { phone: fullPhoneNumber, password: '***' });
-      
+
       // Check if running on localhost
       const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-      
+
       // Retry mechanism: fewer retries for localhost, more for production (Render cold starts)
       const maxRetries = isLocalhost ? 0 : 2; // No retries for localhost, 2 for production
       let attempt = 0;
@@ -100,25 +115,25 @@ const GlobalLoginButton: React.FC = () => {
       const currentLanguage = language;
       const currentIsLocalhost = isLocalhost;
       let currentAttempt = 0; // Initialize outside loop to ensure it's always defined
-      
+
       while (attempt <= maxRetries && !loginSucceeded) {
         attempt++;
         currentAttempt = attempt; // Update at loop level so it's accessible in catch
         // Capture currentAttempt in a const to avoid unsafe closure reference
         const attemptNumber = currentAttempt;
         console.log(`Login attempt ${attemptNumber} of ${maxRetries + 1}...`);
-        
+
         try {
           // Wrap in Promise.race with timeout as a safety measure
           const loginStartTime = Date.now();
-          
+
           console.log(`[Login Attempt ${attemptNumber}] Starting login promise...`);
-          
+
           const loginPromise = login(fullPhoneNumber, loginData.password);
           const timeoutMs = currentIsLocalhost ? 15000 : 65000; // 15s for localhost, 65s for production
-          
+
           console.log(`[Login Attempt ${attemptNumber}] Timeout set to ${timeoutMs}ms`);
-          
+
           let timeoutId: NodeJS.Timeout;
           // eslint-disable-next-line no-loop-func
           const timeoutPromise = new Promise<never>((_, reject) => {
@@ -126,36 +141,36 @@ const GlobalLoginButton: React.FC = () => {
               const elapsed = Date.now() - loginStartTime;
               console.error(`[Login Attempt ${attemptNumber}] Timeout triggered after ${elapsed}ms`);
               const timeoutMsg = currentIsLocalhost
-                ? (currentLanguage === 'en' 
-                    ? 'Backend server is not responding. Please make sure the server is running on http://localhost:5000' 
-                    : 'Server-ka ma u jeediya. Fadlan hubi in server-ku uu shaqeeyo http://localhost:5000')
-                : (currentLanguage === 'en' 
-                    ? 'Backend server is taking too long to respond. The server may be waking up. Please try again in a moment.' 
-                    : 'Server-ka ayaa waqtin badan u qaaday. Server-ku wuu kici karaa. Fadlan mar kale isku day.');
+                ? (currentLanguage === 'en'
+                  ? 'Backend server is not responding. Please make sure the server is running on http://localhost:5001'
+                  : 'Server-ka ma u jeediya. Fadlan hubi in server-ku uu shaqeeyo http://localhost:5001')
+                : (currentLanguage === 'en'
+                  ? 'Backend server is taking too long to respond. The server may be waking up. Please try again in a moment.'
+                  : 'Server-ka ayaa waqtin badan u qaaday. Server-ku wuu kici karaa. Fadlan mar kale isku day.');
               reject(new Error(timeoutMsg));
             }, timeoutMs);
           });
-          
+
           // If loginPromise resolves (even with undefined), login succeeded
           try {
             console.log(`[Login Attempt ${attemptNumber}] Waiting for Promise.race...`);
             await Promise.race([loginPromise, timeoutPromise]);
             const elapsed = Date.now() - loginStartTime;
             // Clear timeout if login succeeded before timeout
-            if (timeoutId) clearTimeout(timeoutId);
+            if (timeoutId!) clearTimeout(timeoutId!);
             console.log(`[Login Attempt ${attemptNumber}] Login successful after ${elapsed}ms`);
             loginSucceeded = true;
             break; // Success, exit retry loop
           } catch (raceError: any) {
             const elapsed = Date.now() - loginStartTime;
             // Clear timeout on error too
-            if (timeoutId) clearTimeout(timeoutId);
+            if (timeoutId!) clearTimeout(timeoutId!);
             console.error(`[Login Attempt ${attemptNumber}] Promise.race failed after ${elapsed}ms:`, raceError.message);
             throw raceError;
           }
         } catch (error: any) {
           console.error(`Login attempt ${attemptNumber} failed:`, error.message);
-          
+
           // If it's a timeout and we have retries left (and not localhost), wait and retry
           if (!currentIsLocalhost && (error.code === 'ECONNABORTED' || error.message?.includes('timeout')) && attemptNumber <= maxRetries) {
             const waitTime = attemptNumber * 2000; // Wait 2s, 4s before retries
@@ -163,21 +178,21 @@ const GlobalLoginButton: React.FC = () => {
             await new Promise(resolve => setTimeout(resolve, waitTime));
             continue; // Retry
           }
-          
+
           // If localhost or no retries left, throw the error immediately
           throw error;
         }
       }
-      
+
       if (!loginSucceeded) {
-        throw new Error(language === 'en' 
-          ? 'Login failed after multiple attempts. The backend server may be down. Please try again later.' 
+        throw new Error(language === 'en'
+          ? 'Login failed after multiple attempts. The backend server may be down. Please try again later.'
           : 'Gelitaan way ku fashilantay ka dib isku dayayaal badan. Server-ka wuu dhacay. Fadlan waqtiimo kale isku day.');
       }
-      
+
       // Show success message
       setShowSuccessMessage(true);
-      
+
       // Close login form and navigate after a short delay
       setTimeout(() => {
         setShowLoginForm(false);
@@ -191,47 +206,33 @@ const GlobalLoginButton: React.FC = () => {
       console.error('Validation errors:', error.response?.data?.errors);
       console.error('Error code:', error.code);
       console.error('Error message:', error.message);
-      
+
       // Handle different types of errors - prioritize network/timeout errors
       let errorMessage = '';
-      // Get API URL dynamically
-      const getApiUrl = () => {
-        if (process.env.REACT_APP_API_URL) {
-          return process.env.REACT_APP_API_URL;
-        }
-        if (typeof window !== 'undefined') {
-          const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-          if (isLocalhost) {
-            return 'http://localhost:5000/api';
-          }
-          return `${window.location.protocol}//${window.location.hostname}/api`;
-        }
-        return '/api';
-      };
       const currentApiUrl = getApiUrl();
       const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-      
+
       // Get status code from error (check both error.status and error.response.status)
       const statusCode = error.status || error.response?.status;
-      
+
       // Check for HTTP response errors FIRST (before network errors)
       // This ensures 401, 500, etc. are handled correctly
       if (statusCode) {
         if (statusCode === 401) {
-          errorMessage = language === 'en' 
-            ? 'Invalid phone number or password. Please check your credentials.' 
+          errorMessage = language === 'en'
+            ? 'Invalid phone number or password. Please check your credentials.'
             : 'Lambarka telefoonka ama furaha sirta ma sax ah. Fadlan hubi macluumaadkaaga.';
         } else if (statusCode === 500) {
-          errorMessage = language === 'en' 
-            ? 'Server error. Please try again later.' 
+          errorMessage = language === 'en'
+            ? 'Server error. Please try again later.'
             : 'Qaladka server. Fadlan mar kale isku day waqtimo kale.';
         } else if (error.response?.data?.message) {
           errorMessage = `Login failed: ${error.response.data.message}`;
         } else if (error.response?.data?.errors) {
           errorMessage = `Validation failed: ${JSON.stringify(error.response.data.errors)}`;
         } else {
-          errorMessage = language === 'en' 
-            ? `Login failed. Status: ${statusCode}` 
+          errorMessage = language === 'en'
+            ? `Login failed. Status: ${statusCode}`
             : `Gelitaan way ku fashilantay. Xaalada: ${statusCode}`;
         }
       }
@@ -241,40 +242,40 @@ const GlobalLoginButton: React.FC = () => {
           // Different messages for localhost vs production
           if (isLocalhost) {
             if (currentApiUrl.includes('localhost')) {
-              errorMessage = language === 'en' 
-                ? 'Backend server is not responding. Please make sure the backend is running on http://localhost:5000' 
-                : 'Server-ka ma u jeediya. Fadlan hubi in backend-ku uu shaqeeyo http://localhost:5000';
+              errorMessage = language === 'en'
+                ? 'Backend server is not responding. Please make sure the backend is running on http://localhost:5001'
+                : 'Server-ka ma u jeediya. Fadlan hubi in backend-ku uu shaqeeyo http://localhost:5001';
             } else {
-              errorMessage = language === 'en' 
-                ? '⚠️ API is pointing to production. For local testing, create a .env file in frontend/ with: REACT_APP_API_URL=http://localhost:5000/api and restart the dev server.' 
-                : '⚠️ API-ga wuxuu u jeedayaa production. Si aad u test gareeyso local, samee file .env gudaha frontend/ oo ku qor: REACT_APP_API_URL=http://localhost:5000/api oo dib u bilow server-ka.';
+              errorMessage = language === 'en'
+                ? '⚠️ API is pointing to production. For local testing, create a .env file in frontend/ with: REACT_APP_API_URL=http://localhost:5001/api and restart the dev server.'
+                : '⚠️ API-ga wuxuu u jeedayaa production. Si aad u test gareeyso local, samee file .env gudaha frontend/ oo ku qor: REACT_APP_API_URL=http://localhost:5001/api oo dib u bilow server-ka.';
             }
           } else {
-            errorMessage = language === 'en' 
-              ? 'Backend server is not responding. The server may be waking up (this can take up to 60 seconds on free hosting). Please wait a moment and try again.' 
+            errorMessage = language === 'en'
+              ? 'Backend server is not responding. The server may be waking up (this can take up to 60 seconds on free hosting). Please wait a moment and try again.'
               : 'Server-ka ayaa u jeediya. Server-ku wuu kici karaa (60 ilbiriqood oo kaliya). Fadlan sug oo mar kale isku day.';
           }
         } else if (error.code === 'ERR_NETWORK' || error.message?.includes('Network Error') || error.message?.includes('Failed to fetch')) {
-          errorMessage = language === 'en' 
-            ? 'Network error. Please check your internet connection and try again.' 
+          errorMessage = language === 'en'
+            ? 'Network error. Please check your internet connection and try again.'
             : 'Qaladka xidhiidhka. Fadlan hubi xiriirkaaga internetka oo mar kale isku day.';
         } else if (error.message?.includes('format') || error.message?.includes('Foomka')) {
           // Validation error thrown by us
           errorMessage = error.message;
         } else {
           // Generic error without response
-          errorMessage = language === 'en' 
-            ? 'Connection error. Please check your internet connection and try again.' 
+          errorMessage = language === 'en'
+            ? 'Connection error. Please check your internet connection and try again.'
             : 'Qaladka isku xirka. Fadlan hubi xiriirkaaga internetka oo mar kale isku day.';
         }
-      } 
+      }
       // Fallback for any other error (no status code and no network error)
       else {
-        errorMessage = language === 'en' 
-          ? 'Login failed. Please check your credentials and try again.' 
+        errorMessage = language === 'en'
+          ? 'Login failed. Please check your credentials and try again.'
           : 'Gelitaan way ku fashilantay. Fadlan hubi macluumaadkaaga oo mar kale isku day.';
       }
-      
+
       // Show error message to user
       if (errorMessage) {
         alert(errorMessage);

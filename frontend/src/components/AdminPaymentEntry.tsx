@@ -5,16 +5,16 @@ const getApiBaseUrl = (): string => {
   if (process.env.REACT_APP_API_URL) {
     return process.env.REACT_APP_API_URL;
   }
-  
+
   if (typeof window !== 'undefined') {
     const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
     if (isLocalhost) {
-      return 'http://localhost:5000/api';
+      return 'http://localhost:5001/api';
     }
     // Use current hostname for production/custom domains
     return `${window.location.protocol}//${window.location.hostname}/api`;
   }
-  
+
   return '/api';
 };
 
@@ -53,7 +53,7 @@ const AdminPaymentEntry: React.FC<AdminPaymentEntryProps> = ({ onPaymentRecorded
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!formData.cardNumber.trim()) {
       setError('Card number is required');
       return;
@@ -64,13 +64,13 @@ const AdminPaymentEntry: React.FC<AdminPaymentEntryProps> = ({ onPaymentRecorded
         setError('Amount is required for flexible payments');
         return;
       }
-      
+
       const amount = parseFloat(formData.amount);
       if (isNaN(amount) || amount <= 0) {
         setError('Please enter a valid amount greater than $0');
         return;
       }
-      
+
       if (amount > 120) {
         setError('Amount cannot exceed $120 (maximum 120 months)');
         return;
@@ -84,7 +84,7 @@ const AdminPaymentEntry: React.FC<AdminPaymentEntryProps> = ({ onPaymentRecorded
 
       // Choose endpoint based on payment type
       const endpoint = paymentType === 'flexible' ? '/payments/flexible' : '/payments/manual';
-      
+
       const response = await fetch(`${API_BASE_URL}${endpoint}`, {
         method: 'POST',
         headers: {
@@ -105,12 +105,12 @@ const AdminPaymentEntry: React.FC<AdminPaymentEntryProps> = ({ onPaymentRecorded
         throw new Error(data.message || 'Failed to record payment');
       }
 
-      const successMessage = paymentType === 'flexible' 
+      const successMessage = paymentType === 'flexible'
         ? `Payment recorded successfully for ${data.data.customerName} (${data.data.cardNumber}) - ${data.data.monthsAdded} month(s) added`
         : `Payment recorded successfully for ${data.data.customerName} (${data.data.cardNumber})`;
-      
+
       setSuccess(successMessage);
-      
+
       // Reset form
       setFormData({
         cardNumber: '',
@@ -139,7 +139,7 @@ const AdminPaymentEntry: React.FC<AdminPaymentEntryProps> = ({ onPaymentRecorded
   return (
     <div className="bg-white rounded-lg shadow-md p-6">
       <h2 className="text-xl font-semibold text-gray-900 mb-6">Manual Payment Entry</h2>
-      
+
       {error && (
         <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-md">
           <div className="flex">
@@ -303,7 +303,7 @@ const AdminPaymentEntry: React.FC<AdminPaymentEntryProps> = ({ onPaymentRecorded
             <h3 className="text-sm font-medium text-yellow-800">Important</h3>
             <div className="mt-2 text-sm text-yellow-700">
               <p>
-                {paymentType === 'flexible' 
+                {paymentType === 'flexible'
                   ? 'This will immediately extend the card subscription based on the amount paid ($1 = 1 month). Make sure the payment has been received before recording.'
                   : 'This will immediately reactivate the card for another month. Make sure the payment has been received before recording.'
                 }

@@ -24,13 +24,13 @@ const generateTokens = (userId) => {
 // Normalize phone number - handles different formats
 const normalizePhone = (phone) => {
   if (!phone) return null;
-  
+
   // Remove all whitespace
   let normalized = phone.trim().replace(/\s+/g, '');
-  
+
   // Remove all non-digit characters except +
   normalized = normalized.replace(/[^\d+]/g, '');
-  
+
   // Handle different formats
   if (normalized.startsWith('+252')) {
     // Already has +252 prefix
@@ -45,7 +45,7 @@ const normalizePhone = (phone) => {
     // Has 252 without + and 9 digits
     return '+' + normalized;
   }
-  
+
   // Return as is if it doesn't match expected patterns
   return normalized;
 };
@@ -57,7 +57,7 @@ const register = async (req, res) => {
 
     // Normalize phone number
     const normalizedPhone = normalizePhone(phone);
-    
+
     if (!normalizedPhone) {
       return res.status(400).json({
         success: false,
@@ -67,13 +67,13 @@ const register = async (req, res) => {
 
     // Check if user already exists (try multiple formats)
     let existingUser = await User.findByPhone(normalizedPhone);
-    
+
     // Try alternative formats if not found
     if (!existingUser) {
       const phoneWithoutPlus = normalizedPhone.replace(/^\+/, '');
       existingUser = await User.findOne({ phone: phoneWithoutPlus });
     }
-    
+
     if (!existingUser && normalizedPhone.startsWith('+252')) {
       const localPhone = normalizedPhone.slice(4);
       existingUser = await User.findOne({ phone: localPhone });
@@ -84,7 +84,7 @@ const register = async (req, res) => {
         message: 'User with this phone number already exists'
       });
     }
-    
+
     // Check if ID number is already in use
     if (idNumber) {
       const existingIdUser = await User.findOne({ idNumber });
@@ -99,7 +99,7 @@ const register = async (req, res) => {
     // Create new user
     // All users can login by default (unless admin creates them)
     const canLogin = true;
-    
+
     const user = new User({
       fullName,
       phone: normalizedPhone, // Use normalized phone number
@@ -131,7 +131,7 @@ const register = async (req, res) => {
     if (role === 'customer') {
       try {
         await SahalCard.createCard(user._id, 1.00);
-        
+
         await Notification.createNotification({
           userId: user._id,
           title: 'Sahal Card Created!',
@@ -183,7 +183,7 @@ const login = async (req, res) => {
 
     // Normalize phone number
     const normalizedPhone = normalizePhone(phone);
-    
+
     console.log('[LOGIN] Attempt received:', {
       originalPhone: phone ? phone.replace(/(\+252)(\d{6})(\d{3})/, '$1******$3') : 'missing',
       normalizedPhone: normalizedPhone ? normalizedPhone.replace(/(\+252)(\d{6})(\d{3})/, '$1******$3') : 'missing',
@@ -194,26 +194,26 @@ const login = async (req, res) => {
 
     // Try to find user with normalized phone number
     let user = await User.findOne({ phone: normalizedPhone }).select('+password');
-    
+
     // If not found, try alternative formats
     if (!user && normalizedPhone) {
       // Try without + prefix
       const phoneWithoutPlus = normalizedPhone.replace(/^\+/, '');
       user = await User.findOne({ phone: phoneWithoutPlus }).select('+password');
-      
+
       // Try with just the last 9 digits (local format)
       if (!user && normalizedPhone.startsWith('+252')) {
         const localPhone = normalizedPhone.slice(4); // Remove +252
         user = await User.findOne({ phone: localPhone }).select('+password');
       }
-      
+
       // Try with 252 prefix (without +)
       if (!user && normalizedPhone.startsWith('+252')) {
         const phoneWith252 = normalizedPhone.slice(1); // Remove +
         user = await User.findOne({ phone: phoneWith252 }).select('+password');
       }
     }
-    
+
     if (!user) {
       console.log('[LOGIN] User not found for phone:', normalizedPhone ? normalizedPhone.replace(/(\+252)(\d{6})(\d{3})/, '$1******$3') : 'missing');
       // Try to find users with similar phone numbers for debugging
@@ -263,14 +263,26 @@ const login = async (req, res) => {
 
     console.log('[LOGIN] Password verified successfully for user:', user._id);
 
-    // Update last login
-    await user.updateLastLogin();
+    // Update last login (non-blocking to prevent login failures)
+    User.findByIdAndUpdate(user._id, { lastLogin: new Date() }).catch(err => {
+      console.error('[LOGIN] Failed to update lastLogin (non-critical):', err.message);
+    });
 
     // Generate tokens
     const { accessToken, refreshToken } = generateTokens(user._id);
 
-    // Save refresh token
-    await user.addRefreshToken(refreshToken);
+    // Save refresh token - must succeed for refresh to work later
+    try {
+      await User.findByIdAndUpdate(
+        user._id,
+        { $push: { refreshTokens: { token: refreshToken } } },
+        { new: true, runValidators: false }
+      );
+      console.log('[LOGIN] Refresh token saved successfully');
+    } catch (tokenError) {
+      console.error('[LOGIN] CRITICAL: Failed to save refresh token:', tokenError);
+      // If we can't save refresh token, still continue but log it prominently
+    }
 
     console.log('[LOGIN] Login successful for user:', user._id);
 
@@ -310,7 +322,7 @@ const refreshToken = async (req, res) => {
 
     // Verify refresh token
     const decoded = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET || process.env.JWT_SECRET);
-    
+
     if (decoded.type !== 'refresh') {
       return res.status(401).json({
         success: false,
@@ -429,26 +441,26 @@ const updateProfile = async (req, res) => {
     if (fullName) user.fullName = fullName;
     if (phone) user.phone = phone;
     if (location) user.location = location;
-    
+
     // Update ID number if provided (check for uniqueness)
     if (idNumber !== undefined) {
       const trimmedIdNumber = idNumber.trim();
-      
+
       // Check if the new ID number is different from current
       if (trimmedIdNumber !== user.idNumber) {
         // Check if ID number already exists (excluding current user)
-        const existingUser = await User.findOne({ 
+        const existingUser = await User.findOne({
           idNumber: trimmedIdNumber,
           _id: { $ne: user._id }
         });
-        
+
         if (existingUser) {
           return res.status(400).json({
             success: false,
             message: 'ID number already exists'
           });
         }
-        
+
         user.idNumber = trimmedIdNumber;
       }
     }
@@ -482,7 +494,7 @@ const changePassword = async (req, res) => {
     // Verify current password
     const userWithPassword = await User.findById(user._id).select('+password');
     const isCurrentPasswordValid = await userWithPassword.comparePassword(currentPassword);
-    
+
     if (!isCurrentPasswordValid) {
       return res.status(400).json({
         success: false,
@@ -520,7 +532,7 @@ const forgotPassword = async (req, res) => {
 
     // Normalize phone number
     const normalizedPhone = normalizePhone(phone);
-    
+
     if (!normalizedPhone) {
       return res.json({
         success: true,
@@ -530,13 +542,13 @@ const forgotPassword = async (req, res) => {
 
     // Try to find user with normalized phone number
     let user = await User.findOne({ phone: normalizedPhone });
-    
+
     // Try alternative formats if not found
     if (!user) {
       const phoneWithoutPlus = normalizedPhone.replace(/^\+/, '');
       user = await User.findOne({ phone: phoneWithoutPlus });
     }
-    
+
     if (!user && normalizedPhone.startsWith('+252')) {
       const localPhone = normalizedPhone.slice(4);
       user = await User.findOne({ phone: localPhone });
@@ -582,7 +594,7 @@ const resetPassword = async (req, res) => {
 
     // Verify reset token
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    
+
     if (decoded.type !== 'password-reset') {
       return res.status(400).json({
         success: false,
@@ -635,7 +647,7 @@ const createUser = async (req, res) => {
 
     // Normalize phone number
     const normalizedPhone = normalizePhone(phone);
-    
+
     if (!normalizedPhone) {
       return res.status(400).json({
         success: false,
@@ -645,25 +657,25 @@ const createUser = async (req, res) => {
 
     // Check if user already exists with same phone (try multiple formats)
     let existingUser = await User.findByPhone(normalizedPhone);
-    
+
     // Try alternative formats if not found
     if (!existingUser) {
       const phoneWithoutPlus = normalizedPhone.replace(/^\+/, '');
       existingUser = await User.findOne({ phone: phoneWithoutPlus });
     }
-    
+
     if (!existingUser && normalizedPhone.startsWith('+252')) {
       const localPhone = normalizedPhone.slice(4);
       existingUser = await User.findOne({ phone: localPhone });
     }
-    
+
     if (existingUser) {
       return res.status(400).json({
         success: false,
         message: 'User with this phone number already exists'
       });
     }
-    
+
     // Check if ID number is already in use
     if (idNumber) {
       const existingIdUser = await User.findOne({ idNumber });
@@ -719,7 +731,7 @@ const createUser = async (req, res) => {
     if (role === 'customer') {
       try {
         await SahalCard.createCard(user._id, 1.00);
-        
+
         await Notification.createNotification({
           userId: user._id,
           title: 'Sahal Card Created!',
@@ -757,20 +769,20 @@ const createUser = async (req, res) => {
 const getAllUsers = async (req, res) => {
   try {
     const { page = 1, limit = 10, role, search } = req.query;
-    
+
     // Build query - ALWAYS exclude superadmin and company users from the list
     // Companies are now independent entities and should not appear in user lists
-    const baseQuery = { 
-      role: { 
+    const baseQuery = {
+      role: {
         $nin: ['superadmin', 'company'] // Exclude both superadmin and company roles
-      } 
+      }
     };
-    
+
     // Add role filter if specified (but never allow superadmin or company)
     if (role && role !== 'superadmin' && role !== 'company') {
       baseQuery.role = role;
     }
-    
+
     // Add search filter if specified
     if (search) {
       baseQuery.$or = [
@@ -778,7 +790,7 @@ const getAllUsers = async (req, res) => {
         { phone: { $regex: search, $options: 'i' } }
       ];
     }
-    
+
     const query = baseQuery;
 
     console.log('🔍 getAllUsers query:', JSON.stringify(query, null, 2));
@@ -913,16 +925,16 @@ const deleteUser = async (req, res) => {
     try {
       // Delete user's Sahal Card
       await SahalCard.deleteMany({ userId: userId });
-      
+
       // Delete user's notifications
       await Notification.deleteMany({ userId: userId });
-      
+
       // Delete user's transactions (if any)
       await Transaction.deleteMany({ customerId: userId });
-      
+
       // Delete user's company (if any)
       // Companies no longer require user accounts, so no company deletion needed
-      
+
       console.log(`Deleted related data for user: ${userToDelete.fullName}`);
     } catch (relatedDataError) {
       console.error('Error deleting related data:', relatedDataError);
@@ -951,7 +963,7 @@ const deleteUser = async (req, res) => {
 const searchUserById = async (req, res) => {
   try {
     const { idNumber } = req.body;
-    
+
     if (!idNumber || !idNumber.trim()) {
       return res.status(400).json({
         success: false,
@@ -960,8 +972,8 @@ const searchUserById = async (req, res) => {
     }
 
     // Find user by ID number
-    const user = await User.findOne({ 
-      idNumber: idNumber.trim() 
+    const user = await User.findOne({
+      idNumber: idNumber.trim()
     }).select('-password -refreshTokens');
 
     if (!user) {

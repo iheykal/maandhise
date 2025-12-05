@@ -80,16 +80,16 @@ const getApiBaseUrl = (): string => {
   if (process.env.REACT_APP_API_URL) {
     return process.env.REACT_APP_API_URL;
   }
-  
+
   if (typeof window !== 'undefined') {
     const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
     if (isLocalhost) {
-      return 'http://localhost:5000/api';
+      return 'http://localhost:5001/api';
     }
     // Use current hostname for production/custom domains
     return `${window.location.protocol}//${window.location.hostname}/api`;
   }
-  
+
   return '/api';
 };
 
@@ -98,19 +98,19 @@ const API_BASE_URL = getApiBaseUrl();
 // Get payment status for a card
 export const getPaymentStatus = async (cardNumber: string): Promise<PaymentStatus> => {
   const token = localStorage.getItem('token');
-  
+
   const response = await fetch(`${API_BASE_URL}/payments/status/${cardNumber}`, {
     headers: {
       'Authorization': `Bearer ${token}`,
       'Content-Type': 'application/json'
     }
   });
-  
+
   if (!response.ok) {
     const errorData = await response.json();
     throw new Error(errorData.message || 'Failed to get payment status');
   }
-  
+
   const data = await response.json();
   return data.data;
 };
@@ -118,7 +118,7 @@ export const getPaymentStatus = async (cardNumber: string): Promise<PaymentStatu
 // Process monthly payment
 export const processPayment = async (paymentData: PaymentRequest): Promise<PaymentResponse> => {
   const token = localStorage.getItem('token');
-  
+
   const response = await fetch(`${API_BASE_URL}/payments/process`, {
     method: 'POST',
     headers: {
@@ -127,32 +127,32 @@ export const processPayment = async (paymentData: PaymentRequest): Promise<Payme
     },
     body: JSON.stringify(paymentData)
   });
-  
+
   const data = await response.json();
-  
+
   if (!response.ok) {
     throw new Error(data.message || 'Payment failed');
   }
-  
+
   return data;
 };
 
 // Get payment history for a card
 export const getPaymentHistory = async (cardNumber: string): Promise<PaymentHistory> => {
   const token = localStorage.getItem('token');
-  
+
   const response = await fetch(`${API_BASE_URL}/payments/history/${cardNumber}`, {
     headers: {
       'Authorization': `Bearer ${token}`,
       'Content-Type': 'application/json'
     }
   });
-  
+
   if (!response.ok) {
     const errorData = await response.json();
     throw new Error(errorData.message || 'Failed to get payment history');
   }
-  
+
   const data = await response.json();
   return data.data;
 };
@@ -160,7 +160,7 @@ export const getPaymentHistory = async (cardNumber: string): Promise<PaymentHist
 // Process flexible payment (admin function)
 export const processFlexiblePayment = async (paymentData: FlexiblePaymentRequest): Promise<PaymentResponse> => {
   const token = localStorage.getItem('token');
-  
+
   const response = await fetch(`${API_BASE_URL}/payments/flexible`, {
     method: 'POST',
     headers: {
@@ -169,20 +169,20 @@ export const processFlexiblePayment = async (paymentData: FlexiblePaymentRequest
     },
     body: JSON.stringify(paymentData)
   });
-  
+
   const data = await response.json();
-  
+
   if (!response.ok) {
     throw new Error(data.message || 'Flexible payment failed');
   }
-  
+
   return data;
 };
 
 // Record manual payment (admin function)
 export const recordManualPayment = async (paymentData: FlexiblePaymentRequest): Promise<PaymentResponse> => {
   const token = localStorage.getItem('token');
-  
+
   const response = await fetch(`${API_BASE_URL}/payments/manual`, {
     method: 'POST',
     headers: {
@@ -191,40 +191,40 @@ export const recordManualPayment = async (paymentData: FlexiblePaymentRequest): 
     },
     body: JSON.stringify(paymentData)
   });
-  
+
   const data = await response.json();
-  
+
   if (!response.ok) {
     throw new Error(data.message || 'Manual payment recording failed');
   }
-  
+
   return data;
 };
 
 // Get payment summary (admin function)
 export const getPaymentSummary = async (): Promise<PaymentSummary> => {
   const token = localStorage.getItem('token');
-  
+
   const response = await fetch(`${API_BASE_URL}/simple-payments/summary`, {
     headers: {
       'Authorization': `Bearer ${token}`,
       'Content-Type': 'application/json'
     }
   });
-  
+
   if (!response.ok) {
     const errorData = await response.json();
     throw new Error(errorData.message || 'Failed to get payment summary');
   }
-  
+
   const data = await response.json();
   return data.data;
 };
 
 // Get all users payment status (admin function)
-export const getAllUsersPaymentStatus = async (status?: string, page = 1, limit = 50): Promise<{users: UserPaymentStatus[], pagination: any}> => {
+export const getAllUsersPaymentStatus = async (status?: string, page = 1, limit = 50): Promise<{ users: UserPaymentStatus[], pagination: any }> => {
   const token = localStorage.getItem('token');
-  
+
   const url = new URL(`${API_BASE_URL}/simple-payments/status`);
   if (status) {
     url.searchParams.append('status', status);
@@ -238,12 +238,12 @@ export const getAllUsersPaymentStatus = async (status?: string, page = 1, limit 
       'Content-Type': 'application/json'
     }
   });
-  
+
   if (!response.ok) {
     const errorData = await response.json();
     throw new Error(errorData.message || 'Failed to get users payment status');
   }
-  
+
   const data = await response.json();
   return data.data;
 };

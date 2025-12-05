@@ -8,16 +8,16 @@ const getApiBaseUrl = (): string => {
   if (process.env.REACT_APP_API_URL) {
     return process.env.REACT_APP_API_URL;
   }
-  
+
   if (typeof window !== 'undefined') {
     const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
     if (isLocalhost) {
-      return 'http://localhost:5000/api';
+      return 'http://localhost:5001/api';
     }
     // Use current hostname for production/custom domains
     return `${window.location.protocol}//${window.location.hostname}/api`;
   }
-  
+
   return '/api';
 };
 
@@ -234,4 +234,3 @@ export const uploadService = {
 };
 
 export default uploadService;
-
