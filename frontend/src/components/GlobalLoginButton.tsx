@@ -193,11 +193,24 @@ const GlobalLoginButton: React.FC = () => {
       // Show success message
       setShowSuccessMessage(true);
 
-      // Close login form and navigate after a short delay
+      // Get user data from localStorage to check role
+      const userDataString = localStorage.getItem('user');
+      const userData = userDataString ? JSON.parse(userDataString) : null;
+      const userRole = userData?.role;
+
+      // Close login form and navigate based on role after a short delay
       setTimeout(() => {
         setShowLoginForm(false);
         setShowSuccessMessage(false);
-        navigate('/dashboard');
+
+        // Navigate based on user role
+        if (userRole === 'marketer') {
+          navigate('/marketer/dashboard');
+        } else if (userRole === 'superadmin' || userRole === 'admin') {
+          navigate('/dashboard');
+        } else {
+          navigate('/profile'); // Default for regular users
+        }
       }, 1500);
     } catch (error: any) {
       console.error('Login error:', error);
