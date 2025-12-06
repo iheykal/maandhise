@@ -592,15 +592,20 @@ const DashboardPage: React.FC = () => {
 
       // Upload file
       const uploadResponse = await uploadService.uploadFile(file);
-      const url = uploadResponse.url;
+      const url = uploadResponse.data.url;
       if (type === 'profilePic') {
         setMarketerFormState({ ...marketerFormState, profilePicUrl: url });
       } else {
         setMarketerFormState({ ...marketerFormState, governmentIdUrl: url });
       }
-    } catch (error) {
-      console.error('Error uploading file:', error);
-      alert('Failed to upload file');
+    } catch (error: any) {
+      console.error('Error uploading file - FULL ERROR:', error);
+      console.error('Error details:', {
+        message: error.message,
+        response: error.response?.data,
+        status: error.response?.status
+      });
+      alert(`Failed to upload file: ${error.response?.data?.message || error.message || 'Unknown error'}`);
     }
   };
 
@@ -613,7 +618,7 @@ const DashboardPage: React.FC = () => {
         fullName: marketerFormState.fullName,
         phone: marketerFormState.phone,
         password: marketerFormState.password || 'marketer123',
-        governmentIdUrl: marketerFormState.governmentIdUrl,
+        governmentIdUrl: marketerFormState.governmentIdUrl || 'https://placeholder.com/gov-id.jpg', // Temporary placeholder
         ...(marketerFormState.profilePicUrl && { profilePicUrl: marketerFormState.profilePicUrl })
       };
 
@@ -636,8 +641,13 @@ const DashboardPage: React.FC = () => {
       });
       setMarketerPreviewImages({ profile: null, governmentId: null });
     } catch (error: any) {
-      console.error('Error creating marketer:', error);
-      alert(error.response?.data?.message || 'Failed to create marketer');
+      console.error('Error creating marketer - FULL ERROR:', error);
+      console.error('Error details:', {
+        message: error.message,
+        response: error.response?.data,
+        status: error.response?.status
+      });
+      alert(error.response?.data?.message || error.message || 'Failed to create marketer');
     } finally {
       setIsLoading(false);
     }
@@ -2505,14 +2515,13 @@ const DashboardPage: React.FC = () => {
                   <label className="flex items-center gap-2 text-sm font-semibold text-gray-700">
                     <CreditCard className="w-4 h-4 text-red-600" />
                     <span>{language === 'en' ? 'Government ID' : 'Aqoonsiga Dawladda'}</span>
-                    <span className="text-red-500">*</span>
+                    <span className="text-xs text-gray-500 font-normal">(Optional for now)</span>
                   </label>
                   <div className="border-2 border-dashed border-red-200 rounded-xl p-4 hover:border-red-400 transition-colors bg-red-50/30">
                     <input
                       type="file"
                       accept="image/*"
                       onChange={(e) => handleMarketerFileChange(e, 'governmentId')}
-                      required
                       className="w-full text-sm file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-red-50 file:text-red-700 hover:file:bg-red-100 cursor-pointer"
                     />
                     {marketerPreviewImages.governmentId && (
