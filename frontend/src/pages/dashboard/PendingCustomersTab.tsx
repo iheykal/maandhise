@@ -161,8 +161,8 @@ const PendingCustomersTab: React.FC = () => {
                                         <p className="text-xs text-gray-500 mb-1">
                                             {language === 'en' ? 'Submitted by Marketer:' : 'Waxaa soo gudbiyay:'}
                                         </p>
-                                        <p className="text-sm font-semibold text-gray-900">{customer.createdBy.fullName}</p>
-                                        <p className="text-xs text-gray-600">{customer.createdBy.phone}</p>
+                                        <p className="text-sm font-semibold text-gray-900">{customer.createdBy?.fullName || 'Unknown'}</p>
+                                        <p className="text-xs text-gray-600">{customer.createdBy?.phone || 'N/A'}</p>
                                     </div>
                                 </div>
 
