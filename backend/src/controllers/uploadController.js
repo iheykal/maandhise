@@ -5,6 +5,13 @@ const R2Service = require('../services/r2Service');
  */
 const uploadFile = async (req, res) => {
   try {
+    // Debug logging
+    console.log('=== Upload Request Debug ===');
+    console.log('req.file:', req.file);
+    console.log('req.body:', req.body);
+    console.log('req.headers:', req.headers);
+    console.log('===========================');
+
     if (!req.file) {
       return res.status(400).json({
         success: false,
@@ -13,7 +20,7 @@ const uploadFile = async (req, res) => {
     }
 
     const { buffer, originalname, mimetype } = req.file;
-    
+
     // Validate file type
     if (!R2Service.isValidImageType(mimetype)) {
       return res.status(400).json({
@@ -24,7 +31,7 @@ const uploadFile = async (req, res) => {
 
     // Generate unique filename
     const uniqueFileName = R2Service.generateUniqueFileName(originalname);
-    
+
     // Upload to R2
     const publicUrl = await R2Service.uploadFile(buffer, uniqueFileName, mimetype);
 
@@ -44,7 +51,7 @@ const uploadFile = async (req, res) => {
 
   } catch (error) {
     console.error('Upload error:', error);
-    
+
     // Check for specific R2 credential errors
     if (error.message.includes('credential') || error.message.includes('credentials')) {
       return res.status(500).json({
@@ -54,7 +61,7 @@ const uploadFile = async (req, res) => {
         details: 'Set CLOUDFLARE_ACCOUNT_ID, CLOUDFLARE_ACCESS_KEY_ID, CLOUDFLARE_SECRET_ACCESS_KEY, and CLOUDFLARE_ENDPOINT in your .env file'
       });
     }
-    
+
     res.status(500).json({
       success: false,
       message: 'Failed to upload file',
