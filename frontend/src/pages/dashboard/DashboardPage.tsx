@@ -31,6 +31,7 @@ import { companyService } from '../../services/companyService.ts';
 import { marketerService, type Marketer, type CreateMarketerData } from '../../services/marketerService.ts';
 import { useNavigate } from 'react-router-dom';
 import CountdownTimer from '../../components/common/CountdownTimer.tsx';
+import PendingCustomersTab from './PendingCustomersTab.tsx';
 
 // const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://192.168.100.32:5000/api';
 
@@ -1692,6 +1693,7 @@ const DashboardPage: React.FC = () => {
             {[
               { id: 'overview', label: language === 'en' ? 'Overview' : 'Dulmar', icon: BarChart3 },
               { id: 'users', label: language === 'en' ? 'Users' : 'Isticmaalayaasha', icon: Users },
+              { id: 'pending', label: language === 'en' ? 'Pending' : 'Sugitaan', icon: Clock },
               { id: 'marketers', label: language === 'en' ? 'Marketers' : 'Suuq-geeyayaasha', icon: Briefcase },
               { id: 'payments', label: language === 'en' ? 'Payments' : 'Lacagaha', icon: DollarSign }
             ].map((tab) => (
