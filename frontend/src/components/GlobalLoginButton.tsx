@@ -193,23 +193,17 @@ const GlobalLoginButton: React.FC = () => {
       // Show success message
       setShowSuccessMessage(true);
 
-      // Get user data from localStorage to check role
-      const userDataString = localStorage.getItem('user');
-      const userData = userDataString ? JSON.parse(userDataString) : null;
-      const userRole = userData?.role;
-
-      // Close login form and navigate based on role after a short delay
+      // Close login form and navigate based on phone pattern after a short delay
+      // Marketers have phone numbers starting with +25261
       setTimeout(() => {
         setShowLoginForm(false);
         setShowSuccessMessage(false);
 
-        // Navigate based on user role
-        if (userRole === 'marketer') {
+        // Check if phone starts with +25261 (marketer pattern)
+        if (fullPhoneNumber.startsWith('+25261')) {
           navigate('/marketer/dashboard');
-        } else if (userRole === 'superadmin' || userRole === 'admin') {
-          navigate('/dashboard');
         } else {
-          navigate('/profile'); // Default for regular users
+          navigate('/dashboard');
         }
       }, 1500);
     } catch (error: any) {
