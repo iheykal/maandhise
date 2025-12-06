@@ -214,26 +214,103 @@ const login = async (req, res) => {
       }
     }
 
+    // If not found as User, try to find as Marketer
+    const Marketer = require('../models/Marketer');
+    let marketer = null;
+
     if (!user) {
-      console.log('[LOGIN] User not found for phone:', normalizedPhone ? normalizedPhone.replace(/(\+252)(\d{6})(\d{3})/, '$1******$3') : 'missing');
-      // Try to find users with similar phone numbers for debugging
-      const lastDigits = normalizedPhone ? normalizedPhone.slice(-4) : '';
-      if (lastDigits) {
-        const similarUsers = await User.find({ phone: { $regex: lastDigits } }).select('phone role').limit(5);
-        if (similarUsers.length > 0) {
-          console.log('[LOGIN] Found similar phone numbers in DB:', similarUsers.map(u => ({
-            phone: u.phone.replace(/(\+252)(\d{6})(\d{3})/, '$1******$3'),
-            role: u.role,
-            exactMatch: u.phone === normalizedPhone
-          })));
+      marketer = await Marketer.findOne({ phone: normalizedPhone }).select('+password');
+
+      // Try alternative formats for marketer too
+      if (!marketer && normalizedPhone) {
+        const phoneWithoutPlus = normalizedPhone.replace(/^\+/, '');
+        marketer = await Marketer.findOne({ phone: phoneWithoutPlus }).select('+password');
+
+        if (!marketer && normalizedPhone.startsWith('+252')) {
+          const localPhone = normalizedPhone.slice(4);
+          marketer = await Marketer.findOne({ phone: localPhone }).select('+password');
+        }
+
+        if (!marketer && normalizedPhone.startsWith('+252')) {
+          const phoneWith252 = normalizedPhone.slice(1);
+          marketer = await Marketer.findOne({ phone: phoneWith252 }).select('+password');
         }
       }
+    }
+
+    if (!user && !marketer) {
+      console.log('[LOGIN] User/Marketer not found for phone:', normalizedPhone ? normalizedPhone.replace(/(\+252)(\d{6})(\d{3})/, '$1******$3') : 'missing');
       return res.status(401).json({
         success: false,
         message: 'Invalid phone number or password'
       });
     }
 
+    // Handle marketer login
+    if (marketer) {
+      console.log('[LOGIN] Marketer found:', {
+        marketerId: marketer._id,
+        fullName: marketer.fullName,
+        phone: marketer.phone.replace(/(\+252)(\d{6})(\d{3})/, '$1******$3')
+      });
+
+      // Check if marketer can login
+      if (!marketer.canLogin) {
+        console.log('[LOGIN] Login disabled for marketer:', marketer._id);
+        return res.status(403).json({
+          success: false,
+          message: 'Login is disabled for this account. Please contact an administrator.'
+        });
+      }
+
+      // Verify password
+      const isPasswordValid = await marketer.comparePassword(password);
+      if (!isPasswordValid) {
+        console.log('[LOGIN] Password mismatch for marketer:', marketer._id);
+        return res.status(401).json({
+          success: false,
+          message: 'Invalid phone number or password'
+        });
+      }
+
+      console.log('[LOGIN] Password verified successfully for marketer:', marketer._id);
+
+      // Update last login
+      Marketer.findByIdAndUpdate(marketer._id, { lastLogin: new Date() }).catch(err => {
+        console.error('[LOGIN] Failed to update lastLogin (non-critical):', err.message);
+      });
+
+      // Generate tokens
+      const { accessToken, refreshToken } = generateTokens(marketer._id);
+
+      // Save refresh token
+      try {
+        await Marketer.findByIdAndUpdate(
+          marketer._id,
+          { $push: { refreshTokens: { token: refreshToken } } },
+          { new: true, runValidators: false }
+        );
+        console.log('[LOGIN] Refresh token saved successfully');
+      } catch (tokenError) {
+        console.error('[LOGIN] CRITICAL: Failed to save refresh token:', tokenError);
+      }
+
+      console.log('[LOGIN] Login successful for marketer:', marketer._id);
+
+      return res.json({
+        success: true,
+        message: 'Login successful',
+        data: {
+          user: marketer.profile,
+          tokens: {
+            accessToken,
+            refreshToken
+          }
+        }
+      });
+    }
+
+    // Handle user login
     console.log('[LOGIN] User found:', {
       userId: user._id,
       fullName: user.fullName,

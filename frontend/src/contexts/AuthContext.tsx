@@ -11,7 +11,7 @@ interface User {
   location?: string;
   profilePicUrl?: string;
   idCardImageUrl?: string;
-  role: 'customer' | 'admin' | 'superadmin';
+  role: 'customer' | 'admin' | 'superadmin' | 'marketer';
   canLogin: boolean;
   membershipMonths?: number;
   validUntil?: string;
@@ -173,7 +173,7 @@ const AnimatedSuccessToast: React.FC<{ message: string; onClose: () => void }> =
             ease: "easeInOut"
           }}
         />
-        
+
         {/* Content */}
         <div className="relative flex items-center p-4 space-x-3">
           {/* Animated Checkmark */}
@@ -218,7 +218,7 @@ const AnimatedSuccessToast: React.FC<{ message: string; onClose: () => void }> =
               </motion.svg>
             </motion.div>
           </div>
-          
+
           {/* Message */}
           <div className="flex-1">
             <motion.p
@@ -230,7 +230,7 @@ const AnimatedSuccessToast: React.FC<{ message: string; onClose: () => void }> =
               {message}
             </motion.p>
           </div>
-          
+
           {/* Close button */}
           <motion.button
             onClick={onClose}
@@ -246,7 +246,7 @@ const AnimatedSuccessToast: React.FC<{ message: string; onClose: () => void }> =
             </svg>
           </motion.button>
         </div>
-        
+
         {/* Progress bar */}
         <motion.div
           className="absolute bottom-0 left-0 h-1 bg-white/30"
@@ -266,7 +266,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const showAnimatedToast = useCallback((message: string) => {
     const id = Math.random().toString(36).substr(2, 9);
     setToasts(prev => [...prev, { id, message }]);
-    
+
     // Auto remove after 5 seconds
     setTimeout(() => {
       setToasts(prev => prev.filter(toast => toast.id !== id));
@@ -300,7 +300,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         }
         return;
       }
-      
+
       if (!token) {
         // No token, immediately set loading to false
         if (isMounted) {
@@ -311,7 +311,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
       // Shorter timeout on mobile (5 seconds), longer on desktop (10 seconds)
       const timeoutDuration = isMobile ? 5000 : 10000;
-      
+
       timeoutId = setTimeout(() => {
         if (isMounted) {
           console.warn('Auth check timeout - clearing tokens and showing login');
@@ -327,7 +327,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
       try {
         const user = await authService.getProfile();
-        
+
         if (timeoutId) {
           clearTimeout(timeoutId);
           timeoutId = null;
@@ -350,7 +350,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         }
 
         console.error('Auth check failed:', error);
-        
+
         if (isMounted) {
           // Clear tokens on error
           try {
@@ -386,20 +386,20 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       console.log('[AuthContext.login] Starting login...', { phone });
       dispatch({ type: 'AUTH_START' });
       console.log('[AuthContext.login] AUTH_START dispatched');
-      
+
       console.log('[AuthContext.login] Calling authService.login...');
       const response = await authService.login(phone, password);
       console.log('[AuthContext.login] authService.login returned:', { hasUser: !!response?.user, hasTokens: !!response?.tokens });
-      
+
       if (!response?.tokens?.accessToken || !response?.tokens?.refreshToken) {
         throw new Error('Invalid response: missing tokens');
       }
-      
+
       console.log('[AuthContext.login] Storing tokens in localStorage...');
       localStorage.setItem('token', response.tokens.accessToken);
       localStorage.setItem('refreshToken', response.tokens.refreshToken);
       console.log('[AuthContext.login] Tokens stored');
-      
+
       console.log('[AuthContext.login] Dispatching AUTH_SUCCESS...');
       dispatch({
         type: 'AUTH_SUCCESS',
@@ -410,7 +410,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         },
       });
       console.log('[AuthContext.login] AUTH_SUCCESS dispatched');
-      
+
       toast.success(`Welcome back, ${response.user.fullName}!`);
       console.log('[AuthContext.login] Login completed successfully');
     } catch (error: any) {
@@ -420,45 +420,45 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         status: error.status || error.response?.status,
         responseData: error.response?.data,
       });
-      
+
       // Get status code from error (check both error.status and error.response.status)
       const statusCode = error.status || error.response?.status;
-      
+
       // Get language from localStorage (default to 'en')
       const currentLanguage = (typeof window !== 'undefined' ? localStorage.getItem('language') : null) || 'en';
-      
+
       // Determine user-friendly error message
       let errorMessage = '';
-      
+
       if (statusCode === 401) {
-        errorMessage = error.response?.data?.message || 
-          (currentLanguage === 'en' 
-            ? 'Invalid phone number or password. Please check your credentials.' 
+        errorMessage = error.response?.data?.message ||
+          (currentLanguage === 'en'
+            ? 'Invalid phone number or password. Please check your credentials.'
             : 'Lambarka telefoonka ama furaha sirta ma sax ah. Fadlan hubi macluumaadkaaga.');
       } else if (statusCode === 500) {
-        errorMessage = error.response?.data?.message || 
-          (currentLanguage === 'en' 
-            ? 'Server error. Please try again later.' 
+        errorMessage = error.response?.data?.message ||
+          (currentLanguage === 'en'
+            ? 'Server error. Please try again later.'
             : 'Qaladka server. Fadlan mar kale isku day waqtimo kale.');
       } else if (error.response?.data?.message) {
         errorMessage = error.response.data.message;
       } else if (error.response?.data?.errors) {
         errorMessage = `Validation failed: ${JSON.stringify(error.response.data.errors)}`;
       } else if (error.code === 'ECONNABORTED' || error.message?.includes('timeout')) {
-        errorMessage = currentLanguage === 'en' 
-          ? 'Request timed out. Please try again.' 
+        errorMessage = currentLanguage === 'en'
+          ? 'Request timed out. Please try again.'
           : 'Waqtiga ayaa dhamaaday. Fadlan mar kale isku day.';
       } else if (error.code === 'ERR_NETWORK' || error.message?.includes('Network Error')) {
-        errorMessage = currentLanguage === 'en' 
-          ? 'Network error. Please check your internet connection and try again.' 
+        errorMessage = currentLanguage === 'en'
+          ? 'Network error. Please check your internet connection and try again.'
           : 'Qaladka xidhiidhka. Fadlan hubi xiriirkaaga internetka oo mar kale isku day.';
       } else {
-        errorMessage = error.message || 
-          (currentLanguage === 'en' 
-            ? 'Login failed. Please check your credentials and try again.' 
+        errorMessage = error.message ||
+          (currentLanguage === 'en'
+            ? 'Login failed. Please check your credentials and try again.'
             : 'Gelitaan way ku fashilantay. Fadlan hubi macluumaadkaaga oo mar kale isku day.');
       }
-      
+
       dispatch({ type: 'AUTH_FAILURE', payload: errorMessage });
       toast.error(errorMessage);
       throw error;
@@ -468,12 +468,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const register = async (userData: RegisterData) => {
     try {
       dispatch({ type: 'AUTH_START' });
-      
+
       const response = await authService.register(userData);
-      
+
       localStorage.setItem('token', response.tokens.accessToken);
       localStorage.setItem('refreshToken', response.tokens.refreshToken);
-      
+
       dispatch({
         type: 'AUTH_SUCCESS',
         payload: {
@@ -482,7 +482,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           refreshToken: response.tokens.refreshToken,
         },
       });
-      
+
       toast.success(`Welcome to SAHAL CARD, ${response.user.fullName}!`);
     } catch (error: any) {
       const errorMessage = error.response?.data?.message || 'Registration failed';

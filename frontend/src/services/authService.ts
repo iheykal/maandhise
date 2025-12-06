@@ -114,7 +114,7 @@ export interface User {
   idNumber?: string;
   location?: string;
   profilePicUrl?: string;
-  role: 'customer' | 'admin' | 'superadmin';
+  role: 'customer' | 'admin' | 'superadmin' | 'marketer';
   canLogin: boolean;
   membershipMonths?: number;
   validUntil?: string;

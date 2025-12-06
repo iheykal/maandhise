@@ -19,6 +19,7 @@ import ContactPage from './pages/ContactPage.tsx';
 import GetSahalCardPage from './pages/GetSahalCardPage.tsx';
 import LoginPage from './pages/auth/LoginPage.tsx';
 import DashboardPage from './pages/dashboard/DashboardPage.tsx';
+import MarketerDashboardPage from './pages/dashboard/MarketerDashboardPage.tsx';
 import ProfilePage from './pages/dashboard/ProfilePage.tsx';
 import CompanyManagementPage from './pages/CompanyManagementPage.tsx';
 
@@ -47,12 +48,17 @@ function App() {
               <div className="min-h-screen">
                 <Navbar />
                 <GlobalLoginButton />
-                
+
                 <Routes>
                   <Route path="/login" element={<LoginPage />} />
                   <Route path="/dashboard" element={
                     <ProtectedRoute requireAdmin={true}>
                       <DashboardPage />
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/marketer/dashboard" element={
+                    <ProtectedRoute>
+                      <MarketerDashboardPage />
                     </ProtectedRoute>
                   } />
                   <Route path="/profile" element={
@@ -72,31 +78,31 @@ function App() {
                       <section id="home" data-snap-section className="h-screen">
                         <HomePage />
                       </section>
-                      
+
                       {/* About Section */}
                       <section id="about" data-snap-section className="h-screen">
                         <AboutPage />
                       </section>
-                      
+
                       {/* Services Section */}
                       <section id="services" data-snap-section className="min-h-screen">
                         <ServicesPage />
                       </section>
-                      
+
                       {/* Sahal Card Section */}
                       <section id="sahal-card" data-snap-section className="min-h-screen">
                         <SahalCardPage />
                       </section>
-                      
+
                       {/* Contact Section */}
                       <section id="contact" data-snap-section className="h-screen">
                         <ContactPage />
                       </section>
-                      
+
                     </ScrollNavigator>
                   } />
                 </Routes>
-                
+
                 {/* Toast Notifications */}
                 <Toaster
                   position="top-right"
@@ -154,7 +160,7 @@ function App() {
                     },
                   }}
                 />
-                
+
               </div>
             </Router>
           </AuthProvider>

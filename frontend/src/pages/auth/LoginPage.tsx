@@ -30,10 +30,10 @@ const LoginPage: React.FC = () => {
       const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
         typeof navigator !== 'undefined' ? navigator.userAgent : ''
       );
-      
+
       // Shorter timeout on mobile (3 seconds), longer on desktop (8 seconds)
       const timeoutDuration = isMobile ? 3000 : 8000;
-      
+
       const timeout = setTimeout(() => {
         setLoadingTimeout(true);
       }, timeoutDuration);
@@ -64,7 +64,10 @@ const LoginPage: React.FC = () => {
 
     try {
       await login(formData.phone, formData.password);
-      // Redirect to the intended page or dashboard
+      // Redirect based on user role
+      // The actual user object is available after login in the auth context
+      // We'll check the role and redirect accordingly
+      // For now, navigate to from path, the ProtectedRoute will handle redirect if needed
       navigate(from, { replace: true });
     } catch (error) {
       // Error is handled by the auth context
@@ -90,12 +93,12 @@ const LoginPage: React.FC = () => {
             {language === 'en' ? 'Checking authentication...' : 'Hubinta ansaxnimada...'}
           </h3>
           <p className="text-gray-600">
-            {language === 'en' 
+            {language === 'en'
               ? 'Please wait while we verify your login status'
               : 'Fadlan sug markaan hubino xaaladdaada galitaanka'}
           </p>
           <p className="text-xs text-gray-500 mt-4">
-            {language === 'en' 
+            {language === 'en'
               ? 'If this takes too long, the login form will appear automatically'
               : 'Haddii ay ku dhawaato, foomka galitaanka ayaa si toos ah u muujaya'}
           </p>

@@ -1,5 +1,6 @@
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
+const Marketer = require('../models/Marketer');
 
 // Verify JWT token
 const authenticateToken = async (req, res, next) => {
@@ -24,8 +25,7 @@ const authenticateToken = async (req, res, next) => {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     console.log('[AUTH DEBUG] Token verified for user:', decoded.userId);
 
-    // Get user from database
-    // Explicitly cast to ObjectId to ensure query works
+    // Get user or marketer from database
     const mongoose = require('mongoose');
     let userId = decoded.userId;
 
@@ -37,32 +37,33 @@ const authenticateToken = async (req, res, next) => {
       console.log('[AUTH DEBUG] Error casting ID:', e.message);
     }
 
-    const user = await User.findById(userId);
+    // First try to find as regular user
+    let user = await User.findById(userId);
 
-    if (!user) {
-      console.log('[AUTH DEBUG] User not found by ID:', userId);
-      console.log('[AUTH DEBUG] DB Name:', mongoose.connection.name);
-      console.log('[AUTH DEBUG] User Collection:', User.collection.name);
-
-      // Fallback: Try to find by phone if ID fails (to debug if it's an ID issue)
-      // We need to decode the token again to get other fields if available, 
-      // but standard JWT only has userId. 
-
-      // Let's try to list ALL users to see what IDs look like (limit 1)
-      const anyUser = await User.findOne();
-      console.log('[AUTH DEBUG] Sample user ID from DB:', anyUser ? anyUser._id.toString() : 'No users found');
-
-      return res.status(401).json({
-        success: false,
-        message: 'User not found'
-      });
+    if (user) {
+      console.log('[AUTH DEBUG] User found:', user.role);
+      req.user = user;
+      return next();
     }
 
-    // Note: isActive field was removed from User model
-    // All users are considered active by default
+    // If not found as user, try to find as marketer
+    const marketer = await Marketer.findById(userId);
 
-    req.user = user;
-    next();
+    if (marketer) {
+      console.log('[AUTH DEBUG] Marketer found');
+      req.marketer = marketer;
+      // Also set req.user with marketer profile for compatibility with authorize middleware
+      req.user = { ...marketer.toObject(), role: 'marketer' };
+      return next();
+    }
+
+    // Neither user nor marketer found
+    console.log('[AUTH DEBUG] User/Marketer not found by ID:', userId);
+    return res.status(401).json({
+      success: false,
+      message: 'User not found'
+    });
+
   } catch (error) {
     if (error.name === 'JsonWebTokenError') {
       return res.status(401).json({
