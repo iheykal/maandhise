@@ -591,7 +591,8 @@ const DashboardPage: React.FC = () => {
       reader.readAsDataURL(file);
 
       // Upload file
-      const url = await uploadService.uploadFile(file);
+      const uploadResponse = await uploadService.uploadFile(file);
+      const url = uploadResponse.url;
       if (type === 'profilePic') {
         setMarketerFormState({ ...marketerFormState, profilePicUrl: url });
       } else {
@@ -1620,18 +1621,29 @@ const DashboardPage: React.FC = () => {
         return UsersTab;
       case 'marketers':
         return (
-          <div className="bg-white rounded-2xl shadow-lg p-8 text-center">
-            <Briefcase className="w-16 h-16 mx-auto mb-4 text-purple-500" />
-            <h2 className="text-2xl font-bold text-gray-800 mb-2">
-              {language === 'en' ? 'Marketers Management' : 'Maamulka Suuq-geeyayaasha'}
-            </h2>
-            <p className="text-gray-600">
-              {language === 'en'
-                ? 'Marketer management functionality coming soon...'
-                : 'Shaqada maamulka suuq-geeyayaasha dhowaan...'
-              }
-            </p>
-          </div>
+          <motion.div className="space-y-6" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+            <div className="bg-white rounded-2xl shadow-lg p-6">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-3">
+                  <div className="p-2 bg-gradient-to-br from-purple-500 to-indigo-600 rounded-lg"><Briefcase className="w-6 h-6 text-white" /></div>
+                  <div><h2 className="text-2xl font-bold">{language === 'en' ? 'Marketers' : 'Suuq-geeyayaasha'}</h2></div>
+                </div>
+                <button onClick={() => setShowAddMarketerForm(true)} className="flex items-center space-x-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"><UserPlus className="w-5 h-5" /><span>{language === 'en' ? 'Add' : 'Ku Dar'}</span></button>
+              </div>
+            </div>
+            <div className="bg-white rounded-2xl shadow-lg p-4"><input type="text" placeholder={language === 'en' ? 'Search...' : 'Raadi...'} value={marketerSearchQuery} onChange={(e) => setMarketerSearchQuery(e.target.value)} className="w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500" /></div>
+            <div className="bg-white rounded-2xl shadow-lg p-6">
+              {marketers.filter(m => !marketerSearchQuery || m.fullName.toLowerCase().includes(marketerSearchQuery.toLowerCase()) || m.phone.includes(marketerSearchQuery)).length === 0 ? (
+                <div className="text-center py-12"><Briefcase className="w-16 h-16 mx-auto mb-4 text-gray-400" /><h3 className="text-xl font-bold mb-2">{language === 'en' ? 'No Marketers' : 'Ma Jiraan'}</h3><p className="text-gray-500">{language === 'en' ? 'Click Add to start' : 'Guji Ku Dar'}</p></div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {marketers.filter(m => !marketerSearchQuery || m.fullName.toLowerCase().includes(marketerSearchQuery.toLowerCase()) || m.phone.includes(marketerSearchQuery)).map((m) => (
+                    <div key={m._id} className="rounded-2xl shadow-lg border overflow-hidden"><div className="h-20 bg-gradient-to-r from-purple-500 to-indigo-600" /><div className="relative -mt-12 flex justify-center mb-4">{m.profilePicUrl ? <img src={m.profilePicUrl} alt={m.fullName} className="w-24 h-24 rounded-full ring-4 ring-white" /> : <div className="w-24 h-24 bg-purple-500 rounded-full flex items-center justify-center ring-4 ring-white"><User className="w-12 h-12 text-white" /></div>}</div><div className="px-6 pb-6 text-center"><h3 className="font-bold text-lg mb-1">{m.fullName}</h3><p className="text-sm text-gray-600 mb-4">{m.phone}</p><div className="grid grid-cols-2 gap-3 mb-4"><div className="bg-green-50 rounded-lg p-3"><p className="text-xs text-green-600">Earnings</p><p className="text-lg font-bold text-green-700">${m.totalEarnings.toFixed(2)}</p></div><div className="bg-blue-50 rounded-lg p-3"><p className="text-xs text-blue-600">Customers</p><p className="text-lg font-bold text-blue-700">{m.approvedCustomers}</p></div></div><button onClick={() => handleDeleteMarketer(m)} className="w-full px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 flex items-center justify-center gap-2"><Trash2 className="w-4 h-4" /><span>{language === 'en' ? 'Delete' : 'Tirtir'}</span></button></div></div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </motion.div>
         );
       case 'payments':
         return PaymentsTab;
@@ -2378,6 +2390,45 @@ const DashboardPage: React.FC = () => {
 
         {/* Tab Content */}
         {renderTabContent()}
+
+        {/* Add Marketer Form Modal */}
+        {showAddMarketerForm && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={handleCancelMarketerForm}>
+            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+              <div className="p-6"><div className="flex items-center justify-between mb-6"><h2 className="text-2xl font-bold flex items-center gap-2"><UserPlus className="w-6 h-6 text-purple-600" /><span>{language === 'en' ? 'Add Marketer' : 'Ku Dar Suuq-geeye'}</span></h2><button onClick={handleCancelMarketerForm} className="p-2 hover:bg-gray-100 rounded-full"><X className="w-5 h-5" /></button></div>
+                <form onSubmit={handleMarketerSubmit} className="space-y-4">
+                  <div><label className="block text-sm font-semibold mb-2">{language === 'en' ? 'Full Name' : 'Magaca'}</label><input type="text" name="fullName" value={marketerFormState.fullName} onChange={handleMarketerInputChange} required className="w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-purple-500" /></div>
+                  <div><label className="block text-sm font-semibold mb-2">{language === 'en' ? 'Phone (61xxxxxxx)' : 'Telefoon (61xxxxxxx)'}</label><input type="tel" name="phone" value={marketerFormState.phone} onChange={handleMarketerInputChange} required className="w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-purple-500" /></div>
+                  <div><label className="block text-sm font-semibold mb-2">{language === 'en' ? 'Password' : 'Password'}</label><input type="password" name="password" value={marketerFormState.password} onChange={handleMarketerInputChange} required minLength={6} className="w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-purple-500" /></div>
+                  <div><label className="block text-sm font-semibold mb-2">{language === 'en' ? 'Profile Picture (Optional)' : 'Sawirka (Ikhtiyaari)'}</label><input type="file" accept="image/*" onChange={(e) => handleMarketerFileChange(e, 'profilePic')} className="w-full px-4 py-3 border rounded-xl" />{marketerPreviewImages.profile && <img src={marketerPreviewImages.profile} alt="Preview" className="mt-2 w-32 h-32 object-cover rounded-lg" />}</div>
+                  <div><label className="block text-sm font-semibold mb-2">{language === 'en' ? 'Government ID (Required)' : 'Aqoonsiga (Loo baahan)'}</label><input type="file" accept="image/*" onChange={(e) => handleMarketerFileChange(e, 'governmentId')} required className="w-full px-4 py-3 border rounded-xl" />{marketerPreviewImages.governmentId && <img src={marketerPreviewImages.governmentId} alt="ID" className="mt-2 w-full h-48 object-contain rounded-lg" />}</div>
+                  <div className="flex gap-3 pt-4"><button type="button" onClick={handleCancelMarketerForm} className="flex-1 px-4 py-3 bg-gray-100 rounded-lg hover:bg-gray-200">{language === 'en' ? 'Cancel' : 'Jooji'}</button><button type="submit" disabled={isLoading} className="flex-1 px-4 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50">{isLoading ? (language === 'en' ? 'Creating...' : 'Waa la sameeya...') : (language === 'en' ? 'Create' : 'Samee')}</button></div>
+                </form>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Credentials Modal */}
+        {marketerCredentials && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setMarketerCredentials(null)}>
+            <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full" onClick={(e) => e.stopPropagation()}>
+              <div className="p-6 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-t-2xl"><h2 className="text-xl font-bold flex items-center gap-2"><CheckCircle className="w-6 h-6" /><span>{language === 'en' ? 'Marketer Created!' : 'Waa La Sameeyay!'}</span></h2></div>
+              <div className="p-6"><div className="bg-gray-50 rounded-lg p-4 mb-4"><h3 className="font-semibold mb-3 text-center">{language === 'en' ? 'Login Credentials' : 'Macluumaadka'}</h3><div className="space-y-3"><div className="bg-white rounded-lg p-3 border"><p className="text-xs text-gray-500">{language === 'en' ? 'Phone' : 'Telefoon'}</p><p className="font-mono font-bold">{marketerCredentials.phone}</p></div><div className="bg-white rounded-lg p-3 border"><p className="text-xs text-gray-500">{language === 'en' ? 'Password' : 'Password'}</p><p className="font-mono font-bold">{marketerCredentials.password}</p></div></div></div><div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 mb-4"><p className="text-xs text-yellow-800 flex items-start gap-2"><AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" /><span>{language === 'en' ? 'Save these credentials!' : 'Keydi macluumaadkan!'}</span></p></div><button onClick={() => setMarketerCredentials(null)} className="w-full px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700">{language === 'en' ? 'Close' : 'Xir'}</button></div>
+            </div>
+          </div>
+        )}
+
+        {/* Delete Confirmation */}
+        {deleteMarketerConfirmation && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setDeleteMarketerConfirmation(null)}>
+            <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full" onClick={(e) => e.stopPropagation()}>
+              <div className="p-6 bg-gradient-to-r from-red-600 to-rose-600 text-white rounded-t-2xl"><h2 className="text-xl font-bold">{language === 'en' ? 'Delete Marketer?' : 'Tirtir?'}</h2></div>
+              <div className="p-6"><div className="text-center mb-6">{deleteMarketerConfirmation.marketer.profilePicUrl ? <img src={deleteMarketerConfirmation.marketer.profilePicUrl} alt="" className="w-20 h-20 rounded-full mx-auto mb-4 ring-4 ring-red-200" /> : <div className="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4 ring-4 ring-red-200"><User className="w-10 h-10 text-red-600" /></div>}<h3 className="text-lg font-semibold mb-2">{language === 'en' ? 'Delete' : 'Tirtir'}</h3><p className="text-xl font-bold text-red-600 mb-2">{deleteMarketerConfirmation.marketer.fullName}</p><p className="text-sm text-gray-600">{deleteMarketerConfirmation.marketer.phone}</p></div><div className="flex gap-3"><button onClick={() => setDeleteMarketerConfirmation(null)} className="flex-1 px-4 py-3 bg-gray-100 rounded-lg hover:bg-gray-200">{language === 'en' ? 'Cancel' : 'Jooji'}</button><button onClick={confirmDeleteMarketer} className="flex-1 px-4 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700">{language === 'en' ? 'Delete' : 'Tirtir'}</button></div></div>
+            </div>
+          </div>
+        )}
+
       </div>
     </div>
   );
