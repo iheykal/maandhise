@@ -89,6 +89,18 @@ const DashboardPage: React.FC = () => {
   const [showAddMarketerForm, setShowAddMarketerForm] = useState(false);
   const [marketerSearchQuery, setMarketerSearchQuery] = useState('');
   const [marketerCredentials, setMarketerCredentials] = useState<{ phone: string; password: string } | null>(null);
+  const [deleteMarketerConfirmation, setDeleteMarketerConfirmation] = useState<{ marketer: Marketer } | null>(null);
+  const [marketerFormState, setMarketerFormState] = useState({
+    fullName: '',
+    phone: '+25261',
+    password: '',
+    profilePicUrl: '',
+    governmentIdUrl: ''
+  });
+  const [marketerPreviewImages, setMarketerPreviewImages] = useState<{
+    profile: string | null;
+    governmentId: string | null;
+  }>({ profile: null, governmentId: null });
 
 
   // Define form state type
@@ -306,6 +318,21 @@ const DashboardPage: React.FC = () => {
     loadCompaniesCount();
   }, [loadCompaniesCount]);
 
+  // Load marketers
+  const loadMarketers = useCallback(async () => {
+    try {
+      const response = await marketerService.getAllMarketers({ limit: 100 });
+      setMarketers(response.marketers);
+    } catch (error) {
+      console.error('Error loading marketers:', error);
+    }
+  }, []);
+
+  // Load marketers on component mount
+  useEffect(() => {
+    loadMarketers();
+  }, [loadMarketers]);
+
   // Handle input changes for controlled components
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -522,6 +549,126 @@ const DashboardPage: React.FC = () => {
     const totalMonthsExpired = (yearsDiff * 12) + monthsDiff;
 
     return Math.max(0, totalMonthsExpired);
+  };
+
+  // Marketer Management Functions
+  const handleMarketerInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    if (name === 'phone') {
+      // Ensure phone starts with +25261
+      let phoneValue = value;
+      if (!phoneValue.startsWith('+25261')) {
+        if (phoneValue.startsWith('61')) {
+          phoneValue = '+252' + phoneValue;
+        } else if (phoneValue.startsWith('+252')) {
+          if (!phoneValue.startsWith('+25261')) {
+            phoneValue = '+25261';
+          }
+        } else {
+          phoneValue = '+25261' + phoneValue.replace(/^\+?252?61?/, '');
+        }
+      }
+      setMarketerFormState({ ...marketerFormState, [name]: phoneValue });
+    } else {
+      setMarketerFormState({ ...marketerFormState, [name]: value });
+    }
+  };
+
+  const handleMarketerFileChange = async (e: React.ChangeEvent<HTMLInputElement>, type: 'profilePic' | 'governmentId') => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    try {
+      // Create preview
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        if (type === 'profilePic') {
+          setMarketerPreviewImages({ ...marketerPreviewImages, profile: reader.result as string });
+        } else {
+          setMarketerPreviewImages({ ...marketerPreviewImages, governmentId: reader.result as string });
+        }
+      };
+      reader.readAsDataURL(file);
+
+      // Upload file
+      const url = await uploadService.uploadFile(file);
+      if (type === 'profilePic') {
+        setMarketerFormState({ ...marketerFormState, profilePicUrl: url });
+      } else {
+        setMarketerFormState({ ...marketerFormState, governmentIdUrl: url });
+      }
+    } catch (error) {
+      console.error('Error uploading file:', error);
+      alert('Failed to upload file');
+    }
+  };
+
+  const handleMarketerSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      setIsLoading(true);
+
+      const marketerData: CreateMarketerData = {
+        fullName: marketerFormState.fullName,
+        phone: marketerFormState.phone,
+        password: marketerFormState.password || 'marketer123',
+        governmentIdUrl: marketerFormState.governmentIdUrl,
+        ...(marketerFormState.profilePicUrl && { profilePicUrl: marketerFormState.profilePicUrl })
+      };
+
+      const response = await marketerService.createMarketer(marketerData);
+
+      // Show credentials
+      setMarketerCredentials(response.credentials);
+
+      // Reload marketers list
+      await loadMarketers();
+
+      // Reset form
+      setShowAddMarketerForm(false);
+      setMarketerFormState({
+        fullName: '',
+        phone: '+25261',
+        password: '',
+        profilePicUrl: '',
+        governmentIdUrl: ''
+      });
+      setMarketerPreviewImages({ profile: null, governmentId: null });
+    } catch (error: any) {
+      console.error('Error creating marketer:', error);
+      alert(error.response?.data?.message || 'Failed to create marketer');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleCancelMarketerForm = () => {
+    setShowAddMarketerForm(false);
+    setMarketerFormState({
+      fullName: '',
+      phone: '+25261',
+      password: '',
+      profilePicUrl: '',
+      governmentIdUrl: ''
+    });
+    setMarketerPreviewImages({ profile: null, governmentId: null });
+  };
+
+  const handleDeleteMarketer = (marketer: Marketer) => {
+    setDeleteMarketerConfirmation({ marketer });
+  };
+
+  const confirmDeleteMarketer = async () => {
+    if (!deleteMarketerConfirmation) return;
+
+    try {
+      await marketerService.deleteMarketer(deleteMarketerConfirmation.marketer._id);
+      await loadMarketers();
+      setDeleteMarketerConfirmation(null);
+    } catch (error) {
+      console.error('Error deleting marketer:', error);
+      alert('Failed to delete marketer');
+    }
   };
 
   // Calculate remaining months and balance (1 month = $1)
