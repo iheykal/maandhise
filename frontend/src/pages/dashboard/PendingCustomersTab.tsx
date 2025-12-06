@@ -12,11 +12,19 @@ const PendingCustomersTab: React.FC = () => {
 
     const loadPendingCustomers = async () => {
         try {
+            console.log('[PendingCustomersTab] Loading pending customers...');
             setLoading(true);
             const response = await pendingCustomerService.getAllPendingCustomers({ status: 'pending' });
+            console.log('[PendingCustomersTab] API Response:', response);
+            console.log('[PendingCustomersTab] Pending customers count:', response.pendingCustomers.length);
             setPendingCustomers(response.pendingCustomers);
-        } catch (error) {
-            console.error('Error loading pending customers:', error);
+        } catch (error: any) {
+            console.error('[PendingCustomersTab] Error loading pending customers:', error);
+            console.error('[PendingCustomersTab] Error details:', {
+                message: error.message,
+                response: error.response?.data,
+                status: error.response?.status
+            });
             toast.error('Failed to load pending customers');
         } finally {
             setLoading(false);
