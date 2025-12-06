@@ -1,3 +1,4 @@
+const mongoose = require('mongoose');
 const PendingCustomer = require('../models/PendingCustomer');
 const Marketer = require('../models/Marketer');
 const User = require('../models/User');
@@ -95,7 +96,8 @@ const createPendingCustomer = async (req, res) => {
             registrationDate: startDate,
             amount: months,
             validUntil: validUntilDate,
-            createdBy: marketer._id,
+            validUntil: validUntilDate,
+            createdBy: new mongoose.Types.ObjectId(marketer._id),
             status: 'pending'
         });
 
@@ -151,8 +153,16 @@ const getAllPendingCustomers = async (req, res) => {
         console.log('[getAllPendingCustomers] MongoDB query:', JSON.stringify(query));
 
         const pendingCustomers = await PendingCustomer.find(query)
-            .populate('createdBy', 'fullName phone')
-            .populate('reviewedBy', 'fullName')
+            .populate({
+                path: 'createdBy',
+                model: 'Marketer',
+                select: 'fullName phone'
+            })
+            .populate({
+                path: 'reviewedBy',
+                model: 'User',
+                select: 'fullName'
+            })
             .sort({ createdAt: -1 })
             .limit(limit * 1)
             .skip((page - 1) * limit);
