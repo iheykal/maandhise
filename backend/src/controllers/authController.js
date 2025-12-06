@@ -192,48 +192,50 @@ const login = async (req, res) => {
       timestamp: new Date().toISOString()
     });
 
-    // Try to find user with normalized phone number
-    let user = await User.findOne({ phone: normalizedPhone }).select('+password');
+    const Marketer = require('../models/Marketer');
 
-    // If not found, try alternative formats
-    if (!user && normalizedPhone) {
-      // Try without + prefix
+    // First, try to find as Marketer (Prioritize Marketers so they can access their dashboard)
+    let marketer = await Marketer.findOne({ phone: normalizedPhone }).select('+password');
+
+    // Try alternative formats for marketer
+    if (!marketer && normalizedPhone) {
       const phoneWithoutPlus = normalizedPhone.replace(/^\+/, '');
-      user = await User.findOne({ phone: phoneWithoutPlus }).select('+password');
+      marketer = await Marketer.findOne({ phone: phoneWithoutPlus }).select('+password');
 
-      // Try with just the last 9 digits (local format)
-      if (!user && normalizedPhone.startsWith('+252')) {
-        const localPhone = normalizedPhone.slice(4); // Remove +252
-        user = await User.findOne({ phone: localPhone }).select('+password');
+      if (!marketer && normalizedPhone.startsWith('+252')) {
+        const localPhone = normalizedPhone.slice(4);
+        marketer = await Marketer.findOne({ phone: localPhone }).select('+password');
       }
 
-      // Try with 252 prefix (without +)
-      if (!user && normalizedPhone.startsWith('+252')) {
-        const phoneWith252 = normalizedPhone.slice(1); // Remove +
-        user = await User.findOne({ phone: phoneWith252 }).select('+password');
+      if (!marketer && normalizedPhone.startsWith('+252')) {
+        const phoneWith252 = normalizedPhone.slice(1);
+        marketer = await Marketer.findOne({ phone: phoneWith252 }).select('+password');
       }
     }
 
-    // If not found as User, try to find as Marketer
-    const Marketer = require('../models/Marketer');
-    let marketer = null;
+    // If not found as Marketer, try to find as User
+    let user = null;
 
-    if (!user) {
-      marketer = await Marketer.findOne({ phone: normalizedPhone }).select('+password');
+    if (!marketer) {
+      // Try to find user with normalized phone number
+      user = await User.findOne({ phone: normalizedPhone }).select('+password');
 
-      // Try alternative formats for marketer too
-      if (!marketer && normalizedPhone) {
+      // If not found, try alternative formats
+      if (!user && normalizedPhone) {
+        // Try without + prefix
         const phoneWithoutPlus = normalizedPhone.replace(/^\+/, '');
-        marketer = await Marketer.findOne({ phone: phoneWithoutPlus }).select('+password');
+        user = await User.findOne({ phone: phoneWithoutPlus }).select('+password');
 
-        if (!marketer && normalizedPhone.startsWith('+252')) {
-          const localPhone = normalizedPhone.slice(4);
-          marketer = await Marketer.findOne({ phone: localPhone }).select('+password');
+        // Try with just the last 9 digits (local format)
+        if (!user && normalizedPhone.startsWith('+252')) {
+          const localPhone = normalizedPhone.slice(4); // Remove +252
+          user = await User.findOne({ phone: localPhone }).select('+password');
         }
 
-        if (!marketer && normalizedPhone.startsWith('+252')) {
-          const phoneWith252 = normalizedPhone.slice(1);
-          marketer = await Marketer.findOne({ phone: phoneWith252 }).select('+password');
+        // Try with 252 prefix (without +)
+        if (!user && normalizedPhone.startsWith('+252')) {
+          const phoneWith252 = normalizedPhone.slice(1); // Remove +
+          user = await User.findOne({ phone: phoneWith252 }).select('+password');
         }
       }
     }
