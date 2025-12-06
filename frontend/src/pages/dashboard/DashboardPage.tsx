@@ -782,8 +782,8 @@ const DashboardPage: React.FC = () => {
                     className="w-10 h-10 rounded-full object-cover ring-2 ring-white shadow-lg"
                   />
                   <div className={`absolute -bottom-1 -right-1 w-4 h-4 rounded-full border-2 border-white flex items-center justify-center ${user.validUntil && new Date() > new Date(user.validUntil)
-                      ? 'bg-red-500' // Red status for expired
-                      : 'bg-green-500' // Green status for valid
+                    ? 'bg-red-500' // Red status for expired
+                    : 'bg-green-500' // Green status for valid
                     }`}>
                     <div className="w-2 h-2 bg-white rounded-full" />
                   </div>
@@ -937,8 +937,8 @@ const DashboardPage: React.FC = () => {
                   data-user-location={user.location}
                   data-user-role={user.role}
                   className={`group relative rounded-3xl shadow-lg hover:shadow-2xl border overflow-hidden transition-all duration-500 ${user.validUntil && new Date() > new Date(user.validUntil)
-                      ? 'bg-red-50 border-red-200 hover:border-red-300' // Red card for expired users
-                      : 'bg-white border-gray-100 hover:border-blue-200' // Normal white card
+                    ? 'bg-red-50 border-red-200 hover:border-red-300' // Red card for expired users
+                    : 'bg-white border-gray-100 hover:border-blue-200' // Normal white card
                     }`}
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
@@ -1012,12 +1012,12 @@ const DashboardPage: React.FC = () => {
 
                   {/* Enhanced header with gradient - red for expired, normal for valid */}
                   <div className={`relative h-28 w-full overflow-hidden ${user.validUntil && new Date() > new Date(user.validUntil)
-                      ? 'bg-gradient-to-br from-red-500 via-red-600 to-red-700' // Red gradient for expired
-                      : 'bg-gradient-to-br from-blue-500 via-indigo-500 to-purple-600' // Normal gradient
+                    ? 'bg-gradient-to-br from-red-500 via-red-600 to-red-700' // Red gradient for expired
+                    : 'bg-gradient-to-br from-blue-500 via-indigo-500 to-purple-600' // Normal gradient
                     }`}>
                     <div className={`absolute inset-0 ${user.validUntil && new Date() > new Date(user.validUntil)
-                        ? 'bg-gradient-to-r from-red-400/20 to-red-500/20' // Red overlay for expired
-                        : 'bg-gradient-to-r from-blue-400/20 to-purple-400/20' // Normal overlay
+                      ? 'bg-gradient-to-r from-red-400/20 to-red-500/20' // Red overlay for expired
+                      : 'bg-gradient-to-r from-blue-400/20 to-purple-400/20' // Normal overlay
                       }`} />
                     <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -translate-y-16 translate-x-16" />
                     <div className="absolute bottom-0 left-0 w-24 h-24 bg-white/5 rounded-full translate-y-12 -translate-x-12" />
@@ -1047,8 +1047,8 @@ const DashboardPage: React.FC = () => {
                             }}
                           />
                           <div className={`absolute -bottom-1 -right-1 w-8 h-8 rounded-full border-4 border-white flex items-center justify-center ${user.validUntil && new Date() > new Date(user.validUntil)
-                              ? 'bg-red-500' // Red status for expired
-                              : 'bg-green-500' // Green status for valid
+                            ? 'bg-red-500' // Red status for expired
+                            : 'bg-green-500' // Green status for valid
                             }`}>
                             <div className="w-3 h-3 bg-white rounded-full" />
                           </div>
@@ -1059,8 +1059,8 @@ const DashboardPage: React.FC = () => {
                             <User className="w-12 h-12 text-white" />
                           </div>
                           <div className={`absolute -bottom-1 -right-1 w-8 h-8 rounded-full border-4 border-white flex items-center justify-center ${user.validUntil && new Date() > new Date(user.validUntil)
-                              ? 'bg-red-500' // Red status for expired
-                              : 'bg-green-500' // Green status for valid
+                            ? 'bg-red-500' // Red status for expired
+                            : 'bg-green-500' // Green status for valid
                             }`}>
                             <div className="w-3 h-3 bg-white rounded-full" />
                           </div>
@@ -1247,8 +1247,8 @@ const DashboardPage: React.FC = () => {
                   data-user-location={user.location}
                   data-user-role={user.role}
                   className={`group relative rounded-3xl shadow-lg hover:shadow-2xl border overflow-hidden transition-all duration-500 ${user.validUntil && new Date() > new Date(user.validUntil)
-                      ? 'bg-red-50 border-red-200 hover:border-red-300'
-                      : 'bg-white border-gray-100 hover:border-blue-200'
+                    ? 'bg-red-50 border-red-200 hover:border-red-300'
+                    : 'bg-white border-gray-100 hover:border-blue-200'
                     }`}
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
@@ -1326,12 +1326,12 @@ const DashboardPage: React.FC = () => {
 
                   {/* Enhanced header with gradient */}
                   <div className={`relative h-28 w-full overflow-hidden ${user.validUntil && new Date() > new Date(user.validUntil)
-                      ? 'bg-gradient-to-br from-red-500 via-red-600 to-red-700'
-                      : 'bg-gradient-to-br from-blue-500 via-indigo-500 to-purple-600'
+                    ? 'bg-gradient-to-br from-red-500 via-red-600 to-red-700'
+                    : 'bg-gradient-to-br from-blue-500 via-indigo-500 to-purple-600'
                     }`}>
                     <div className={`absolute inset-0 ${user.validUntil && new Date() > new Date(user.validUntil)
-                        ? 'bg-gradient-to-r from-red-400/20 to-red-500/20'
-                        : 'bg-gradient-to-r from-blue-400/20 to-purple-400/20'
+                      ? 'bg-gradient-to-r from-red-400/20 to-red-500/20'
+                      : 'bg-gradient-to-r from-blue-400/20 to-purple-400/20'
                       }`} />
                     <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -translate-y-16 translate-x-16" />
                     <div className="absolute bottom-0 left-0 w-24 h-24 bg-white/5 rounded-full translate-y-12 -translate-x-12" />
@@ -1361,8 +1361,8 @@ const DashboardPage: React.FC = () => {
                             }}
                           />
                           <div className={`absolute -bottom-1 -right-1 w-8 h-8 rounded-full border-4 border-white flex items-center justify-center ${user.validUntil && new Date() > new Date(user.validUntil)
-                              ? 'bg-red-500' // Red status for expired
-                              : 'bg-green-500' // Green status for valid
+                            ? 'bg-red-500' // Red status for expired
+                            : 'bg-green-500' // Green status for valid
                             }`}>
                             <div className="w-3 h-3 bg-white rounded-full" />
                           </div>
@@ -1373,8 +1373,8 @@ const DashboardPage: React.FC = () => {
                             <User className="w-12 h-12 text-white" />
                           </div>
                           <div className={`absolute -bottom-1 -right-1 w-8 h-8 rounded-full border-4 border-white flex items-center justify-center ${user.validUntil && new Date() > new Date(user.validUntil)
-                              ? 'bg-red-500' // Red status for expired
-                              : 'bg-green-500' // Green status for valid
+                            ? 'bg-red-500' // Red status for expired
+                            : 'bg-green-500' // Green status for valid
                             }`}>
                             <div className="w-3 h-3 bg-white rounded-full" />
                           </div>
@@ -1471,6 +1471,21 @@ const DashboardPage: React.FC = () => {
         return OverviewTab;
       case 'users':
         return UsersTab;
+      case 'marketers':
+        return (
+          <div className="bg-white rounded-2xl shadow-lg p-8 text-center">
+            <Briefcase className="w-16 h-16 mx-auto mb-4 text-purple-500" />
+            <h2 className="text-2xl font-bold text-gray-800 mb-2">
+              {language === 'en' ? 'Marketers Management' : 'Maamulka Suuq-geeyayaasha'}
+            </h2>
+            <p className="text-gray-600">
+              {language === 'en'
+                ? 'Marketer management functionality coming soon...'
+                : 'Shaqada maamulka suuq-geeyayaasha dhowaan...'
+              }
+            </p>
+          </div>
+        );
       case 'payments':
         return PaymentsTab;
       default:
@@ -1508,14 +1523,15 @@ const DashboardPage: React.FC = () => {
             {[
               { id: 'overview', label: language === 'en' ? 'Overview' : 'Dulmar', icon: BarChart3 },
               { id: 'users', label: language === 'en' ? 'Users' : 'Isticmaalayaasha', icon: Users },
+              { id: 'marketers', label: language === 'en' ? 'Marketers' : 'Suuq-geeyayaasha', icon: Briefcase },
               { id: 'payments', label: language === 'en' ? 'Payments' : 'Lacagaha', icon: DollarSign }
             ].map((tab) => (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
                 className={`flex items-center space-x-2 px-4 py-3 rounded-lg font-medium transition-all duration-300 ${activeTab === tab.id
-                    ? 'bg-blue-600 text-white shadow-lg'
-                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+                  ? 'bg-blue-600 text-white shadow-lg'
+                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
                   }`}
               >
                 <tab.icon className="w-5 h-5" />
@@ -1854,8 +1870,8 @@ const DashboardPage: React.FC = () => {
                   const balanceInfo = calculateRemainingBalance(selectedUserImage.user.validUntil, selectedUserImage.user.createdAt);
                   return (
                     <div className={`mt-6 p-4 rounded-lg shadow-md ${balanceInfo.isValid
-                        ? 'bg-gradient-to-br from-green-500 to-emerald-600'
-                        : 'bg-gradient-to-br from-red-500 to-rose-600'
+                      ? 'bg-gradient-to-br from-green-500 to-emerald-600'
+                      : 'bg-gradient-to-br from-red-500 to-rose-600'
                       }`}>
                       <div className="text-center text-white">
                         <div className="flex items-center justify-center gap-2 mb-1">
@@ -2013,8 +2029,8 @@ const DashboardPage: React.FC = () => {
                     <p className="text-sm text-gray-600">{paymentModal.user.phone}</p>
                     {paymentModal.user.validUntil && (
                       <p className={`text-xs font-semibold mt-1 ${new Date(paymentModal.user.validUntil) > new Date()
-                          ? 'text-green-600'
-                          : 'text-red-600'
+                        ? 'text-green-600'
+                        : 'text-red-600'
                         }`}>
                         {new Date(paymentModal.user.validUntil) > new Date()
                           ? `${language === 'en' ? 'Valid until' : 'Ansax ilaa'}: ${new Date(paymentModal.user.validUntil).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}`
