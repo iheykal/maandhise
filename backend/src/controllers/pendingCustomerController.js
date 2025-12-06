@@ -101,10 +101,13 @@ const createPendingCustomer = async (req, res) => {
 
         await pendingCustomer.save();
 
-        console.log('[createPendingCustomer] Pending customer created:', {
+        console.log('[createPendingCustomer] ✅ Pending customer created successfully:', {
             id: pendingCustomer._id,
             fullName: pendingCustomer.fullName,
-            createdBy: marketer.fullName
+            phone: pendingCustomer.phone,
+            status: pendingCustomer.status,
+            createdBy: marketer.fullName,
+            createdByPhone: marketer.phone
         });
 
         res.status(201).json({
@@ -128,7 +131,9 @@ const createPendingCustomer = async (req, res) => {
 // Get all pending customers (Superadmin only)
 const getAllPendingCustomers = async (req, res) => {
     try {
+        console.log('[getAllPendingCustomers] Request from:', req.user?.role, req.user?.phone);
         const { page = 1, limit = 50, status, search } = req.query;
+        console.log('[getAllPendingCustomers] Query params:', { page, limit, status, search });
 
         const query = {};
 
@@ -143,6 +148,8 @@ const getAllPendingCustomers = async (req, res) => {
             ];
         }
 
+        console.log('[getAllPendingCustomers] MongoDB query:', JSON.stringify(query));
+
         const pendingCustomers = await PendingCustomer.find(query)
             .populate('createdBy', 'fullName phone')
             .populate('reviewedBy', 'fullName')
@@ -151,6 +158,14 @@ const getAllPendingCustomers = async (req, res) => {
             .skip((page - 1) * limit);
 
         const total = await PendingCustomer.countDocuments(query);
+
+        console.log('[getAllPendingCustomers] Found:', pendingCustomers.length, 'total:', total);
+        console.log('[getAllPendingCustomers] Sample data:', pendingCustomers.slice(0, 2).map(c => ({
+            id: c._id,
+            fullName: c.fullName,
+            status: c.status,
+            createdBy: c.createdBy?.fullName
+        })));
 
         res.json({
             success: true,
