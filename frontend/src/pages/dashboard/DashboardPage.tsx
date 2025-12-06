@@ -1,13 +1,13 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  BarChart3, 
-  Users, 
-  DollarSign, 
-  Plus, 
-  Search, 
-  Eye, 
-  Trash2, 
+import {
+  BarChart3,
+  Users,
+  DollarSign,
+  Plus,
+  Search,
+  Eye,
+  Trash2,
   Shield,
   UserPlus,
   // TrendingUp,
@@ -21,12 +21,14 @@ import {
   AlertCircle,
   X,
   User,
-  Clock
+  Clock,
+  Briefcase
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext.tsx';
 import { uploadService } from '../../services/uploadService.ts';
 import { useTheme } from '../../contexts/ThemeContext.tsx';
 import { companyService } from '../../services/companyService.ts';
+import { marketerService, type Marketer, type CreateMarketerData } from '../../services/marketerService.ts';
 import { useNavigate } from 'react-router-dom';
 import CountdownTimer from '../../components/common/CountdownTimer.tsx';
 
@@ -67,7 +69,7 @@ const DashboardPage: React.FC = () => {
       }
     `;
     document.head.appendChild(style);
-    
+
     return () => {
       if (document.head.contains(style)) {
         document.head.removeChild(style);
@@ -77,11 +79,17 @@ const DashboardPage: React.FC = () => {
 
   const [activeTab, setActiveTab] = useState('overview');
   const [showAddUserForm, setShowAddUserForm] = useState(false);
-  const [selectedUserImage, setSelectedUserImage] = useState<{user: any, imageUrl: string} | null>(null);
-  const [deleteConfirmation, setDeleteConfirmation] = useState<{user: any} | null>(null);
-  const [paymentModal, setPaymentModal] = useState<{user: any} | null>(null);
+  const [selectedUserImage, setSelectedUserImage] = useState<{ user: any, imageUrl: string } | null>(null);
+  const [deleteConfirmation, setDeleteConfirmation] = useState<{ user: any } | null>(null);
+  const [paymentModal, setPaymentModal] = useState<{ user: any } | null>(null);
   const [paymentAmount, setPaymentAmount] = useState('');
-  
+
+  // Marketer state
+  const [marketers, setMarketers] = useState<Marketer[]>([]);
+  const [showAddMarketerForm, setShowAddMarketerForm] = useState(false);
+  const [marketerSearchQuery, setMarketerSearchQuery] = useState('');
+  const [marketerCredentials, setMarketerCredentials] = useState<{ phone: string; password: string } | null>(null);
+
 
   // Define form state type
   type FormState = {
@@ -107,7 +115,7 @@ const DashboardPage: React.FC = () => {
 
   // Form state reference for uncontrolled inputs
   const formRef = React.useRef<FormState>({ ...initialFormState });
-  
+
   // Local state for controlled components
   const [formState, setFormState] = React.useState<Omit<FormState, 'profilePic'>>(initialFormState);
 
@@ -188,21 +196,21 @@ const DashboardPage: React.FC = () => {
   // Helper: format remaining validity time from validUntil
   const getValidityInfo = useCallback((validUntil?: string, registrationDate?: string) => {
     if (!validUntil || !registrationDate) return null;
-    
+
     const end = new Date(validUntil);
     const start = new Date(registrationDate);
     const now = new Date();
-    
+
     const isValid = end.getTime() > now.getTime();
-    
+
     // Calculate exact months between start and end dates
     let months = (end.getFullYear() - start.getFullYear()) * 12 + (end.getMonth() - start.getMonth());
-    
+
     // Adjust if the day hasn't been reached yet
     if (end.getDate() < start.getDate()) {
       months--;
     }
-    
+
     // Calculate remaining days after full months
     const tempDate = new Date(start);
     tempDate.setMonth(tempDate.getMonth() + months);
@@ -231,20 +239,20 @@ const DashboardPage: React.FC = () => {
     if (!searchQuery.trim() && roleFilter === 'all') {
       return addedUsers;
     }
-    
+
     const query = searchQuery.toLowerCase();
     return addedUsers.filter(user => {
       // Only run search if there's a query
-      const matchesSearch = !query || 
+      const matchesSearch = !query ||
         user.fullName?.toLowerCase().includes(query) ||
         user.phone?.toLowerCase().includes(query) ||
         (user.idNumber && user.idNumber.toLowerCase().includes(query)) ||
         (user.location && user.location.toLowerCase().includes(query));
-    
-    const matchesRole = roleFilter === 'all' || user.role === roleFilter;
-    
-    return matchesSearch && matchesRole;
-  });
+
+      const matchesRole = roleFilter === 'all' || user.role === roleFilter;
+
+      return matchesSearch && matchesRole;
+    });
   }, [addedUsers, searchQuery, roleFilter]);
 
   // Memoize filtered users for payments tab
@@ -252,7 +260,7 @@ const DashboardPage: React.FC = () => {
     if (!paymentSearchQuery.trim()) {
       return addedUsers;
     }
-    
+
     const query = paymentSearchQuery.toLowerCase();
     return addedUsers.filter(user => {
       return user.fullName?.toLowerCase().includes(query) ||
@@ -301,11 +309,11 @@ const DashboardPage: React.FC = () => {
   // Handle input changes for controlled components
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    
+
     // Special handling for phone number
     if (name === 'phone') {
       let phoneValue = value;
-      
+
       // If user types without +252, prepend it
       if (value && !value.startsWith('+252')) {
         // If it starts with 61, add +252 prefix
@@ -319,7 +327,7 @@ const DashboardPage: React.FC = () => {
           phoneValue = '+25261' + value;
         }
       }
-      
+
       setFormState(prev => ({
         ...prev,
         [name]: phoneValue
@@ -392,21 +400,21 @@ const DashboardPage: React.FC = () => {
       const months = Math.max(1, parseInt(formState.amount || '1', 10));
       const startDate = new Date(formState.registrationDate);
       const validUntilDate = new Date(startDate);
-      
+
       // More accurate month calculation to avoid date overflow issues
       const currentYear = validUntilDate.getFullYear();
       const currentMonth = validUntilDate.getMonth();
       const currentDay = validUntilDate.getDate();
-      
+
       // Calculate target year and month
       const totalMonths = currentMonth + months;
       const targetYear = currentYear + Math.floor(totalMonths / 12);
       const targetMonth = totalMonths % 12;
-      
+
       // Set the new date, ensuring we don't exceed the days in the target month
       const daysInTargetMonth = new Date(targetYear, targetMonth + 1, 0).getDate();
       const finalDay = Math.min(currentDay, daysInTargetMonth);
-      
+
       validUntilDate.setFullYear(targetYear, targetMonth, finalDay);
 
       const userData = {
@@ -421,16 +429,16 @@ const DashboardPage: React.FC = () => {
       };
 
       const newUser = await createUser(userData);
-      
+
       // Add to local state
       setAddedUsers(prev => [newUser, ...prev]);
-      
+
       // Reset form
       setFormState(initialFormState);
       formRef.current = { ...initialFormState };
       setPreviewImage(null);
       setShowAddUserForm(false);
-      
+
     } catch (error) {
       console.error('Error creating user:', error);
       // Show error message to user
@@ -506,60 +514,60 @@ const DashboardPage: React.FC = () => {
   const calculateMonthsOwed = (validUntil: string) => {
     const now = new Date();
     const expiredDate = new Date(validUntil);
-    
+
     if (expiredDate >= now) return 0;
-    
+
     const yearsDiff = now.getFullYear() - expiredDate.getFullYear();
     const monthsDiff = now.getMonth() - expiredDate.getMonth();
     const totalMonthsExpired = (yearsDiff * 12) + monthsDiff;
-    
+
     return Math.max(0, totalMonthsExpired);
   };
 
   // Calculate remaining months and balance (1 month = $1)
   const calculateRemainingBalance = (validUntil: string | undefined, createdAt: string | undefined) => {
     if (!validUntil || !createdAt) return { months: 0, balance: 0, isValid: false };
-    
+
     const now = new Date();
     const expiryDate = new Date(validUntil);
     // const registrationDate = new Date(createdAt);
-    
+
     // If expired, balance is negative (debt)
     if (expiryDate < now) {
       const monthsExpired = calculateMonthsOwed(validUntil);
-      return { 
-        months: -monthsExpired, 
-        balance: -monthsExpired, 
-        isValid: false 
+      return {
+        months: -monthsExpired,
+        balance: -monthsExpired,
+        isValid: false
       };
     }
-    
+
     // Calculate remaining months from now until expiry
     const yearsDiff = expiryDate.getFullYear() - now.getFullYear();
     const monthsDiff = expiryDate.getMonth() - now.getMonth();
     const daysDiff = expiryDate.getDate() - now.getDate();
-    
+
     let remainingMonths = (yearsDiff * 12) + monthsDiff;
-    
+
     // If days are negative, subtract one month
     if (daysDiff < 0) {
       remainingMonths--;
     }
-    
+
     // Ensure at least 0 months
     remainingMonths = Math.max(0, remainingMonths);
-    
-    return { 
-      months: remainingMonths, 
+
+    return {
+      months: remainingMonths,
       balance: remainingMonths, // $1 per month
-      isValid: true 
+      isValid: true
     };
   };
 
   // Process payment
   const processPayment = async () => {
     if (!paymentModal || !paymentAmount) return;
-    
+
     const amount = parseFloat(paymentAmount);
     if (isNaN(amount) || amount <= 0) {
       alert(language === 'en' ? 'Please enter a valid amount' : 'Fadlan geli qaddar sax ah');
@@ -569,11 +577,11 @@ const DashboardPage: React.FC = () => {
     try {
       setIsLoading(true);
       const user = paymentModal.user;
-      
+
       // Calculate new validity date
       let startDate: Date;
       let monthsToAdd = Math.floor(amount); // Each $1 = 1 month
-      
+
       if (user.validUntil && new Date(user.validUntil) > new Date()) {
         // User is VALID - extend from current validUntil
         startDate = new Date(user.validUntil);
@@ -582,57 +590,57 @@ const DashboardPage: React.FC = () => {
         if (user.validUntil) {
           // Calculate months owed
           const monthsOwed = calculateMonthsOwed(user.validUntil);
-          
+
           if (monthsToAdd < monthsOwed) {
             alert(
-              language === 'en' 
+              language === 'en'
                 ? `User owes $${monthsOwed} for ${monthsOwed} expired months. Please pay at least $${monthsOwed}.`
                 : `Isticmaalaha wuxuu leeyahay $${monthsOwed} ${monthsOwed} bilood oo dhacay. Fadlan bixi ugu yaraan $${monthsOwed}.`
             );
             setIsLoading(false);
             return;
           }
-          
+
           // Subtract months owed from payment
           monthsToAdd -= monthsOwed;
         }
-        
+
         // Start from today
         startDate = new Date();
       }
-      
+
       // Calculate new validity date
       const newValidUntil = new Date(startDate);
       const currentYear = newValidUntil.getFullYear();
       const currentMonth = newValidUntil.getMonth();
       const currentDay = newValidUntil.getDate();
-      
+
       const totalMonths = currentMonth + monthsToAdd;
       const targetYear = currentYear + Math.floor(totalMonths / 12);
       const targetMonth = totalMonths % 12;
       const daysInTargetMonth = new Date(targetYear, targetMonth + 1, 0).getDate();
       const finalDay = Math.min(currentDay, daysInTargetMonth);
-      
+
       newValidUntil.setFullYear(targetYear, targetMonth, finalDay);
-      
+
       // Update user via API
       await updateUser(user._id, {
         validUntil: newValidUntil.toISOString()
       });
-      
+
       // Update local state
-      setAddedUsers(prev => prev.map(u => 
-        u._id === user._id 
+      setAddedUsers(prev => prev.map(u =>
+        u._id === user._id
           ? { ...u, validUntil: newValidUntil.toISOString() }
           : u
       ));
-      
+
       alert(
         language === 'en'
           ? `Payment successful! User is now valid until ${newValidUntil.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}`
           : `Lacag bixintii waa guuleysatay! Isticmaalaha hadda waa ansax ilaa ${newValidUntil.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}`
       );
-      
+
       setPaymentModal(null);
       setPaymentAmount('');
     } catch (error) {
@@ -661,7 +669,7 @@ const DashboardPage: React.FC = () => {
 
   // Overview Tab Component - Memoized to prevent recreation
   const OverviewTab = useMemo(() => (
-  <motion.div 
+    <motion.div
       className="space-y-8"
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
@@ -685,10 +693,10 @@ const DashboardPage: React.FC = () => {
               <Users className="w-6 h-6 text-blue-600" />
             </div>
           </div>
-              </motion.div>
+        </motion.div>
 
-                  
-                    <motion.div
+
+        <motion.div
           className="bg-white rounded-2xl shadow-lg p-6 border border-gray-100"
           whileHover={{ y: -5, scale: 1.02 }}
           transition={{ duration: 0.3 }}
@@ -717,7 +725,7 @@ const DashboardPage: React.FC = () => {
           </div>
         </motion.div>
 
-              <motion.div
+        <motion.div
           className="bg-white rounded-2xl shadow-lg p-6 border border-gray-100"
           whileHover={{ y: -5, scale: 1.02 }}
           transition={{ duration: 0.3 }}
@@ -736,10 +744,10 @@ const DashboardPage: React.FC = () => {
             </div>
           </div>
         </motion.div>
-                  </div>
-                  
+      </div>
+
       {/* Recent Users */}
-                    <motion.div
+      <motion.div
         className="bg-white rounded-2xl shadow-lg p-6 border border-gray-100"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -749,17 +757,17 @@ const DashboardPage: React.FC = () => {
           <h3 className="text-xl font-bold text-gray-900">
             {language === 'en' ? 'Recent Users' : 'Isticmaalayaasha Dhowaan'}
           </h3>
-                        <button
+          <button
             onClick={() => setActiveTab('users')}
             className="text-blue-600 hover:text-blue-700 font-medium"
           >
             {language === 'en' ? 'View All' : 'Fiiri Dhammaan'}
-                        </button>
-                      </div>
+          </button>
+        </div>
 
         <div className="space-y-4">
           {addedUsers.slice(0, 5).map((user, index) => (
-                  <motion.div 
+            <motion.div
               key={user._id}
               className="flex items-center space-x-4 p-4 bg-gray-50 rounded-xl"
               initial={{ opacity: 0, x: -20 }}
@@ -773,11 +781,10 @@ const DashboardPage: React.FC = () => {
                     alt={user.fullName}
                     className="w-10 h-10 rounded-full object-cover ring-2 ring-white shadow-lg"
                   />
-                  <div className={`absolute -bottom-1 -right-1 w-4 h-4 rounded-full border-2 border-white flex items-center justify-center ${
-                    user.validUntil && new Date() > new Date(user.validUntil)
+                  <div className={`absolute -bottom-1 -right-1 w-4 h-4 rounded-full border-2 border-white flex items-center justify-center ${user.validUntil && new Date() > new Date(user.validUntil)
                       ? 'bg-red-500' // Red status for expired
                       : 'bg-green-500' // Green status for valid
-                  }`}>
+                    }`}>
                     <div className="w-2 h-2 bg-white rounded-full" />
                   </div>
                 </div>
@@ -795,23 +802,23 @@ const DashboardPage: React.FC = () => {
                   {new Date(user.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
                 </p>
               </div>
-              </motion.div>
+            </motion.div>
           ))}
         </div>
-              </motion.div>
-          </motion.div>
+      </motion.div>
+    </motion.div>
   ), [addedUsers, language, companiesCount, navigate]);
 
   // Users Tab Component - Memoized to prevent recreation
   const UsersTab = useMemo(() => (
-    <motion.div 
+    <motion.div
       className="space-y-8"
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
     >
       {/* Enhanced Users Table */}
-      <motion.div 
+      <motion.div
         className="bg-white rounded-2xl shadow-xl overflow-hidden border border-gray-100"
       >
         <motion.div className="bg-gradient-to-r from-gray-50 to-gray-100 px-6 py-6 border-b border-gray-200">
@@ -827,7 +834,7 @@ const DashboardPage: React.FC = () => {
                 <p className="text-gray-600 text-sm">
                   {language === 'en' ? 'Manage all users in the system' : 'Maamul dhammaan isticmaalayaasha nidaamka'}
                 </p>
-        </motion.div>
+              </motion.div>
             </motion.div>
 
             <motion.button
@@ -840,7 +847,7 @@ const DashboardPage: React.FC = () => {
               <span>{language === 'en' ? 'Add User' : 'Ku Dar Isticmaale'}</span>
             </motion.button>
           </motion.div>
-            </motion.div>
+        </motion.div>
 
 
 
@@ -881,30 +888,30 @@ const DashboardPage: React.FC = () => {
         {/* Users Grid */}
         <motion.div className="p-6">
           {isLoading ? (
-          <motion.div 
+            <motion.div
               className="text-center py-16"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
               transition={{ duration: 0.5 }}
-          >
-            <motion.div 
-                className="w-16 h-16 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center mx-auto mb-4"
-              animate={{ rotate: 360 }}
-                transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
             >
+              <motion.div
+                className="w-16 h-16 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center mx-auto mb-4"
+                animate={{ rotate: 360 }}
+                transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+              >
                 <Users className="w-8 h-8 text-white" />
-          </motion.div>
+              </motion.div>
               <p className="text-gray-600 font-medium">
                 {language === 'en' ? 'Loading users...' : 'Waa la soo gelayaa isticmaalayaasha...'}
               </p>
             </motion.div>
           ) : addedUsers.length === 0 ? (
-          <motion.div 
-            className="text-center py-16"
+            <motion.div
+              className="text-center py-16"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-          >
+              transition={{ duration: 0.5 }}
+            >
               <motion.div className="w-24 h-24 bg-gradient-to-br from-gray-100 to-gray-200 rounded-full flex items-center justify-center mx-auto mb-6">
                 <Users className="w-12 h-12 text-gray-400" />
               </motion.div>
@@ -912,28 +919,27 @@ const DashboardPage: React.FC = () => {
                 {language === 'en' ? 'No Users Found' : 'Ma Jiraan Isticmaalayaal'}
               </h3>
               <p className="text-gray-500 max-w-md mx-auto mb-6">
-                {language === 'en' 
+                {language === 'en'
                   ? 'No users have been added yet. Click "Add User" to get started.'
                   : 'Weli ma la dhinin isticmaalayaal. Guji "Ku Dar Isticmaale" si aad u bilowdo.'
                 }
               </p>
             </motion.div>
-        ) : (
+          ) : (
             <motion.div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {filteredUsers.map((user, index) => (
-              <motion.div
-                key={user._id}
-                data-user-card
-                data-user-name={user.fullName}
-                data-user-phone={user.phone}
-                data-user-id={user.idNumber}
-                data-user-location={user.location}
-                data-user-role={user.role}
-                  className={`group relative rounded-3xl shadow-lg hover:shadow-2xl border overflow-hidden transition-all duration-500 ${
-                    user.validUntil && new Date() > new Date(user.validUntil)
+              {filteredUsers.map((user, index) => (
+                <motion.div
+                  key={user._id}
+                  data-user-card
+                  data-user-name={user.fullName}
+                  data-user-phone={user.phone}
+                  data-user-id={user.idNumber}
+                  data-user-location={user.location}
+                  data-user-role={user.role}
+                  className={`group relative rounded-3xl shadow-lg hover:shadow-2xl border overflow-hidden transition-all duration-500 ${user.validUntil && new Date() > new Date(user.validUntil)
                       ? 'bg-red-50 border-red-200 hover:border-red-300' // Red card for expired users
                       : 'bg-white border-gray-100 hover:border-blue-200' // Normal white card
-                  }`}
+                    }`}
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.5, delay: index * 0.1 }}
@@ -943,8 +949,8 @@ const DashboardPage: React.FC = () => {
                   {user.validUntil && (() => {
                     const info = getValidityInfo(user.validUntil, user.createdAt);
                     if (!info) return null;
-                    const badgeClass = info.isValid 
-                      ? 'bg-gradient-to-r from-emerald-500 to-green-500 text-white shadow-lg' 
+                    const badgeClass = info.isValid
+                      ? 'bg-gradient-to-r from-emerald-500 to-green-500 text-white shadow-lg'
                       : 'bg-gradient-to-r from-red-500 to-rose-500 text-white shadow-lg';
                     return (
                       <div className={`absolute top-4 right-4 px-3 py-1.5 rounded-full text-xs font-bold ${badgeClass} z-10`}>
@@ -964,7 +970,7 @@ const DashboardPage: React.FC = () => {
                                 d="M20 6L9 17l-5-5"
                                 initial={{ pathLength: 0 }}
                                 animate={{ pathLength: 1 }}
-                                transition={{ 
+                                transition={{
                                   duration: 0.6,
                                   delay: 0.1,
                                   ease: "easeOut"
@@ -1005,16 +1011,14 @@ const DashboardPage: React.FC = () => {
                   })()}
 
                   {/* Enhanced header with gradient - red for expired, normal for valid */}
-                  <div className={`relative h-28 w-full overflow-hidden ${
-                    user.validUntil && new Date() > new Date(user.validUntil)
+                  <div className={`relative h-28 w-full overflow-hidden ${user.validUntil && new Date() > new Date(user.validUntil)
                       ? 'bg-gradient-to-br from-red-500 via-red-600 to-red-700' // Red gradient for expired
                       : 'bg-gradient-to-br from-blue-500 via-indigo-500 to-purple-600' // Normal gradient
-                  }`}>
-                    <div className={`absolute inset-0 ${
-                      user.validUntil && new Date() > new Date(user.validUntil)
+                    }`}>
+                    <div className={`absolute inset-0 ${user.validUntil && new Date() > new Date(user.validUntil)
                         ? 'bg-gradient-to-r from-red-400/20 to-red-500/20' // Red overlay for expired
                         : 'bg-gradient-to-r from-blue-400/20 to-purple-400/20' // Normal overlay
-                    }`} />
+                      }`} />
                     <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -translate-y-16 translate-x-16" />
                     <div className="absolute bottom-0 left-0 w-24 h-24 bg-white/5 rounded-full translate-y-12 -translate-x-12" />
                   </div>
@@ -1042,11 +1046,10 @@ const DashboardPage: React.FC = () => {
                               e.currentTarget.src = '/icons/founder.jpeg';
                             }}
                           />
-                          <div className={`absolute -bottom-1 -right-1 w-8 h-8 rounded-full border-4 border-white flex items-center justify-center ${
-                            user.validUntil && new Date() > new Date(user.validUntil)
+                          <div className={`absolute -bottom-1 -right-1 w-8 h-8 rounded-full border-4 border-white flex items-center justify-center ${user.validUntil && new Date() > new Date(user.validUntil)
                               ? 'bg-red-500' // Red status for expired
                               : 'bg-green-500' // Green status for valid
-                          }`}>
+                            }`}>
                             <div className="w-3 h-3 bg-white rounded-full" />
                           </div>
                         </div>
@@ -1055,11 +1058,10 @@ const DashboardPage: React.FC = () => {
                           <div className="w-28 h-28 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 ring-4 ring-white shadow-2xl flex items-center justify-center">
                             <User className="w-12 h-12 text-white" />
                           </div>
-                          <div className={`absolute -bottom-1 -right-1 w-8 h-8 rounded-full border-4 border-white flex items-center justify-center ${
-                            user.validUntil && new Date() > new Date(user.validUntil)
+                          <div className={`absolute -bottom-1 -right-1 w-8 h-8 rounded-full border-4 border-white flex items-center justify-center ${user.validUntil && new Date() > new Date(user.validUntil)
                               ? 'bg-red-500' // Red status for expired
                               : 'bg-green-500' // Green status for valid
-                          }`}>
+                            }`}>
                             <div className="w-3 h-3 bg-white rounded-full" />
                           </div>
                         </div>
@@ -1072,12 +1074,12 @@ const DashboardPage: React.FC = () => {
                       <div className="text-center">
                         <div className="flex items-center justify-center gap-2">
                           <h3 className="text-lg font-bold text-gray-900 truncate" data-user-name>
-                      {user.fullName}
-                        </h3>
+                            {user.fullName}
+                          </h3>
                           {user.validUntil && new Date() <= new Date(user.validUntil) && (
-                            <img 
-                              src="/icons/check.png" 
-                              alt="Valid" 
+                            <img
+                              src="/icons/check.png"
+                              alt="Valid"
                               className="w-5 h-5"
                             />
                           )}
@@ -1091,7 +1093,7 @@ const DashboardPage: React.FC = () => {
                           <span className="text-gray-600 font-medium flex items-center gap-2">
                             <Phone className="w-4 h-4" />
                             {language === 'en' ? 'Number' : 'Lambar'}
-                      </span>
+                          </span>
                           <span className="text-gray-900 font-semibold" data-user-phone>{user.phone}</span>
                         </div>
 
@@ -1123,14 +1125,14 @@ const DashboardPage: React.FC = () => {
                     {/* Compact action buttons */}
                     <div className="mt-4 flex items-center justify-center gap-2">
                       <button
-                              onClick={() => handleImageClick(user)}
+                        onClick={() => handleImageClick(user)}
                         className="inline-flex items-center justify-center gap-1 px-2 py-1 bg-blue-100 text-blue-700 rounded-md hover:bg-blue-200 transition-colors text-xs font-medium"
                       >
                         <Eye className="w-3 h-3" />
                         <span>{language === 'en' ? 'View' : 'Fiiri'}</span>
                       </button>
                       <button
-                      onClick={() => handleDeleteClick(user)}
+                        onClick={() => handleDeleteClick(user)}
                         className="inline-flex items-center justify-center gap-1 px-2 py-1 bg-red-100 text-red-700 rounded-md hover:bg-red-200 transition-colors text-xs font-medium"
                       >
                         <Trash2 className="w-3 h-3" />
@@ -1138,24 +1140,24 @@ const DashboardPage: React.FC = () => {
                       </button>
                     </div>
                   </div>
-                  </motion.div>
-            ))}
-          </motion.div>
-        )}
-      </motion.div>
+                </motion.div>
+              ))}
+            </motion.div>
+          )}
+        </motion.div>
       </motion.div>
     </motion.div>
   ), [filteredUsers, isLoading, language, addedUsers, getValidityInfo, handleDeleteClick, handleImageClick, handleRoleChange, inputValue, roleFilter]);
 
   // Payments Tab Component - Memoized to prevent recreation
   const PaymentsTab = useMemo(() => (
-    <motion.div 
+    <motion.div
       className="space-y-8"
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
     >
-      <motion.div 
+      <motion.div
         className="bg-white rounded-2xl shadow-xl overflow-hidden border border-gray-100"
       >
         <motion.div className="bg-gradient-to-r from-gray-50 to-gray-100 px-6 py-6 border-b border-gray-200">
@@ -1166,13 +1168,13 @@ const DashboardPage: React.FC = () => {
               </motion.div>
               <motion.div>
                 <h2 className="text-2xl font-bold text-gray-800">
-              {language === 'en' ? 'Payments Management' : 'Maamulka Lacagaha'}
+                  {language === 'en' ? 'Payments Management' : 'Maamulka Lacagaha'}
                 </h2>
                 <p className="text-gray-600 text-sm">
                   {language === 'en' ? 'Search and view user payment information' : 'Baadh oo fiiri macluumaadka lacag bixinta isticmaalayaasha'}
-        </p>
-                      </motion.div>
-                </motion.div>
+                </p>
+              </motion.div>
+            </motion.div>
           </motion.div>
         </motion.div>
 
@@ -1197,13 +1199,13 @@ const DashboardPage: React.FC = () => {
         {/* Users Payment List */}
         <motion.div className="p-6">
           {isLoading ? (
-            <motion.div 
+            <motion.div
               className="text-center py-16"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ duration: 0.5 }}
             >
-              <motion.div 
+              <motion.div
                 className="w-16 h-16 bg-gradient-to-br from-green-500 to-emerald-600 rounded-full flex items-center justify-center mx-auto mb-4"
                 animate={{ rotate: 360 }}
                 transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
@@ -1215,7 +1217,7 @@ const DashboardPage: React.FC = () => {
               </p>
             </motion.div>
           ) : filteredPaymentUsers.length === 0 ? (
-            <motion.div 
+            <motion.div
               className="text-center py-16"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -1228,27 +1230,26 @@ const DashboardPage: React.FC = () => {
                 {language === 'en' ? 'No Users Found' : 'Ma Jiraan Isticmaalayaal'}
               </h3>
               <p className="text-gray-500 max-w-md mx-auto">
-                {language === 'en' 
+                {language === 'en'
                   ? 'No users match your search criteria.'
                   : 'Ma jiraan isticmaalayaal ku habboon shuruudahaaga raadinta.'}
               </p>
             </motion.div>
           ) : (
             <motion.div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {filteredPaymentUsers.map((user, index) => (
-              <motion.div
-                key={user._id}
-                data-user-card
-                data-user-name={user.fullName}
-                data-user-phone={user.phone}
-                data-user-id={user.idNumber}
-                data-user-location={user.location}
-                data-user-role={user.role}
-                  className={`group relative rounded-3xl shadow-lg hover:shadow-2xl border overflow-hidden transition-all duration-500 ${
-                    user.validUntil && new Date() > new Date(user.validUntil)
+              {filteredPaymentUsers.map((user, index) => (
+                <motion.div
+                  key={user._id}
+                  data-user-card
+                  data-user-name={user.fullName}
+                  data-user-phone={user.phone}
+                  data-user-id={user.idNumber}
+                  data-user-location={user.location}
+                  data-user-role={user.role}
+                  className={`group relative rounded-3xl shadow-lg hover:shadow-2xl border overflow-hidden transition-all duration-500 ${user.validUntil && new Date() > new Date(user.validUntil)
                       ? 'bg-red-50 border-red-200 hover:border-red-300'
                       : 'bg-white border-gray-100 hover:border-blue-200'
-                  }`}
+                    }`}
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.5, delay: index * 0.1 }}
@@ -1258,8 +1259,8 @@ const DashboardPage: React.FC = () => {
                   {user.validUntil && (() => {
                     const info = getValidityInfo(user.validUntil, user.createdAt);
                     if (!info) return null;
-                    const badgeClass = info.isValid 
-                      ? 'bg-gradient-to-r from-emerald-500 to-green-500 text-white shadow-lg' 
+                    const badgeClass = info.isValid
+                      ? 'bg-gradient-to-r from-emerald-500 to-green-500 text-white shadow-lg'
                       : 'bg-gradient-to-r from-red-500 to-rose-500 text-white shadow-lg';
                     return (
                       <div className={`absolute top-4 right-4 px-3 py-1.5 rounded-full text-xs font-bold ${badgeClass} z-10`}>
@@ -1274,22 +1275,22 @@ const DashboardPage: React.FC = () => {
                               strokeLinecap="round"
                               strokeLinejoin="round"
                             >
-                                <motion.path
-                                  d="M20 6L9 17l-5-5"
-                                  initial={{ pathLength: 0 }}
-                                  animate={{ 
-                                    pathLength: [0, 1, 1, 0],
-                                    opacity: [0, 1, 1, 0]
-                                  }}
-                                  transition={{ 
-                                    duration: 10,
-                                    delay: 0.5,
-                                    repeat: Infinity,
-                                    repeatType: "loop",
-                                    ease: "easeInOut",
-                                    times: [0, 0.12, 0.92, 1]
-                                  }}
-                                />
+                              <motion.path
+                                d="M20 6L9 17l-5-5"
+                                initial={{ pathLength: 0 }}
+                                animate={{
+                                  pathLength: [0, 1, 1, 0],
+                                  opacity: [0, 1, 1, 0]
+                                }}
+                                transition={{
+                                  duration: 10,
+                                  delay: 0.5,
+                                  repeat: Infinity,
+                                  repeatType: "loop",
+                                  ease: "easeInOut",
+                                  times: [0, 0.12, 0.92, 1]
+                                }}
+                              />
                             </motion.svg>
                             <motion.span
                               initial={{ width: 0 }}
@@ -1324,16 +1325,14 @@ const DashboardPage: React.FC = () => {
                   })()}
 
                   {/* Enhanced header with gradient */}
-                  <div className={`relative h-28 w-full overflow-hidden ${
-                    user.validUntil && new Date() > new Date(user.validUntil)
+                  <div className={`relative h-28 w-full overflow-hidden ${user.validUntil && new Date() > new Date(user.validUntil)
                       ? 'bg-gradient-to-br from-red-500 via-red-600 to-red-700'
                       : 'bg-gradient-to-br from-blue-500 via-indigo-500 to-purple-600'
-                  }`}>
-                    <div className={`absolute inset-0 ${
-                      user.validUntil && new Date() > new Date(user.validUntil)
+                    }`}>
+                    <div className={`absolute inset-0 ${user.validUntil && new Date() > new Date(user.validUntil)
                         ? 'bg-gradient-to-r from-red-400/20 to-red-500/20'
                         : 'bg-gradient-to-r from-blue-400/20 to-purple-400/20'
-                    }`} />
+                      }`} />
                     <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -translate-y-16 translate-x-16" />
                     <div className="absolute bottom-0 left-0 w-24 h-24 bg-white/5 rounded-full translate-y-12 -translate-x-12" />
                   </div>
@@ -1361,11 +1360,10 @@ const DashboardPage: React.FC = () => {
                               e.currentTarget.src = '/icons/founder.jpeg';
                             }}
                           />
-                          <div className={`absolute -bottom-1 -right-1 w-8 h-8 rounded-full border-4 border-white flex items-center justify-center ${
-                            user.validUntil && new Date() > new Date(user.validUntil)
+                          <div className={`absolute -bottom-1 -right-1 w-8 h-8 rounded-full border-4 border-white flex items-center justify-center ${user.validUntil && new Date() > new Date(user.validUntil)
                               ? 'bg-red-500' // Red status for expired
                               : 'bg-green-500' // Green status for valid
-                          }`}>
+                            }`}>
                             <div className="w-3 h-3 bg-white rounded-full" />
                           </div>
                         </div>
@@ -1374,11 +1372,10 @@ const DashboardPage: React.FC = () => {
                           <div className="w-28 h-28 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 ring-4 ring-white shadow-2xl flex items-center justify-center">
                             <User className="w-12 h-12 text-white" />
                           </div>
-                          <div className={`absolute -bottom-1 -right-1 w-8 h-8 rounded-full border-4 border-white flex items-center justify-center ${
-                            user.validUntil && new Date() > new Date(user.validUntil)
+                          <div className={`absolute -bottom-1 -right-1 w-8 h-8 rounded-full border-4 border-white flex items-center justify-center ${user.validUntil && new Date() > new Date(user.validUntil)
                               ? 'bg-red-500' // Red status for expired
                               : 'bg-green-500' // Green status for valid
-                          }`}>
+                            }`}>
                             <div className="w-3 h-3 bg-white rounded-full" />
                           </div>
                         </div>
@@ -1394,9 +1391,9 @@ const DashboardPage: React.FC = () => {
                             {user.fullName}
                           </h3>
                           {user.validUntil && new Date() <= new Date(user.validUntil) && (
-                            <img 
-                              src="/icons/check.png" 
-                              alt="Valid" 
+                            <img
+                              src="/icons/check.png"
+                              alt="Valid"
                               className="w-5 h-5"
                             />
                           )}
@@ -1410,7 +1407,7 @@ const DashboardPage: React.FC = () => {
                           <span className="text-gray-600 font-medium flex items-center gap-2">
                             <Phone className="w-4 h-4" />
                             {language === 'en' ? 'Number' : 'Lambar'}
-                      </span>
+                          </span>
                           <span className="text-gray-900 font-semibold" data-user-phone>{user.phone}</span>
                         </div>
 
@@ -1457,9 +1454,9 @@ const DashboardPage: React.FC = () => {
                       </button>
                     </div>
                   </div>
-                  </motion.div>
-            ))}
-          </motion.div>
+                </motion.div>
+              ))}
+            </motion.div>
           )}
         </motion.div>
       </motion.div>
@@ -1470,18 +1467,18 @@ const DashboardPage: React.FC = () => {
   // Render tab content - return memoized values directly
   const renderTabContent = () => {
     switch (activeTab) {
-      case 'overview': 
+      case 'overview':
         return OverviewTab;
-      case 'users': 
+      case 'users':
         return UsersTab;
-      case 'payments': 
+      case 'payments':
         return PaymentsTab;
-      default: 
+      default:
         return OverviewTab;
     }
   };
 
-    return (
+  return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-indigo-100">
       <div className="container mx-auto px-4 py-8">
         {/* Header */}
@@ -1514,33 +1511,32 @@ const DashboardPage: React.FC = () => {
               { id: 'payments', label: language === 'en' ? 'Payments' : 'Lacagaha', icon: DollarSign }
             ].map((tab) => (
               <button
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center space-x-2 px-4 py-3 rounded-lg font-medium transition-all duration-300 ${
-                    activeTab === tab.id
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`flex items-center space-x-2 px-4 py-3 rounded-lg font-medium transition-all duration-300 ${activeTab === tab.id
                     ? 'bg-blue-600 text-white shadow-lg'
                     : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
-                }`}
+                  }`}
               >
                 <tab.icon className="w-5 h-5" />
-                  <span>{tab.label}</span>
+                <span>{tab.label}</span>
               </button>
-              ))}
+            ))}
           </div>
-          </motion.div>
+        </motion.div>
 
         {/* Add User Form Modal */}
         <AnimatePresence>
           {showAddUserForm && (
             <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
               className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
             >
-          <motion.div 
+              <motion.div
                 initial={{ scale: 0.9, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
+                animate={{ scale: 1, opacity: 1 }}
                 exit={{ scale: 0.9, opacity: 0 }}
                 className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto"
               >
@@ -1578,7 +1574,7 @@ const DashboardPage: React.FC = () => {
                         className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-100 focus:border-blue-500 transition-all duration-300 bg-gray-50 focus:bg-white"
                         placeholder={language === 'en' ? 'Enter full name' : 'Geli magaca buuxa'}
                       />
-                </motion.div>
+                    </motion.div>
 
                     {/* Phone Number Field */}
                     <motion.div
@@ -1592,7 +1588,7 @@ const DashboardPage: React.FC = () => {
                       </label>
                       <div className="relative">
                         <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none z-10">
-                          <img 
+                          <img
                             src="/icons/Flag_of_Somalia.svg.png"
                             alt="Somalia Flag"
                             className="w-5 h-5 object-cover rounded-sm"
@@ -1621,10 +1617,10 @@ const DashboardPage: React.FC = () => {
                           placeholder="xxxxxxx"
                         />
                       </div>
-              </motion.div>
+                    </motion.div>
 
                     {/* ID Number Field */}
-                <motion.div
+                    <motion.div
                       initial={{ opacity: 0, x: -20 }}
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ duration: 0.4, delay: 0.3 }}
@@ -1645,7 +1641,7 @@ const DashboardPage: React.FC = () => {
                     </motion.div>
 
                     {/* Location Field */}
-                    <motion.div 
+                    <motion.div
                       initial={{ opacity: 0, x: -20 }}
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ duration: 0.4, delay: 0.4 }}
@@ -1666,7 +1662,7 @@ const DashboardPage: React.FC = () => {
                     </motion.div>
 
                     {/* Registration Date Field */}
-                <motion.div 
+                    <motion.div
                       initial={{ opacity: 0, x: -20 }}
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ duration: 0.4, delay: 0.45 }}
@@ -1683,7 +1679,7 @@ const DashboardPage: React.FC = () => {
                         required
                         className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-100 focus:border-blue-500 transition-all duration-300 bg-gray-50 focus:bg-white"
                       />
-                  </motion.div>
+                    </motion.div>
 
                     {/* Amount (months) Field */}
                     <motion.div
@@ -1709,11 +1705,11 @@ const DashboardPage: React.FC = () => {
                       <p className="mt-1 text-xs text-gray-500">
                         {language === 'en' ? 'Each $ equals 1 month of validity.' : 'Doolar walba wuxuu u dhigmayaa 1 bil ansax ah.'}
                       </p>
-                </motion.div>
+                    </motion.div>
 
 
                     {/* Profile Picture Field */}
-                <motion.div 
+                    <motion.div
                       initial={{ opacity: 0, x: -20 }}
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ duration: 0.4, delay: 0.5 }}
@@ -1722,7 +1718,7 @@ const DashboardPage: React.FC = () => {
                         <User className="w-4 h-4 text-purple-600" />
                         <span>{language === 'en' ? 'Profile Picture' : 'Sawirka Isticmaalaha'}</span>
                       </label>
-                      
+
                       <div className="space-y-4">
                         {/* File Input */}
                         <div className="relative">
@@ -1733,7 +1729,7 @@ const DashboardPage: React.FC = () => {
                             className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-4 focus:ring-purple-100 focus:border-purple-500 transition-all duration-300 bg-gray-50 focus:bg-white file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-purple-50 file:text-purple-700 hover:file:bg-purple-100"
                           />
                         </div>
-                        
+
                         {/* Image Preview */}
                         {previewImage && (
                           <motion.div
@@ -1758,24 +1754,24 @@ const DashboardPage: React.FC = () => {
                                 ×
                               </button>
                             </div>
-                      </motion.div>
+                          </motion.div>
                         )}
                       </div>
-                        </motion.div>
+                    </motion.div>
 
                     {/* Form Buttons */}
-              <motion.div 
+                    <motion.div
                       className="flex space-x-4 pt-6"
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ duration: 0.4, delay: 0.7 }}
                     >
-                <motion.button
+                      <motion.button
                         type="submit"
                         disabled={isLoading}
                         className="flex-1 bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-3 px-6 rounded-xl hover:from-blue-700 hover:to-indigo-700 transition-all duration-300 font-semibold shadow-lg hover:shadow-xl flex items-center justify-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
                       >
                         {isLoading ? (
                           <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
@@ -1785,36 +1781,36 @@ const DashboardPage: React.FC = () => {
                             <span>{language === 'en' ? 'Add User' : 'Ku Dar Isticmaale'}</span>
                           </>
                         )}
-                </motion.button>
+                      </motion.button>
 
                       <motion.button
                         type="button"
                         onClick={handleCancel}
                         className="flex-1 bg-gradient-to-r from-gray-400 to-gray-500 text-white py-3 px-6 rounded-xl hover:from-gray-500 hover:to-gray-600 transition-all duration-300 font-semibold shadow-lg hover:shadow-xl flex items-center justify-center space-x-2"
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
                       >
                         <X className="w-5 h-5" />
                         <span>{language === 'en' ? 'Cancel' : 'Jooji'}</span>
                       </motion.button>
-              </motion.div>
+                    </motion.div>
                   </motion.form>
                 </div>
+              </motion.div>
             </motion.div>
-          </motion.div>
           )}
         </AnimatePresence>
 
 
         {/* Profile Picture Modal */}
         {selectedUserImage && (
-          <div 
-            className="fixed inset-0 bg-black/90 flex items-center justify-center z-[9999] p-4" 
+          <div
+            className="fixed inset-0 bg-black/90 flex items-center justify-center z-[9999] p-4"
             onClick={() => setSelectedUserImage(null)}
             style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0 }}
           >
-            <div 
-              className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto" 
+            <div
+              className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto"
               onClick={(e) => e.stopPropagation()}
             >
               {/* Header */}
@@ -1851,24 +1847,23 @@ const DashboardPage: React.FC = () => {
                     />
                   </div>
                 </div>
-                
+
 
                 {/* Balance Display - Compact */}
                 {(() => {
                   const balanceInfo = calculateRemainingBalance(selectedUserImage.user.validUntil, selectedUserImage.user.createdAt);
                   return (
-                    <div className={`mt-6 p-4 rounded-lg shadow-md ${
-                      balanceInfo.isValid 
+                    <div className={`mt-6 p-4 rounded-lg shadow-md ${balanceInfo.isValid
                         ? 'bg-gradient-to-br from-green-500 to-emerald-600'
                         : 'bg-gradient-to-br from-red-500 to-rose-600'
-                    }`}>
+                      }`}>
                       <div className="text-center text-white">
                         <div className="flex items-center justify-center gap-2 mb-1">
                           <DollarSign className="w-5 h-5" />
                           <h3 className="text-lg font-bold">
                             {language === 'en' ? 'Balance' : 'Xisaabta'}
                           </h3>
-              </div>
+                        </div>
                         <div className="text-4xl font-extrabold my-2">
                           ${Math.abs(balanceInfo.balance)}
                         </div>
@@ -1904,7 +1899,7 @@ const DashboardPage: React.FC = () => {
                       </div>
                     </div>
                   </div>
-                  
+
                   <div className="p-3 bg-green-50 rounded-lg">
                     <div className="flex items-start gap-3">
                       <CreditCard className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
@@ -1913,14 +1908,14 @@ const DashboardPage: React.FC = () => {
                         <p className="text-gray-600 text-sm break-all">{selectedUserImage.user.idNumber || 'Not provided'}</p></div>
                     </div>
                   </div>
-                  
+
                   <div className="p-3 bg-purple-50 rounded-lg">
                     <div className="flex items-start gap-3">
                       <Calendar className="w-5 h-5 text-purple-600 flex-shrink-0 mt-0.5" />
                       <div className="min-w-0 flex-1">
                         <h4 className="font-semibold text-gray-700 text-sm">{language === 'en' ? 'Registered' : 'Diiwaangashan'}</h4>
                         <p className="text-gray-600 text-sm">
-                          {selectedUserImage.user.createdAt 
+                          {selectedUserImage.user.createdAt
                             ? new Date(selectedUserImage.user.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
                             : 'Not available'
                           }
@@ -1928,14 +1923,14 @@ const DashboardPage: React.FC = () => {
                       </div>
                     </div>
                   </div>
-                  
+
                   <div className="p-3 bg-orange-50 rounded-lg">
                     <div className="flex items-start gap-3">
                       <Clock className="w-5 h-5 text-orange-600 flex-shrink-0 mt-0.5" />
                       <div className="min-w-0 flex-1">
                         <h4 className="font-semibold text-gray-700 text-sm">{language === 'en' ? 'Expires' : 'Dhacaya'}</h4>
                         <p className="text-gray-600 text-sm">
-                          {selectedUserImage.user.validUntil 
+                          {selectedUserImage.user.validUntil
                             ? new Date(selectedUserImage.user.validUntil).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
                             : 'Not set'
                           }
@@ -1943,7 +1938,7 @@ const DashboardPage: React.FC = () => {
                       </div>
                     </div>
                   </div>
-                  
+
                   <div className="p-3 bg-emerald-50 rounded-lg col-span-1 md:col-span-2">
                     <div className="flex items-start gap-3">
                       <Calendar className="w-5 h-5 text-emerald-600 flex-shrink-0 mt-0.5" />
@@ -1952,9 +1947,9 @@ const DashboardPage: React.FC = () => {
                         <p className="text-emerald-600 font-semibold text-sm">
                           {selectedUserImage.user.validUntil && selectedUserImage.user.createdAt
                             ? (() => {
-                                const info = getValidityInfo(selectedUserImage.user.validUntil, selectedUserImage.user.createdAt);
-                                return info ? info.text : 'Unable to calculate';
-                              })()
+                              const info = getValidityInfo(selectedUserImage.user.validUntil, selectedUserImage.user.createdAt);
+                              return info ? info.text : 'Unable to calculate';
+                            })()
                             : 'No validity data'
                           }
                         </p>
@@ -1966,8 +1961,8 @@ const DashboardPage: React.FC = () => {
                 {/* Countdown Timer Section */}
                 {selectedUserImage.user.validUntil && (
                   <div className="mt-4">
-                    <CountdownTimer 
-                      endDate={selectedUserImage.user.validUntil} 
+                    <CountdownTimer
+                      endDate={selectedUserImage.user.validUntil}
                       language={language}
                     />
                   </div>
@@ -2017,11 +2012,10 @@ const DashboardPage: React.FC = () => {
                     <h3 className="font-bold text-gray-900">{paymentModal.user.fullName}</h3>
                     <p className="text-sm text-gray-600">{paymentModal.user.phone}</p>
                     {paymentModal.user.validUntil && (
-                      <p className={`text-xs font-semibold mt-1 ${
-                        new Date(paymentModal.user.validUntil) > new Date()
+                      <p className={`text-xs font-semibold mt-1 ${new Date(paymentModal.user.validUntil) > new Date()
                           ? 'text-green-600'
                           : 'text-red-600'
-                      }`}>
+                        }`}>
                         {new Date(paymentModal.user.validUntil) > new Date()
                           ? `${language === 'en' ? 'Valid until' : 'Ansax ilaa'}: ${new Date(paymentModal.user.validUntil).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}`
                           : `${language === 'en' ? 'Expired' : 'Dhacay'}: ${new Date(paymentModal.user.validUntil).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}`
@@ -2094,7 +2088,7 @@ const DashboardPage: React.FC = () => {
                               ? calculateMonthsOwed(paymentModal.user.validUntil)
                               : 0;
                             const extensionMonths = Math.max(0, amount - monthsOwed);
-                            
+
                             if (monthsOwed > 0) {
                               if (amount < monthsOwed) {
                                 return language === 'en'
@@ -2161,8 +2155,8 @@ const DashboardPage: React.FC = () => {
                   </div>
                   <div>
                     <h2 className="text-xl font-bold">
-                      {language === 'en' 
-                        ? `DELETE ${deleteConfirmation.user.fullName.split(' ')[0].toUpperCase()}` 
+                      {language === 'en'
+                        ? `DELETE ${deleteConfirmation.user.fullName.split(' ')[0].toUpperCase()}`
                         : `TIRTIR ${deleteConfirmation.user.fullName.split(' ')[0].toUpperCase()}`
                       }
                     </h2>
@@ -2188,7 +2182,7 @@ const DashboardPage: React.FC = () => {
                       </div>
                     )}
                   </div>
-                  
+
                   <h3 className="text-lg font-semibold mb-2">
                     {language === 'en' ? 'Are you sure you want to delete' : 'Ma hubtaa inaad tirtirto'}
                   </h3>
@@ -2208,8 +2202,8 @@ const DashboardPage: React.FC = () => {
                     onClick={confirmDelete}
                     className="flex-1 px-4 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium"
                   >
-                    {language === 'en' 
-                      ? `DELETE ${deleteConfirmation.user.fullName.split(' ')[0].toUpperCase()}` 
+                    {language === 'en'
+                      ? `DELETE ${deleteConfirmation.user.fullName.split(' ')[0].toUpperCase()}`
                       : `TIRTIR ${deleteConfirmation.user.fullName.split(' ')[0].toUpperCase()}`
                     }
                   </button>
