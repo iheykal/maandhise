@@ -2391,20 +2391,167 @@ const DashboardPage: React.FC = () => {
         {/* Tab Content */}
         {renderTabContent()}
 
-        {/* Add Marketer Form Modal */}
+        {/* Add Marketer Form Modal - Enhanced Design */}
         {showAddMarketerForm && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={handleCancelMarketerForm}>
-            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
-              <div className="p-6"><div className="flex items-center justify-between mb-6"><h2 className="text-2xl font-bold flex items-center gap-2"><UserPlus className="w-6 h-6 text-purple-600" /><span>{language === 'en' ? 'Add Marketer' : 'Ku Dar Suuq-geeye'}</span></h2><button onClick={handleCancelMarketerForm} className="p-2 hover:bg-gray-100 rounded-full"><X className="w-5 h-5" /></button></div>
-                <form onSubmit={handleMarketerSubmit} className="space-y-4">
-                  <div><label className="block text-sm font-semibold mb-2">{language === 'en' ? 'Full Name' : 'Magaca'}</label><input type="text" name="fullName" value={marketerFormState.fullName} onChange={handleMarketerInputChange} required className="w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-purple-500" /></div>
-                  <div><label className="block text-sm font-semibold mb-2">{language === 'en' ? 'Phone (61xxxxxxx)' : 'Telefoon (61xxxxxxx)'}</label><input type="tel" name="phone" value={marketerFormState.phone} onChange={handleMarketerInputChange} required className="w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-purple-500" /></div>
-                  <div><label className="block text-sm font-semibold mb-2">{language === 'en' ? 'Password' : 'Password'}</label><input type="password" name="password" value={marketerFormState.password} onChange={handleMarketerInputChange} required minLength={6} className="w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-purple-500" /></div>
-                  <div><label className="block text-sm font-semibold mb-2">{language === 'en' ? 'Profile Picture (Optional)' : 'Sawirka (Ikhtiyaari)'}</label><input type="file" accept="image/*" onChange={(e) => handleMarketerFileChange(e, 'profilePic')} className="w-full px-4 py-3 border rounded-xl" />{marketerPreviewImages.profile && <img src={marketerPreviewImages.profile} alt="Preview" className="mt-2 w-32 h-32 object-cover rounded-lg" />}</div>
-                  <div><label className="block text-sm font-semibold mb-2">{language === 'en' ? 'Government ID (Required)' : 'Aqoonsiga (Loo baahan)'}</label><input type="file" accept="image/*" onChange={(e) => handleMarketerFileChange(e, 'governmentId')} required className="w-full px-4 py-3 border rounded-xl" />{marketerPreviewImages.governmentId && <img src={marketerPreviewImages.governmentId} alt="ID" className="mt-2 w-full h-48 object-contain rounded-lg" />}</div>
-                  <div className="flex gap-3 pt-4"><button type="button" onClick={handleCancelMarketerForm} className="flex-1 px-4 py-3 bg-gray-100 rounded-lg hover:bg-gray-200">{language === 'en' ? 'Cancel' : 'Jooji'}</button><button type="submit" disabled={isLoading} className="flex-1 px-4 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50">{isLoading ? (language === 'en' ? 'Creating...' : 'Waa la sameeya...') : (language === 'en' ? 'Create' : 'Samee')}</button></div>
-                </form>
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={handleCancelMarketerForm}>
+            <div className="bg-white rounded-3xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+              {/* Header with gradient */}
+              <div className="bg-gradient-to-r from-purple-600 via-indigo-600 to-blue-600 p-6 rounded-t-3xl">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="p-3 bg-white/20 backdrop-blur-sm rounded-xl">
+                      <UserPlus className="w-7 h-7 text-white" />
+                    </div>
+                    <div>
+                      <h2 className="text-2xl font-bold text-white">
+                        {language === 'en' ? 'Add New Marketer' : 'Ku Dar Suuq-geeye Cusub'}
+                      </h2>
+                      <p className="text-white/80 text-sm">
+                        {language === 'en' ? 'Create a new marketer account' : 'Samee koonto suuq-geeye cusub'}
+                      </p>
+                    </div>
+                  </div>
+                  <button onClick={handleCancelMarketerForm} className="p-2 hover:bg-white/20 rounded-full transition-colors">
+                    <X className="w-6 h-6 text-white" />
+                  </button>
+                </div>
               </div>
+
+              {/* Form Body */}
+              <form onSubmit={handleMarketerSubmit} className="p-6 space-y-6">
+                {/* Full Name */}
+                <div className="space-y-2">
+                  <label className="flex items-center gap-2 text-sm font-semibold text-gray-700">
+                    <User className="w-4 h-4 text-purple-600" />
+                    <span>{language === 'en' ? 'Full Name' : 'Magaca Buuxa'}</span>
+                    <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    name="fullName"
+                    value={marketerFormState.fullName}
+                    onChange={handleMarketerInputChange}
+                    required
+                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-4 focus:ring-purple-100 focus:border-purple-500 transition-all bg-gray-50 focus:bg-white"
+                    placeholder={language === 'en' ? 'Enter full name' : 'Geli magaca buuxa'}
+                  />
+                </div>
+
+                {/* Phone Number */}
+                <div className="space-y-2">
+                  <label className="flex items-center gap-2 text-sm font-semibold text-gray-700">
+                    <Phone className="w-4 h-4 text-green-600" />
+                    <span>{language === 'en' ? 'Phone Number' : 'Lambarka Telefoonka'}</span>
+                    <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="tel"
+                    name="phone"
+                    value={marketerFormState.phone}
+                    onChange={handleMarketerInputChange}
+                    required
+                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-4 focus:ring-green-100 focus:border-green-500 transition-all bg-gray-50 focus:bg-white font-mono"
+                    placeholder="+252611234567"
+                  />
+                  <p className="text-xs text-gray-500 flex items-center gap-1">
+                    <AlertCircle className="w-3 h-3" />
+                    {language === 'en' ? 'Phone must start with 61' : 'Telefoonka waa inuu ku bilaabmaa 61'}
+                  </p>
+                </div>
+
+                {/* Password */}
+                <div className="space-y-2">
+                  <label className="flex items-center gap-2 text-sm font-semibold text-gray-700">
+                    <Shield className="w-4 h-4 text-blue-600" />
+                    <span>{language === 'en' ? 'Password' : 'Erayga Sirta ah'}</span>
+                    <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="password"
+                    name="password"
+                    value={marketerFormState.password}
+                    onChange={handleMarketerInputChange}
+                    required
+                    minLength={6}
+                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-100 focus:border-blue-500 transition-all bg-gray-50 focus:bg-white"
+                    placeholder={language === 'en' ? 'Enter password (min 6 characters)' : 'Geli erayga sirta ah (ugu yaraan 6 xaraf)'}
+                  />
+                </div>
+
+                {/* Profile Picture - Optional */}
+                <div className="space-y-2">
+                  <label className="flex items-center gap-2 text-sm font-semibold text-gray-700">
+                    <User className="w-4 h-4 text-indigo-600" />
+                    <span>{language === 'en' ? 'Profile Picture' : 'Sawirka Profile'}</span>
+                    <span className="text-xs text-gray-500 font-normal">(Optional)</span>
+                  </label>
+                  <div className="border-2 border-dashed border-gray-300 rounded-xl p-4 hover:border-indigo-400 transition-colors bg-gray-50">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => handleMarketerFileChange(e, 'profilePic')}
+                      className="w-full text-sm file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 cursor-pointer"
+                    />
+                    {marketerPreviewImages.profile && (
+                      <div className="mt-3 flex justify-center">
+                        <img src={marketerPreviewImages.profile} alt="Preview" className="w-32 h-32 object-cover rounded-xl shadow-lg ring-2 ring-indigo-200" />
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Government ID - Required */}
+                <div className="space-y-2">
+                  <label className="flex items-center gap-2 text-sm font-semibold text-gray-700">
+                    <CreditCard className="w-4 h-4 text-red-600" />
+                    <span>{language === 'en' ? 'Government ID' : 'Aqoonsiga Dawladda'}</span>
+                    <span className="text-red-500">*</span>
+                  </label>
+                  <div className="border-2 border-dashed border-red-200 rounded-xl p-4 hover:border-red-400 transition-colors bg-red-50/30">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => handleMarketerFileChange(e, 'governmentId')}
+                      required
+                      className="w-full text-sm file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-red-50 file:text-red-700 hover:file:bg-red-100 cursor-pointer"
+                    />
+                    {marketerPreviewImages.governmentId && (
+                      <div className="mt-3">
+                        <img src={marketerPreviewImages.governmentId} alt="Government ID" className="w-full h-48 object-contain rounded-xl shadow-lg ring-2 ring-red-200 bg-white" />
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Action Buttons */}
+                <div className="flex gap-3 pt-4 border-t border-gray-200">
+                  <button
+                    type="button"
+                    onClick={handleCancelMarketerForm}
+                    className="flex-1 px-6 py-3 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 transition-colors font-semibold flex items-center justify-center gap-2"
+                  >
+                    <X className="w-5 h-5" />
+                    {language === 'en' ? 'Cancel' : 'Jooji'}
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isLoading}
+                    className="flex-1 px-6 py-3 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-xl hover:from-purple-700 hover:to-indigo-700 transition-all font-semibold disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg hover:shadow-xl"
+                  >
+                    {isLoading ? (
+                      <>
+                        <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                        <span>{language === 'en' ? 'Creating...' : 'Waa la sameeya...'}</span>
+                      </>
+                    ) : (
+                      <>
+                        <CheckCircle className="w-5 h-5" />
+                        <span>{language === 'en' ? 'Create Marketer' : 'Samee Suuq-geeye'}</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              </form>
             </div>
           </div>
         )}
