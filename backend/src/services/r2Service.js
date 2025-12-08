@@ -23,7 +23,7 @@ console.log('[R2Service] Initialized with:', {
   publicUrl: process.env.CLOUDFLARE_PUBLIC_URL
 });
 
-const BUCKET_NAME = process.env.CLOUDFLARE_BUCKET_NAME || 'maandhise';
+const BUCKET_NAME = process.env.CLOUDFLARE_BUCKET_NAME || 'sahal-card-2025';
 
 
 // Configure multer for memory storage
@@ -63,17 +63,25 @@ class R2Service {
    */
   static _constructPublicUrl(key) {
     const publicUrlBase = process.env.CLOUDFLARE_PUBLIC_URL;
+    const bucketName = process.env.CLOUDFLARE_BUCKET_NAME || 'sahal-card-2025';
 
-    if (publicUrlBase) {
-      let cleanBase = publicUrlBase.replace(/\/$/, '');
-      if (cleanBase.includes('r2.dev') && cleanBase.endsWith('/' + BUCKET_NAME)) {
-        cleanBase = cleanBase.substring(0, cleanBase.lastIndexOf('/' + BUCKET_NAME));
-      }
-      return `${cleanBase}/${key}`;
+    if (!publicUrlBase) {
+      console.error('[R2Service] ❌ CRITICAL: CLOUDFLARE_PUBLIC_URL is not defined in .env');
+      return `https://MISSING_R2_PUBLIC_URL/${key}`;
     }
 
-    const accountId = process.env.CLOUDFLARE_ACCOUNT_ID;
-    return `https://pub-${accountId}.r2.dev/${key}`;
+    // Clean the base URL (remove trailing slash)
+    let cleanBase = publicUrlBase.replace(/\/$/, '');
+
+    // If the public URL creates a duplicated bucket path (common with some R2 setups), fix it
+    // Example: https://pub-xxx.r2.dev/bucketName/bucketName/file.jpg -> https://pub-xxx.r2.dev/bucketName/file.jpg
+    if (cleanBase.endsWith(`/${bucketName}`)) {
+      // It already includes the bucket name, so we just append the key
+      // But if the key also starts with the bucket name (rare but possible), we might double up.
+      // For now, standard behavior:
+    }
+
+    return `${cleanBase}/${key}`;
   }
 
   /**

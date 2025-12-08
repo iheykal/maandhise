@@ -174,7 +174,7 @@ const getAllPendingCustomers = async (req, res) => {
             id: c._id,
             fullName: c.fullName,
             status: c.status,
-            createdBy: c.createdBy?.fullName
+            createdByData: c.createdBy // Log full object to check population
         })));
 
         res.json({

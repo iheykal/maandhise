@@ -25,6 +25,15 @@ const createMarketer = async (req, res) => {
     try {
         const { fullName, phone, profilePicUrl, governmentIdUrl, password } = req.body;
 
+        console.log('[createMarketer] Received request:', {
+            fullName,
+            phone,
+            hasProfilePic: !!profilePicUrl,
+            profilePicUrl: profilePicUrl ? profilePicUrl.substring(0, 50) + '...' : 'none',
+            hasGovId: !!governmentIdUrl,
+            govIdUrl: governmentIdUrl ? governmentIdUrl.substring(0, 50) + '...' : 'none'
+        });
+
         // Normalize phone number
         const normalizedPhone = normalizePhone(phone);
 
