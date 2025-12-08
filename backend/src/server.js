@@ -19,6 +19,10 @@ const companyRoutes = require('./routes/company');
 const marketerRoutes = require('./routes/marketer');
 const pendingCustomerRoutes = require('./routes/pendingCustomer');
 
+const app = express();
+
+app.set('trust proxy', 1); // Trust first proxy
+
 // Debug: Unique Server ID to identify instances
 const SERVER_ID = Math.random().toString(36).substring(7);
 const Company = require('./models/Company');
@@ -44,10 +48,6 @@ app.get('/api/health-check', async (req, res) => {
     res.status(500).json({ success: false, error: error.message });
   }
 });
-
-const app = express();
-
-app.set('trust proxy', 1); // Trust first proxy
 
 // Security middleware
 app.use(helmet({
