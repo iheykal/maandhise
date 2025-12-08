@@ -1,37 +1,6 @@
 import axios from 'axios';
 
-// Helper function to get API base URL dynamically
-// Works for both desktop and mobile devices on the same network
-const getApiBaseUrl = (): string => {
-  // Check if environment variable is set
-  if (process.env.REACT_APP_API_URL) {
-    return process.env.REACT_APP_API_URL;
-  }
-
-  // Auto-detect localhost and local network IPs (for mobile devices on same network)
-  if (typeof window !== 'undefined') {
-    const hostname = window.location.hostname;
-    const isLocalhost = hostname === 'localhost' || hostname === '127.0.0.1';
-    const isLocalNetwork = hostname.startsWith('192.168.') || hostname.startsWith('10.0.') || hostname.startsWith('172.16.');
-
-    // For localhost or local network (including mobile devices on same network)
-    if (isLocalhost || isLocalNetwork) {
-      // Use the same hostname as the frontend, but port 5001 for backend
-      // This allows mobile devices on the same network to access the backend
-      return `${window.location.protocol}//${hostname}:5001/api`;
-    }
-  }
-
-  // Default: use current hostname (works for custom domains)
-  if (typeof window !== 'undefined') {
-    return `${window.location.protocol}//${window.location.hostname}/api`;
-  }
-
-  // Fallback for server-side rendering
-  return process.env.REACT_APP_API_URL || '/api';
-};
-
-const API_BASE_URL = getApiBaseUrl();
+import { API_BASE_URL } from './apiConfig';
 
 const api = axios.create({
   baseURL: API_BASE_URL,

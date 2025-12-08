@@ -45,7 +45,15 @@ app.use(helmet({
         `https://pub-${process.env.CLOUDFLARE_ACCOUNT_ID}.r2.dev`,
         `https://maandhise.${process.env.CLOUDFLARE_ACCOUNT_ID}.r2.cloudflarestorage.com`
       ],
-      connectSrc: ["'self'", "https://*.r2.dev", "https://*.r2.cloudflarestorage.com"],
+      connectSrc: [
+        "'self'",
+        "https://*.r2.dev",
+        "https://*.r2.cloudflarestorage.com",
+        "https://maandhise252.onrender.com",
+        "https://maandhise.onrender.com",
+        "https://sahalcard.com",
+        "https://www.sahalcard.com"
+      ],
       objectSrc: ["'none'"],
       upgradeInsecureRequests: []
     }
