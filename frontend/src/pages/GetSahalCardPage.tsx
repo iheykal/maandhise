@@ -191,6 +191,7 @@ const GetSahalCardPage: React.FC = () => {
       automotive: { from: 'from-orange-500', to: 'to-orange-600' },
       education: { from: 'from-cyan-500', to: 'to-cyan-600' },
       services: { from: 'from-amber-500', to: 'to-amber-600' },
+      furniture: { from: 'from-yellow-600', to: 'to-yellow-700' },
       telecommunication: { from: 'from-violet-500', to: 'to-violet-600' },
       travelagency: { from: 'from-emerald-500', to: 'to-emerald-600' },
       other: { from: 'from-gray-500', to: 'to-gray-600' }

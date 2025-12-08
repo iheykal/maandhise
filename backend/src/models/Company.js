@@ -60,7 +60,7 @@ const companySchema = new mongoose.Schema({
     required: [true, 'Business type is required'],
     enum: [
       'pharmacy', 'supermarket', 'restaurant', 'clothing', 'electronics',
-      'beauty', 'healthcare', 'automotive', 'education', 'services', 
+      'beauty', 'healthcare', 'automotive', 'education', 'services', 'furniture',
       'telecommunication', 'travelagency', 'other'
     ]
   },
@@ -189,12 +189,12 @@ companySchema.index({ featured: 1 });
 companySchema.index({ 'branches.coordinates': '2dsphere' });
 
 // Virtual for active branches count
-companySchema.virtual('activeBranchesCount').get(function() {
+companySchema.virtual('activeBranchesCount').get(function () {
   return this.branches.filter(branch => branch.isActive).length;
 });
 
 // Virtual for company profile
-companySchema.virtual('profile').get(function() {
+companySchema.virtual('profile').get(function () {
   return {
     _id: this._id,
     businessName: this.businessName,
@@ -211,7 +211,7 @@ companySchema.virtual('profile').get(function() {
 });
 
 // Static method to find nearby companies
-companySchema.statics.findNearby = function(lat, lng, maxDistance = 10000) {
+companySchema.statics.findNearby = function (lat, lng, maxDistance = 10000) {
   return this.find({
     'branches.coordinates': {
       $near: {
@@ -228,7 +228,7 @@ companySchema.statics.findNearby = function(lat, lng, maxDistance = 10000) {
 };
 
 // Static method to get companies by type
-companySchema.statics.getByType = function(businessType) {
+companySchema.statics.getByType = function (businessType) {
   return this.find({
     businessType,
     isActive: true,
@@ -237,13 +237,13 @@ companySchema.statics.getByType = function(businessType) {
 };
 
 // Method to add customer
-companySchema.methods.addCustomer = async function() {
+companySchema.methods.addCustomer = async function () {
   this.totalCustomers += 1;
   return await this.save();
 };
 
 // Method to add transaction
-companySchema.methods.addTransaction = async function(amount, savings) {
+companySchema.methods.addTransaction = async function (amount, savings) {
   this.totalTransactions += 1;
   this.totalSavings += savings;
   this.monthlyRevenue += amount;
@@ -251,7 +251,7 @@ companySchema.methods.addTransaction = async function(amount, savings) {
 };
 
 // Method to update rating
-companySchema.methods.updateRating = async function(newRating) {
+companySchema.methods.updateRating = async function (newRating) {
   const totalRating = this.rating.average * this.rating.count + newRating;
   this.rating.count += 1;
   this.rating.average = totalRating / this.rating.count;
@@ -259,7 +259,7 @@ companySchema.methods.updateRating = async function(newRating) {
 };
 
 // Method to verify company
-companySchema.methods.verify = async function(notes = null) {
+companySchema.methods.verify = async function (notes = null) {
   this.isVerified = true;
   this.verificationStatus = 'verified';
   this.verificationNotes = notes;
@@ -267,7 +267,7 @@ companySchema.methods.verify = async function(notes = null) {
 };
 
 // Method to reject verification
-companySchema.methods.rejectVerification = async function(notes) {
+companySchema.methods.rejectVerification = async function (notes) {
   this.isVerified = false;
   this.verificationStatus = 'rejected';
   this.verificationNotes = notes;
@@ -275,7 +275,7 @@ companySchema.methods.rejectVerification = async function(notes) {
 };
 
 // Method to get analytics
-companySchema.methods.getAnalytics = function() {
+companySchema.methods.getAnalytics = function () {
   return {
     totalCustomers: this.totalCustomers,
     totalTransactions: this.totalTransactions,

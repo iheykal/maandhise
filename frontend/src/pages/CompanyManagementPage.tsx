@@ -62,7 +62,7 @@ const CompanyManagementPage: React.FC = () => {
       console.log('[CompanyManagementPage] Response:', response);
       console.log('[CompanyManagementPage] Companies count:', response.companies?.length || 0);
       console.log('[CompanyManagementPage] Companies:', response.companies);
-      
+
       if (response && response.companies) {
         setCompanies(response.companies);
         console.log('[CompanyManagementPage] Successfully loaded', response.companies.length, 'companies');
@@ -75,19 +75,19 @@ const CompanyManagementPage: React.FC = () => {
       console.error('[CompanyManagementPage] Error response:', error.response?.data);
       console.error('[CompanyManagementPage] Error status:', error.response?.status);
       console.error('[CompanyManagementPage] Error message:', error.message);
-      
+
       let errorMessage = language === 'en' ? 'Failed to load companies.' : 'Waxay ku fashilantay in la soo saaro shirkadaha.';
-      
+
       if (error.response?.status === 401 || error.response?.status === 403) {
-        errorMessage = language === 'en' 
-          ? 'You do not have permission to view companies. Please login as superadmin.' 
+        errorMessage = language === 'en'
+          ? 'You do not have permission to view companies. Please login as superadmin.'
           : 'Ma hayso idan soo bandhigidda shirkadaha. Fadlan soo gal sida superadmin.';
       } else if (error.response?.data?.message) {
         errorMessage = error.response.data.message;
       } else if (error.message) {
         errorMessage = error.message;
       }
-      
+
       setCompaniesError(errorMessage);
       setCompanies([]);
     } finally {
@@ -128,7 +128,7 @@ const CompanyManagementPage: React.FC = () => {
         try {
           const uploadResponse = await uploadService.uploadFile(logoFile);
           console.log('Logo upload response:', uploadResponse);
-          
+
           // Extract URL from response structure: { success, message, data: { url, ... } }
           if (uploadResponse.data && uploadResponse.data.url) {
             logoUrl = uploadResponse.data.url;
@@ -138,17 +138,17 @@ const CompanyManagementPage: React.FC = () => {
             console.error('Unexpected upload response structure:', uploadResponse);
             throw new Error('Invalid upload response structure');
           }
-          
+
           console.log('Logo URL extracted:', logoUrl);
           console.log('Logo URL will be saved to company:', logoUrl);
-          
+
           if (!logoUrl || logoUrl.trim() === '') {
             throw new Error('No URL returned from upload service');
           }
         } catch (uploadError) {
           console.error('Logo upload error:', uploadError);
-          alert(language === 'en' 
-            ? 'Failed to upload logo. Please try again.' 
+          alert(language === 'en'
+            ? 'Failed to upload logo. Please try again.'
             : 'Waxay ku fashilantay in la soo geliyo astaanta. Fadlan mar kale isku day.');
           setLoading(false);
           return;
@@ -199,10 +199,10 @@ const CompanyManagementPage: React.FC = () => {
         status: error.response?.status,
         statusText: error.response?.statusText
       });
-      
-      const errorMessage = error.response?.data?.message || error.response?.data?.error || error.message || 
+
+      const errorMessage = error.response?.data?.message || error.response?.data?.error || error.message ||
         (language === 'en' ? 'Failed to create company. Please check the console for details.' : 'Waxay ku fashilantay in la sameeyo shirkadda. Fadlan hubi console-ka.');
-      
+
       alert(errorMessage);
     } finally {
       setLoading(false);
@@ -235,7 +235,7 @@ const CompanyManagementPage: React.FC = () => {
   const handleUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingCompany) return;
-    
+
     setLoading(true);
 
     try {
@@ -247,7 +247,7 @@ const CompanyManagementPage: React.FC = () => {
         try {
           const uploadResponse = await uploadService.uploadFile(logoFile);
           console.log('Logo upload response:', uploadResponse);
-          
+
           if (uploadResponse.data && uploadResponse.data.url) {
             logoUrl = uploadResponse.data.url;
           } else if (uploadResponse.url) {
@@ -256,12 +256,12 @@ const CompanyManagementPage: React.FC = () => {
             console.error('Unexpected upload response structure:', uploadResponse);
             throw new Error('Invalid upload response structure');
           }
-          
+
           console.log('New logo URL:', logoUrl);
         } catch (uploadError) {
           console.error('Logo upload error:', uploadError);
-          alert(language === 'en' 
-            ? 'Failed to upload logo. Please try again.' 
+          alert(language === 'en'
+            ? 'Failed to upload logo. Please try again.'
             : 'Waxay ku fashilantay in la soo geliyo astaanta. Fadlan mar kale isku day.');
           setLoading(false);
           return;
@@ -307,7 +307,7 @@ const CompanyManagementPage: React.FC = () => {
       alert(language === 'en' ? 'Company updated successfully!' : 'Shirkadda waa la cusbooneysiiyay!');
     } catch (error: any) {
       console.error('Update company error:', error);
-      const errorMessage = error.response?.data?.message || error.response?.data?.error || error.message || 
+      const errorMessage = error.response?.data?.message || error.response?.data?.error || error.message ||
         (language === 'en' ? 'Failed to update company. Please check the console for details.' : 'Waxay ku fashilantay in la cusbooneysiiyo shirkadda. Fadlan hubi console-ka.');
       alert(errorMessage);
     } finally {
@@ -321,7 +321,7 @@ const CompanyManagementPage: React.FC = () => {
 
   const confirmDelete = async () => {
     if (!deletingCompany) return;
-    
+
     setLoading(true);
     try {
       await companyService.deleteCompany(deletingCompany._id);
@@ -330,7 +330,7 @@ const CompanyManagementPage: React.FC = () => {
       setDeletingCompany(null);
     } catch (error: any) {
       console.error('Delete company error:', error);
-      const errorMessage = error.response?.data?.message || error.response?.data?.error || error.message || 
+      const errorMessage = error.response?.data?.message || error.response?.data?.error || error.message ||
         (language === 'en' ? 'Failed to delete company.' : 'Waxay ku fashilantay in la tirtiro shirkadda.');
       alert(errorMessage);
     } finally {
@@ -352,10 +352,11 @@ const CompanyManagementPage: React.FC = () => {
       automotive: { from: 'from-orange-500', to: 'to-orange-600' },
       education: { from: 'from-cyan-500', to: 'to-cyan-600' },
       services: { from: 'from-amber-500', to: 'to-amber-600' },
+      furniture: { from: 'from-yellow-600', to: 'to-yellow-700' },
       telecommunication: { from: 'from-violet-500', to: 'to-violet-600' },
       other: { from: 'from-gray-500', to: 'to-gray-600' }
     };
-    
+
     return colorMap[businessType] || { from: 'from-green-500', to: 'to-green-600' };
   };
 
@@ -603,6 +604,7 @@ const CompanyManagementPage: React.FC = () => {
                       <option value="automotive">{language === 'en' ? 'Automotive' : 'Baabuurta'}</option>
                       <option value="education">{language === 'en' ? 'Education' : 'Waxbarashada'}</option>
                       <option value="services">{language === 'en' ? 'Services' : 'Adeegyada'}</option>
+                      <option value="furniture">{language === 'en' ? 'Furniture' : 'Alaabta Guriga'}</option>
                       <option value="telecommunication">{language === 'en' ? 'Telecommunication' : 'Isgaadhsiinta'}</option>
                       <option value="travelagency">{language === 'en' ? 'Cargo & Travel Agency' : 'Cargo iyo Wakaalada Safarka'}</option>
                       <option value="other">{language === 'en' ? 'Other' : 'Kale'}</option>
@@ -705,7 +707,7 @@ const CompanyManagementPage: React.FC = () => {
                   {language === 'en' ? 'Delete Company' : 'Tirtir Shirkadda'}
                 </h2>
                 <p className="text-gray-600 mb-6">
-                  {language === 'en' 
+                  {language === 'en'
                     ? `Are you sure you want to delete "${deletingCompany.businessName}"? This action cannot be undone.`
                     : `Ma hubtaa inaad tirtirto "${deletingCompany.businessName}"? Tallaabaddan lama dib u soo celin karo.`}
                 </p>
@@ -759,79 +761,79 @@ const CompanyManagementPage: React.FC = () => {
           {!companiesLoading && !companiesError && (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {companies.map((company) => (
-              <motion.div
-                key={company._id}
-                className={`group relative overflow-hidden rounded-2xl bg-gradient-to-br ${getCardColors(company.businessType).from} ${getCardColors(company.businessType).to} shadow-xl hover:shadow-2xl transition-all duration-300`}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                whileHover={{ y: -5 }}
-              >
-                <div className="relative p-6 text-white">
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="w-36 h-36 flex items-center justify-center relative">
-                      {company.logo && company.logo.trim() !== '' ? (
-                        <img
-                          src={company.logo}
-                          alt={`${company.businessName} logo`}
-                          className="w-full h-full object-contain"
-                          style={{
-                            backgroundColor: 'transparent',
-                            imageRendering: 'auto',
-                            filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.1))',
-                            mixBlendMode: 'normal'
-                          }}
-                          onLoad={(e) => {
-                            console.log('Logo image loaded successfully:', company.logo);
-                            const img = e.currentTarget;
-                            img.style.backgroundColor = 'transparent';
-                            img.style.display = 'block';
-                          }}
-                          onError={(e) => {
-                            console.error('Logo image failed to load:', company.logo);
-                            // Hide broken image
-                            e.currentTarget.style.display = 'none';
-                            // Show fallback icon
-                            const parent = e.currentTarget.parentElement;
-                            if (parent) {
-                              const icon = document.createElement('div');
-                              icon.innerHTML = '<svg class="w-24 h-24 text-white/80" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>';
-                              parent.appendChild(icon);
-                            }
-                          }}
-                        />
-                      ) : (
-                        <Building2 className="w-24 h-24 text-white/80" />
-                      )}
+                <motion.div
+                  key={company._id}
+                  className={`group relative overflow-hidden rounded-2xl bg-gradient-to-br ${getCardColors(company.businessType).from} ${getCardColors(company.businessType).to} shadow-xl hover:shadow-2xl transition-all duration-300`}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  whileHover={{ y: -5 }}
+                >
+                  <div className="relative p-6 text-white">
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="w-36 h-36 flex items-center justify-center relative">
+                        {company.logo && company.logo.trim() !== '' ? (
+                          <img
+                            src={company.logo}
+                            alt={`${company.businessName} logo`}
+                            className="w-full h-full object-contain"
+                            style={{
+                              backgroundColor: 'transparent',
+                              imageRendering: 'auto',
+                              filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.1))',
+                              mixBlendMode: 'normal'
+                            }}
+                            onLoad={(e) => {
+                              console.log('Logo image loaded successfully:', company.logo);
+                              const img = e.currentTarget;
+                              img.style.backgroundColor = 'transparent';
+                              img.style.display = 'block';
+                            }}
+                            onError={(e) => {
+                              console.error('Logo image failed to load:', company.logo);
+                              // Hide broken image
+                              e.currentTarget.style.display = 'none';
+                              // Show fallback icon
+                              const parent = e.currentTarget.parentElement;
+                              if (parent) {
+                                const icon = document.createElement('div');
+                                icon.innerHTML = '<svg class="w-24 h-24 text-white/80" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>';
+                                parent.appendChild(icon);
+                              }
+                            }}
+                          />
+                        ) : (
+                          <Building2 className="w-24 h-24 text-white/80" />
+                        )}
+                      </div>
+                      <div className="text-right">
+                        <div className="text-3xl font-bold">{company.discountRate}%</div>
+                        <div className="text-sm opacity-90">{language === 'en' ? 'OFF' : 'DHIMIS'}</div>
+                      </div>
                     </div>
-                    <div className="text-right">
-                      <div className="text-3xl font-bold">{company.discountRate}%</div>
-                      <div className="text-sm opacity-90">{language === 'en' ? 'OFF' : 'DHIMIS'}</div>
+                    <h3 className="text-xl font-bold mb-2">{company.businessName}</h3>
+                    <p className="text-white/90 text-sm mb-4">{company.description}</p>
+                    <div className="flex items-center justify-between text-xs opacity-80 mb-4">
+                      <span>📍 {company.branches?.[0]?.address || company.location || 'Mogadishu'}</span>
+                    </div>
+                    {/* Edit and Delete Buttons */}
+                    <div className="flex gap-2 mt-4 pt-4 border-t border-white/20">
+                      <button
+                        onClick={() => handleEdit(company)}
+                        className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-white/20 hover:bg-white/30 text-white rounded-lg transition-colors text-sm font-medium"
+                      >
+                        <Edit className="w-4 h-4" />
+                        {language === 'en' ? 'Edit' : 'Wax ka beddel'}
+                      </button>
+                      <button
+                        onClick={() => handleDelete(company)}
+                        className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-red-500/80 hover:bg-red-600 text-white rounded-lg transition-colors text-sm font-medium"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                        {language === 'en' ? 'Delete' : 'Tirtir'}
+                      </button>
                     </div>
                   </div>
-                  <h3 className="text-xl font-bold mb-2">{company.businessName}</h3>
-                  <p className="text-white/90 text-sm mb-4">{company.description}</p>
-                  <div className="flex items-center justify-between text-xs opacity-80 mb-4">
-                    <span>📍 {company.branches?.[0]?.address || company.location || 'Mogadishu'}</span>
-                  </div>
-                  {/* Edit and Delete Buttons */}
-                  <div className="flex gap-2 mt-4 pt-4 border-t border-white/20">
-                    <button
-                      onClick={() => handleEdit(company)}
-                      className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-white/20 hover:bg-white/30 text-white rounded-lg transition-colors text-sm font-medium"
-                    >
-                      <Edit className="w-4 h-4" />
-                      {language === 'en' ? 'Edit' : 'Wax ka beddel'}
-                    </button>
-                    <button
-                      onClick={() => handleDelete(company)}
-                      className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-red-500/80 hover:bg-red-600 text-white rounded-lg transition-colors text-sm font-medium"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                      {language === 'en' ? 'Delete' : 'Tirtir'}
-                    </button>
-                  </div>
-                </div>
-              </motion.div>
+                </motion.div>
               ))}
             </div>
           )}
