@@ -1,44 +1,20 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-    User,
     Phone,
     DollarSign,
     Users,
     Calendar,
-    CreditCard,
-    X,
-    Trash2,
     Eye,
+    X,
+    User,
+    Trash2,
     Briefcase,
     MapPin,
+    CreditCard,
     Clock
 } from 'lucide-react';
-import { marketerService } from '../services/marketerService.ts';
-
-export interface Marketer {
-    _id: string;
-    fullName: string;
-    phone: string;
-    profilePicUrl?: string;
-    governmentIdUrl: string;
-    totalEarnings: number;
-    approvedCustomers: number;
-    canLogin: boolean;
-    createdAt: string;
-    role: 'marketer';
-}
-
-interface RegisteredUser {
-    _id: string;
-    fullName: string;
-    phone: string;
-    location?: string;
-    profilePicUrl?: string;
-    validUntil?: string;
-    createdAt: string;
-    membershipMonths: number;
-}
+import { marketerService, type Marketer, type RegisteredUser } from '../services/marketerService.ts';
 
 interface MarketerCardProps {
     marketer: Marketer;
@@ -46,7 +22,7 @@ interface MarketerCardProps {
     onDelete: (marketer: Marketer) => void;
 }
 
-export const MarketerCard: React.FC<MarketerCardProps> = ({ marketer, language, onDelete }) => {
+const MarketerCard: React.FC<MarketerCardProps> = ({ marketer, language, onDelete }) => {
     const [showDetail, setShowDetail] = useState(false);
     const [showGovId, setShowGovId] = useState(false);
     const [registeredUsers, setRegisteredUsers] = useState<RegisteredUser[]>([]);
@@ -243,22 +219,35 @@ export const MarketerCard: React.FC<MarketerCardProps> = ({ marketer, language, 
                             </div>
 
                             {/* Government ID Section */}
-                            {marketer.governmentIdUrl && marketer.governmentIdUrl !== 'https://placeholder.com/gov-id.jpg' && (
+                            {marketer.governmentIdUrl && (
                                 <div className="px-6 pb-4">
                                     <h3 className="font-bold text-gray-800 mb-3 flex items-center gap-2">
                                         <CreditCard className="w-5 h-5 text-red-600" />
                                         {language === 'en' ? 'Government ID' : 'Aqoonsiga Dawladda'}
                                     </h3>
                                     <div
-                                        className="relative cursor-pointer group/id rounded-xl overflow-hidden border border-gray-200 shadow-sm"
+                                        className="relative cursor-pointer group/id rounded-xl overflow-hidden border border-gray-200 shadow-sm h-48 bg-gray-50 flex items-center justify-center"
                                         onClick={() => setShowGovId(true)}
                                     >
                                         <img
                                             src={marketer.governmentIdUrl}
                                             alt="Government ID"
-                                            className="w-full h-48 object-cover group-hover/id:scale-105 transition-transform"
+                                            className="w-full h-full object-cover group-hover/id:scale-105 transition-transform"
                                             onError={(e) => {
-                                                e.currentTarget.parentElement!.style.display = 'none';
+                                                e.currentTarget.style.display = 'none';
+                                                e.currentTarget.parentElement?.classList.add('flex', 'items-center', 'justify-center', 'bg-gray-100');
+                                                // Create a placeholder element
+                                                if (!e.currentTarget.parentElement?.querySelector('.fallback-id')) {
+                                                    const div = document.createElement('div');
+                                                    div.className = 'fallback-id text-center p-4';
+                                                    div.innerHTML = `
+                                                        <div class="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center mx-auto mb-2">
+                                                            <svg class="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"></path></svg>
+                                                        </div>
+                                                        <span class="text-sm text-gray-500 font-medium">No Image Loaded</span>
+                                                    `;
+                                                    e.currentTarget.parentElement?.appendChild(div);
+                                                }
                                             }}
                                         />
                                         <div className="absolute inset-0 bg-black/40 opacity-0 group-hover/id:opacity-100 transition-opacity flex items-center justify-center">

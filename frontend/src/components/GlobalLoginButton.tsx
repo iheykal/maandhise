@@ -12,19 +12,12 @@ import { useTheme } from '../contexts/ThemeContext.tsx';
 import { useAuth } from '../contexts/AuthContext.tsx';
 import LoadingSpinner from './common/LoadingSpinner.tsx';
 
-// Get API URL dynamically
+// Use connection string from centralized config
+// @ts-ignore
+import { API_BASE_URL } from '../services/apiConfig';
+
 const getApiUrl = (): string => {
-  if (process.env.REACT_APP_API_URL) {
-    return process.env.REACT_APP_API_URL;
-  }
-  if (typeof window !== 'undefined') {
-    const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-    if (isLocalhost) {
-      return 'http://localhost:5001/api';
-    }
-    return `${window.location.protocol}//${window.location.hostname}/api`;
-  }
-  return '/api';
+  return API_BASE_URL;
 };
 
 const GlobalLoginButton: React.FC = () => {

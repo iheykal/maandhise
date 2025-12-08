@@ -1,5 +1,12 @@
 export const getApiBaseUrl = () => {
-    // 1. Check env var (highest priority)
+    // 0. Hardcoded fix for custom domain (Highest priority safeguard)
+    // This ensures that even if an environment variable is set incorrectly, 
+    // the custom domain will always point to the correct backend.
+    if (typeof window !== 'undefined' && (window.location.hostname === 'sahalcard.com' || window.location.hostname === 'www.sahalcard.com')) {
+        return 'https://maandhise252.onrender.com/api';
+    }
+
+    // 1. Check env var
     if (process.env.REACT_APP_API_URL) {
         return process.env.REACT_APP_API_URL;
     }
@@ -14,13 +21,11 @@ export const getApiBaseUrl = () => {
 
         if (isLocalhost || isLocalNetwork) {
             // Use the same hostname but port 5001 for backend
-            // This is crucial for testing on mobile devices connected to the same WiFi
             return `${window.location.protocol}//${hostname}:5001/api`;
         }
     }
 
-    // 4. Production Fallback (Force the correct backend URL)
-    // This solves the issue where custom domains (sahalcard.com) don't have the backend
+    // 4. Production Fallback (Default)
     return 'https://maandhise252.onrender.com/api';
 };
 
