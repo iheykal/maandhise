@@ -5,6 +5,7 @@ import { ArrowLeft, CreditCard, Search, XCircle, Phone, Calendar, User, Trash2, 
 import { useTheme } from '../contexts/ThemeContext.tsx';
 import { useNavigate } from 'react-router-dom';
 import { companyService } from '../services/companyService.ts';
+import { API_BASE_URL } from '../services/apiConfig';
 
 const GetSahalCardPage: React.FC = () => {
   const { language } = useTheme();
@@ -199,16 +200,9 @@ const GetSahalCardPage: React.FC = () => {
   };
 
 
-  // Auto-detect localhost in development
-  const isLocalhost = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
-  const defaultApiUrl = isLocalhost
-    ? 'http://localhost:5001/api'
-    : '/api'; // Use relative URL in production since backend serves frontend
-  const API_BASE_URL = process.env.REACT_APP_API_URL || defaultApiUrl;
 
   console.log('[GetSahalCardPage] API Config:', {
     hostname: typeof window !== 'undefined' ? window.location.hostname : 'server',
-    isLocalhost,
     apiUrl: API_BASE_URL,
   });
 
