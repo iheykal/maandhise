@@ -3,7 +3,7 @@ export const getApiBaseUrl = () => {
     // This ensures that even if an environment variable is set incorrectly, 
     // the custom domain will always point to the correct backend.
     if (typeof window !== 'undefined' && (window.location.hostname === 'sahalcard.com' || window.location.hostname === 'www.sahalcard.com')) {
-        return 'https://maandhise252.onrender.com/api';
+        return `${window.location.protocol}//${window.location.hostname}/api`;
     }
 
     // 1. Check env var
