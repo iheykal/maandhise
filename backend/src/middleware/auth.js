@@ -1,6 +1,7 @@
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 const Marketer = require('../models/Marketer');
+const mongoose = require('mongoose');
 
 // Verify JWT token
 const authenticateToken = async (req, res, next) => {
@@ -8,11 +9,9 @@ const authenticateToken = async (req, res, next) => {
     const authHeader = req.headers.authorization;
     const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
 
-    // DEBUG LOGS
-    console.log('[AUTH DEBUG] Request:', req.path);
-    console.log('[AUTH DEBUG] Auth Header:', authHeader ? 'Present' : 'Missing');
-    console.log('[AUTH DEBUG] Token:', token ? token.substring(0, 10) + '...' : 'Missing');
-    console.log('[AUTH DEBUG] JWT_SECRET:', process.env.JWT_SECRET ? process.env.JWT_SECRET.substring(0, 3) + '...' : 'Missing');
+    // DEBUG LOGS (Commented out to reduce noise unless needed)
+    // console.log('[AUTH DEBUG] Request:', req.path);
+    // console.log('[AUTH DEBUG] Auth Header:', authHeader ? 'Present' : 'Missing');
 
     if (!token) {
       console.log('[AUTH DEBUG] No token provided');
@@ -23,34 +22,49 @@ const authenticateToken = async (req, res, next) => {
     }
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    console.log('[AUTH DEBUG] Token verified for user:', decoded.userId);
+    const userId = decoded.userId;
 
-    // Get user or marketer from database
-    const mongoose = require('mongoose');
-    let userId = decoded.userId;
-
-    try {
-      if (typeof userId === 'string') {
-        userId = new mongoose.Types.ObjectId(userId);
-      }
-    } catch (e) {
-      console.log('[AUTH DEBUG] Error casting ID:', e.message);
+    // db connection check
+    if (User.db.readyState !== 1) {
+      console.error('[AUTH CRITICAL] User model not connected to DB! State:', User.db.readyState);
     }
 
-    // First try to find as regular user
-    let user = await User.findById(userId);
+    // Trim and cast ID explicitly
+    let cleanUserId = userId.toString().trim();
+    let objectId;
+    try {
+      objectId = new mongoose.Types.ObjectId(cleanUserId);
+    } catch (e) {
+      console.error('[AUTH ERROR] Invalid ID format:', cleanUserId);
+      return res.status(401).json({ success: false, message: 'Invalid token payload' });
+    }
+
+    // Try finding via explicit _id query
+    let user = await User.findOne({ _id: objectId });
+
+    if (!user) {
+      console.warn('[AUTH WARNING] Standard lookup failed. Attempting Scan Fallback...');
+      const allUsers = await User.find({});
+      user = allUsers.find(u => u._id.toString() === cleanUserId);
+      if (user) {
+        console.log('[AUTH SUCCESS] Recovered user via Scan Fallback!');
+      }
+    }
 
     if (user) {
-      console.log('[AUTH DEBUG] User found:', user.role);
       req.user = user;
       return next();
     }
 
     // If not found as user, try to find as marketer
-    const marketer = await Marketer.findById(userId);
+    let marketer = await Marketer.findOne({ _id: objectId });
+
+    if (!marketer) {
+      const allMarketers = await Marketer.find({});
+      marketer = allMarketers.find(m => m._id.toString() === cleanUserId);
+    }
 
     if (marketer) {
-      console.log('[AUTH DEBUG] Marketer found');
       req.marketer = marketer;
       // Also set req.user with marketer profile for compatibility with authorize middleware
       req.user = { ...marketer.toObject(), role: 'marketer' };
@@ -58,10 +72,10 @@ const authenticateToken = async (req, res, next) => {
     }
 
     // Neither user nor marketer found
-    console.log('[AUTH DEBUG] User/Marketer not found by ID:', userId);
+    console.log('[AUTH DEBUG] User/Marketer not found by ID:', cleanUserId);
     return res.status(401).json({
       success: false,
-      message: 'User not found'
+      message: `User not found (ID: ${cleanUserId})`
     });
 
   } catch (error) {
@@ -145,10 +159,15 @@ const optionalAuth = async (req, res, next) => {
 
     if (token) {
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
-      const user = await User.findById(decoded.userId).select('-password');
 
-      if (user && user.isActive) {
-        req.user = user;
+      try {
+        const objectId = new mongoose.Types.ObjectId(decoded.userId);
+        const user = await User.findOne({ _id: objectId }).select('-password');
+        if (user && user.isActive) {
+          req.user = user;
+        }
+      } catch (e) {
+        // ignore invalid ID in optional auth
       }
     }
 

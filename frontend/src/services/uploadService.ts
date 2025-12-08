@@ -13,8 +13,13 @@ const api = axios.create({
 // Add auth token to requests
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem('token');
+  console.log('[UploadService] Interceptor - Token check:', token ? `Present (${token.substring(0, 10)}...)` : 'MISSING');
+
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
+    console.log('[UploadService] Authorization header set');
+  } else {
+    console.warn('[UploadService] Warning: No token found in localStorage for upload request');
   }
   return config;
 });

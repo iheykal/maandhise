@@ -45,6 +45,26 @@ const upload = multer({
 
 class R2Service {
   /**
+   * Helper to construct public URL with correct base
+   * @param {string} key - Object key
+   * @returns {string} - Full public URL
+   */
+  static _constructPublicUrl(key) {
+    const publicUrlBase = process.env.CLOUDFLARE_PUBLIC_URL;
+
+    if (publicUrlBase) {
+      let cleanBase = publicUrlBase.replace(/\/$/, '');
+      if (cleanBase.includes('r2.dev') && cleanBase.endsWith('/' + BUCKET_NAME)) {
+        cleanBase = cleanBase.substring(0, cleanBase.lastIndexOf('/' + BUCKET_NAME));
+      }
+      return `${cleanBase}/${key}`;
+    }
+
+    const accountId = process.env.CLOUDFLARE_ACCOUNT_ID;
+    return `https://pub-${accountId}.r2.dev/${key}`;
+  }
+
+  /**
    * Upload a file to R2 storage with a custom folder path
    * @param {Buffer} fileBuffer - File buffer
    * @param {string} fileName - File name
@@ -75,26 +95,8 @@ class R2Service {
       const result = await s3Client.send(command);
       console.log('[R2Service] Upload successful:', result);
 
-      // Generate public URL instead of signed URL for permanent access
-      const publicUrlBase = process.env.CLOUDFLARE_PUBLIC_URL;
-      let publicUrl;
-
-      if (publicUrlBase) {
-        // Check if publicUrlBase already includes bucket name
-        // r2.dev subdomain format: https://pub-{accountId}.r2.dev (bucket already mapped)
-        // Custom domain format might include bucket: https://cdn.domain.com/bucket
-        if (publicUrlBase.includes('r2.dev')) {
-          // r2.dev subdomain - bucket is already mapped, don't include in path
-          publicUrl = `${publicUrlBase}/${key}`;
-        } else {
-          // Custom domain - might need bucket in path
-          publicUrl = `${publicUrlBase}/${key}`;
-        }
-      } else {
-        // Fallback: construct r2.dev URL (bucket already mapped to subdomain)
-        const accountId = process.env.CLOUDFLARE_ACCOUNT_ID;
-        publicUrl = `https://pub-${accountId}.r2.dev/${key}`;
-      }
+      // Generate public URL using helper
+      const publicUrl = this._constructPublicUrl(key);
 
       return publicUrl;
     } catch (error) {
@@ -154,26 +156,8 @@ class R2Service {
       const result = await s3Client.send(command);
       console.log('[R2Service] Upload successful:', result);
 
-      // Generate public URL instead of signed URL for permanent access
-      const publicUrlBase = process.env.CLOUDFLARE_PUBLIC_URL;
-      let publicUrl;
-
-      if (publicUrlBase) {
-        // Check if publicUrlBase already includes bucket name
-        // r2.dev subdomain format: https://pub-{accountId}.r2.dev (bucket already mapped)
-        // Custom domain format might include bucket: https://cdn.domain.com/bucket
-        if (publicUrlBase.includes('r2.dev')) {
-          // r2.dev subdomain - bucket is already mapped, don't include in path
-          publicUrl = `${publicUrlBase}/${key}`;
-        } else {
-          // Custom domain - might need bucket in path
-          publicUrl = `${publicUrlBase}/${key}`;
-        }
-      } else {
-        // Fallback: construct r2.dev URL (bucket already mapped to subdomain)
-        const accountId = process.env.CLOUDFLARE_ACCOUNT_ID;
-        publicUrl = `https://pub-${accountId}.r2.dev/${key}`;
-      }
+      // Generate public URL using helper
+      const publicUrl = this._constructPublicUrl(key);
 
       return publicUrl;
     } catch (error) {
@@ -225,23 +209,8 @@ class R2Service {
 
       const uploadUrl = await getSignedUrl(s3Client, command, { expiresIn: 3600 }); // 1 hour
 
-      // Use the public URL from environment variable if available, otherwise construct it
-      const publicUrlBase = process.env.CLOUDFLARE_PUBLIC_URL;
-      let publicUrl;
-
-      if (publicUrlBase) {
-        // Check if using r2.dev subdomain (bucket already mapped)
-        if (publicUrlBase.includes('r2.dev')) {
-          publicUrl = `${publicUrlBase}/${key}`;
-        } else {
-          // Custom domain
-          publicUrl = `${publicUrlBase}/${key}`;
-        }
-      } else {
-        // Fallback: construct r2.dev URL (bucket already mapped to subdomain)
-        const accountId = process.env.CLOUDFLARE_ACCOUNT_ID;
-        publicUrl = `https://pub-${accountId}.r2.dev/${key}`;
-      }
+      // Use the public URL from helper
+      const publicUrl = this._constructPublicUrl(key);
 
       return { uploadUrl, publicUrl };
     } catch (error) {

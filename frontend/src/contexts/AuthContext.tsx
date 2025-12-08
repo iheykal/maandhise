@@ -309,29 +309,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         return;
       }
 
-      // Shorter timeout on mobile (5 seconds), longer on desktop (10 seconds)
-      const timeoutDuration = isMobile ? 5000 : 10000;
-
-      timeoutId = setTimeout(() => {
-        if (isMounted) {
-          console.warn('Auth check timeout - clearing tokens and showing login');
-          try {
-            localStorage.removeItem('token');
-            localStorage.removeItem('refreshToken');
-          } catch (error) {
-            console.error('Error clearing localStorage:', error);
-          }
-          dispatch({ type: 'AUTH_LOGOUT' });
-        }
-      }, timeoutDuration);
-
       try {
         const user = await authService.getProfile();
-
-        if (timeoutId) {
-          clearTimeout(timeoutId);
-          timeoutId = null;
-        }
 
         if (isMounted) {
           dispatch({
@@ -344,11 +323,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           });
         }
       } catch (error: any) {
-        if (timeoutId) {
-          clearTimeout(timeoutId);
-          timeoutId = null;
-        }
-
         console.error('Auth check failed:', error);
 
         if (isMounted) {
