@@ -232,7 +232,7 @@ const MarketerCard: React.FC<MarketerCardProps> = ({ marketer, language, onDelet
                                         <img
                                             src={marketer.governmentIdUrl}
                                             alt="Government ID"
-                                            className="w-full h-full object-cover group-hover/id:scale-105 transition-transform"
+                                            className="w-full h-full object-contain group-hover/id:scale-105 transition-transform"
                                             onError={(e) => {
                                                 e.currentTarget.style.display = 'none';
                                                 e.currentTarget.parentElement?.classList.add('flex', 'items-center', 'justify-center', 'bg-gray-100');

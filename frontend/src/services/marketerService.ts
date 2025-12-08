@@ -34,6 +34,17 @@ export interface CreateMarketerData {
     password: string;
 }
 
+export interface RegisteredUser {
+    _id: string;
+    fullName: string;
+    phone: string;
+    location?: string;
+    profilePicUrl?: string;
+    validUntil?: string;
+    createdAt: string;
+    membershipMonths: number;
+}
+
 export const marketerService = {
     // Create marketer (SuperAdmin only)
     createMarketer: async (data: CreateMarketerData): Promise<{ marketer: Marketer; credentials: { phone: string; password: string } }> => {
@@ -112,16 +123,8 @@ export const marketerService = {
     // Get users registered by a specific marketer
     getMarketerRegisteredUsers: async (id: string): Promise<{
         marketer: Marketer;
-        registeredUsers: Array<{
-            _id: string;
-            fullName: string;
-            phone: string;
-            location?: string;
-            profilePicUrl?: string;
-            validUntil?: string;
-            createdAt: string;
-            membershipMonths: number;
-        }>;
+        marketer: Marketer;
+        registeredUsers: RegisteredUser[];
         totalRegistered: number;
     }> => {
         try {
