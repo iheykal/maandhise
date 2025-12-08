@@ -624,11 +624,17 @@ const DashboardPage: React.FC = () => {
     try {
       setIsLoading(true);
 
+      if (!marketerFormState.governmentIdUrl) {
+        alert(language === 'en' ? 'Please upload a Government ID' : 'Fadlan soo geli Aqoonsiga Dawladda');
+        setIsLoading(false);
+        return;
+      }
+
       const marketerData: CreateMarketerData = {
         fullName: marketerFormState.fullName,
         phone: marketerFormState.phone,
         password: marketerFormState.password || 'marketer123',
-        governmentIdUrl: marketerFormState.governmentIdUrl || 'https://placeholder.com/gov-id.jpg', // Temporary placeholder
+        governmentIdUrl: marketerFormState.governmentIdUrl,
         ...(marketerFormState.profilePicUrl && { profilePicUrl: marketerFormState.profilePicUrl })
       };
 

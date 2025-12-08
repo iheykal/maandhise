@@ -193,7 +193,12 @@ export const uploadService = {
     }
 
     // Check file type - accept any image format
-    if (!file.type.startsWith('image/')) {
+    // enhanced check: rely on extension if type is missing or generic
+    const validExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.svg', '.bmp', '.tiff', '.tif', '.heic', '.heif'];
+    const fileName = file.name.toLowerCase();
+    const hasValidExt = validExtensions.some(ext => fileName.endsWith(ext));
+
+    if (!file.type.startsWith('image/') && !hasValidExt) {
       return {
         isValid: false,
         error: 'Only image files are allowed',

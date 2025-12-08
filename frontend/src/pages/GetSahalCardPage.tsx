@@ -596,7 +596,7 @@ const GetSahalCardPage: React.FC = () => {
                                     className="w-28 h-28 rounded-full object-cover ring-4 ring-white shadow-2xl transition-all duration-300 group-hover/avatar:scale-110 group-hover/avatar:shadow-3xl"
                                     onError={(e) => {
                                       console.log('Profile picture failed to load:', searchedUser.profilePicUrl);
-                                      e.currentTarget.src = '/icons/founder.jpeg';
+                                      e.currentTarget.src = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMjgiIGhlaWdodD0iMTI4IiB2aWV3Qm94PSIwIDAgMTI4IDEyOCI+PHJlY3Qgd2lkdGg9IjEyOCIgaGVpZ2h0PSIxMjgiIGZpbGw9IiM4YjVjZjYiLz48Y2lyY2xlIGN4PSI2NCIgY3k9IjQ1IiByPSIyNSIgZmlsbD0iI2ZmZiIgb3BhY2l0eT0iMC44Ii8+PHBhdGggZD0iTTEwNCAxMTVjMC0yMi4xLTE3LjktNDAtNDAtNDBzLTQwIDE3LjktNDAgNDBoMTZjMC0xMy4zIDEwLjctMjQgMjQtMjRzMjQgMTAuNyAyNCAyNGgxNnoiIGZpbGw9IiNmZmYiIG9wYWNpdHk9IjAuOCIvPjwvc3ZnPg==';
                                     }}
                                   />
                                   <div className={`absolute -bottom-1 -right-1 w-8 h-8 rounded-full border-4 border-white flex items-center justify-center ${searchedUser.validUntil && new Date() > new Date(searchedUser.validUntil)
@@ -1128,7 +1128,7 @@ const GetSahalCardPage: React.FC = () => {
                   className="max-w-full max-h-[50vh] object-contain rounded-lg shadow-lg"
                   onError={(e) => {
                     console.log('Profile picture failed to load in modal:', selectedUserImage.imageUrl);
-                    e.currentTarget.src = '/icons/founder.jpeg';
+                    e.currentTarget.src = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMjgiIGhlaWdodD0iMTI4IiB2aWV3Qm94PSIwIDAgMTI4IDEyOCI+PHJlY3Qgd2lkdGg9IjEyOCIgaGVpZ2h0PSIxMjgiIGZpbGw9IiM4YjVjZjYiLz48Y2lyY2xlIGN4PSI2NCIgY3k9IjQ1IiByPSIyNSIgZmlsbD0iI2ZmZiIgb3BhY2l0eT0iMC44Ii8+PHBhdGggZD0iTTEwNCAxMTVjMC0yMi4xLTE3LjktNDAtNDAtNDBzLTQwIDE3LjktNDAgNDBoMTZjMC0xMy4zIDEwLjctMjQgMjQtMjRzMjQgMTAuNyAyNCAyNGgxNnoiIGZpbGw9IiNmZmYiIG9wYWNpdHk9IjAuOCIvPjwvc3ZnPg==';
                   }}
                 />
               </div>

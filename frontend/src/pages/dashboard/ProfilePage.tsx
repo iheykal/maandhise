@@ -29,7 +29,7 @@ const ProfilePage: React.FC = () => {
             {language === 'en' ? 'Profile Settings' : 'Dejinta Profile'}
           </h1>
           <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-            {language === 'en' 
+            {language === 'en'
               ? 'Manage your personal information and account settings.'
               : 'Maamul macluumaadkaaga shakhsiyeed iyo dejinta akoonka.'
             }
@@ -85,51 +85,51 @@ const ProfilePage: React.FC = () => {
           {(() => {
             console.log('ProfilePage render - user?.validUntil:', user?.validUntil);
             console.log('ProfilePage render - user object keys:', user ? Object.keys(user) : 'no user');
-            
+
             // Check if validUntil exists and is not null/undefined/empty
-            const hasValidUntil = user?.validUntil && 
-                                  user.validUntil !== null && 
-                                  user.validUntil !== undefined && 
-                                  user.validUntil !== '';
-            
+            const hasValidUntil = user?.validUntil &&
+              user.validUntil !== null &&
+              user.validUntil !== undefined &&
+              user.validUntil !== '';
+
             console.log('ProfilePage render - hasValidUntil:', hasValidUntil);
-            
+
             return hasValidUntil ? (
-              <CountdownTimer 
-                endDate={user.validUntil} 
+              <CountdownTimer
+                endDate={user.validUntil}
                 language={language}
               />
             ) : (
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="glass-card p-8 md:p-12"
-            >
-              <div className="text-center">
-                <motion.div
-                  animate={{ rotate: [0, 360] }}
-                  transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
-                  className="text-4xl mb-4 inline-block"
-                >
-                  ⏳
-                </motion.div>
-                <h3 className="text-xl md:text-2xl font-bold text-gray-900 mb-2">
-                  {language === 'en' ? 'Membership Status' : 'Xaaladda Kansuugga'}
-                </h3>
-                <p className="text-gray-600">
-                  {language === 'en'
-                    ? 'No expiration date set. Please contact an administrator to set up your membership.'
-                    : 'Taariikhda dhacaadka lama dejiyo. Fadlan la xidhiidh maamule si aad kansuuggaaga u dejiso.'}
-                </p>
-                {/* Debug info - remove in production */}
-                <div className="mt-4 p-4 bg-gray-100 rounded-lg text-left text-xs">
-                  <p className="font-semibold mb-2">Debug Info:</p>
-                  <p>User exists: {user ? 'Yes' : 'No'}</p>
-                  <p>validUntil value: {user?.validUntil ? String(user.validUntil) : 'null/undefined'}</p>
-                  <p>validUntil type: {user?.validUntil ? typeof user.validUntil : 'N/A'}</p>
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="glass-card p-8 md:p-12"
+              >
+                <div className="text-center">
+                  <motion.div
+                    animate={{ rotate: [0, 360] }}
+                    transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+                    className="text-4xl mb-4 inline-block"
+                  >
+                    ⏳
+                  </motion.div>
+                  <h3 className="text-xl md:text-2xl font-bold text-gray-900 mb-2">
+                    {language === 'en' ? 'Membership Status' : 'Xaaladda Kansuugga'}
+                  </h3>
+                  <p className="text-gray-600">
+                    {language === 'en'
+                      ? 'No expiration date set. Please contact an administrator to set up your membership.'
+                      : 'Taariikhda dhacaadka lama dejiyo. Fadlan la xidhiidh maamule si aad kansuuggaaga u dejiso.'}
+                  </p>
+                  {/* Debug info - remove in production */}
+                  <div className="mt-4 p-4 bg-gray-100 rounded-lg text-left text-xs">
+                    <p className="font-semibold mb-2">Debug Info:</p>
+                    <p>User exists: {user ? 'Yes' : 'No'}</p>
+                    <p>validUntil value: {user?.validUntil ? String(user.validUntil) : 'null/undefined'}</p>
+                    <p>validUntil type: {user?.validUntil ? typeof user.validUntil : 'N/A'}</p>
+                  </div>
                 </div>
-              </div>
-            </motion.div>
+              </motion.div>
             );
           })()}
         </div>
@@ -139,10 +139,10 @@ const ProfilePage: React.FC = () => {
             {language === 'en' ? 'ID Card Image' : 'Sawirka Kaarka Aqoonsiga'}
           </h2>
           {user?.idCardImageUrl ? (
-            <img 
-              src={user.idCardImageUrl} 
-              alt="ID Card" 
-              className="w-full max-w-sm mx-auto rounded-lg shadow-lg"
+            <img
+              src={user.idCardImageUrl}
+              alt="ID Card"
+              className="w-full max-w-sm mx-auto rounded-lg shadow-lg object-contain bg-gray-50"
             />
           ) : (
             <p className="text-gray-600">

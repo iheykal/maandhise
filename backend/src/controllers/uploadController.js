@@ -22,7 +22,7 @@ const uploadFile = async (req, res) => {
     const { buffer, originalname, mimetype } = req.file;
 
     // Validate file type
-    if (!R2Service.isValidImageType(mimetype)) {
+    if (!R2Service.isValidImageType(mimetype, originalname)) {
       return res.status(400).json({
         success: false,
         message: 'Invalid file type. Only images are allowed.'
@@ -85,7 +85,7 @@ const generateUploadUrl = async (req, res) => {
     }
 
     // Validate content type
-    if (!R2Service.isValidImageType(contentType)) {
+    if (!R2Service.isValidImageType(contentType, fileName)) {
       return res.status(400).json({
         success: false,
         message: 'Invalid file type. Only images are allowed.'
@@ -205,7 +205,7 @@ const uploadMarketerIdImage = async (req, res) => {
     const { buffer, originalname, mimetype } = req.file;
 
     // Validate file type
-    if (!R2Service.isValidImageType(mimetype)) {
+    if (!R2Service.isValidImageType(mimetype, originalname)) {
       return res.status(400).json({
         success: false,
         message: 'Invalid file type. Only images are allowed.'
@@ -258,7 +258,7 @@ const uploadMarketerProfileImage = async (req, res) => {
     const { buffer, originalname, mimetype } = req.file;
 
     // Validate file type
-    if (!R2Service.isValidImageType(mimetype)) {
+    if (!R2Service.isValidImageType(mimetype, originalname)) {
       return res.status(400).json({
         success: false,
         message: 'Invalid file type. Only images are allowed.'

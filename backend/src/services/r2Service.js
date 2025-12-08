@@ -34,12 +34,24 @@ const upload = multer({
     fileSize: 5 * 1024 * 1024, // 5MB limit
   },
   fileFilter: (req, file, cb) => {
-    // Accept any image format
+    // strict check
     if (file.mimetype.startsWith('image/')) {
-      cb(null, true);
-    } else {
-      cb(new Error('Only image files are allowed!'), false);
+      return cb(null, true);
     }
+
+    // Fallback: check extension if mimetype is generic or missing
+    const ext = path.extname(file.originalname).toLowerCase();
+    const validExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.svg', '.bmp', '.tiff', '.tif', '.heic', '.heif'];
+
+    if (validExtensions.includes(ext)) {
+      // Manually fix mimetype for common cases that might be mis-detected
+      if (ext === '.jpg' || ext === '.jpeg') file.mimetype = 'image/jpeg';
+      if (ext === '.png') file.mimetype = 'image/png';
+      if (ext === '.webp') file.mimetype = 'image/webp';
+      return cb(null, true);
+    }
+
+    cb(new Error('Only image files are allowed!'), false);
   },
 });
 
@@ -268,9 +280,20 @@ class R2Service {
    * @param {string} mimetype - MIME type
    * @returns {boolean}
    */
-  static isValidImageType(mimetype) {
+  static isValidImageType(mimetype, filename = '') {
     // Accept any image format (image/*)
-    return mimetype && mimetype.startsWith('image/');
+    if (mimetype && mimetype.startsWith('image/')) {
+      return true;
+    }
+
+    // Fallback based on extension
+    if (filename) {
+      const ext = path.extname(filename).toLowerCase();
+      const validExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.svg', '.bmp', '.tiff', '.tif', '.heic', '.heif'];
+      return validExtensions.includes(ext);
+    }
+
+    return false;
   }
 
   /**
