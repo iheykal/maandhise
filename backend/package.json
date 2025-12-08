@@ -4,11 +4,8 @@
   "description": "SAHAL CARD Backend API",
   "main": "src/server.js",
   "scripts": {
-    "start": "node src/server.js",
+    "start": "NODE_ENV=production node src/server.js",
     "dev": "nodemon src/server.js",
-    "build": "echo 'Frontend build handled by Dockerfile'",
-    "build:start": "npm run build && npm start",
-    "prestart": "node create-superadmin-615216774.js && npm run build",
     "test": "jest",
     "test:mongodb": "node scripts/test-mongodb.js"
   },

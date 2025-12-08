@@ -50,9 +50,6 @@ app.use(helmet({
       connectSrc: [
         "'self'",
         "https://*.r2.dev",
-        "https://*.r2.cloudflarestorage.com",
-        "https://maandhise252.onrender.com",
-        "https://maandhise.onrender.com",
         "https://sahalcard.com",
         "https://www.sahalcard.com"
       ],
