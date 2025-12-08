@@ -42,6 +42,8 @@ app.use(helmet({
         "blob:",
         "https://*.r2.dev",
         "https://*.r2.cloudflarestorage.com",
+        "https://placeholder.com",
+        "https://via.placeholder.com",
         `https://pub-${process.env.CLOUDFLARE_ACCOUNT_ID}.r2.dev`,
         `https://maandhise.${process.env.CLOUDFLARE_ACCOUNT_ID}.r2.cloudflarestorage.com`
       ],
