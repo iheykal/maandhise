@@ -141,6 +141,12 @@ const GetSahalCardPage: React.FC = () => {
         // If loading fails, companies array will remain empty
         setCompanies([]);
         setAllCompanies([]);
+        // We'll add a visual indicator in the UI via a separate state if needed, 
+        // but for now logging is sufficient as we're debugging.
+        // Actually, let's alert locally if debugging
+        if (window.location.hostname === 'localhost') {
+          console.warn('Companies failed to load on localhost');
+        }
       } finally {
         setCompaniesLoading(false);
       }
