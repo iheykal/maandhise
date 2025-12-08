@@ -151,7 +151,7 @@ export const companyService = {
     try {
       // Use a separate axios instance without auth for public endpoint
       // Use the same API base URL logic to work on mobile devices
-      const publicApiBaseUrl = getApiBaseUrl();
+      const publicApiBaseUrl = API_BASE_URL;
       console.log('[Public Companies API] Using URL:', publicApiBaseUrl);
 
       const publicApi = axios.create({

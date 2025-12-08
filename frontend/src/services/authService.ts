@@ -1,28 +1,6 @@
 import axios from 'axios';
 
-// Helper function to get API base URL dynamically
-const getApiBaseUrl = (): string => {
-  // Check if environment variable is set
-  if (process.env.REACT_APP_API_URL) {
-    return process.env.REACT_APP_API_URL;
-  }
-
-  // Auto-detect localhost in development
-  if (typeof window !== 'undefined') {
-    const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-    if (isLocalhost) {
-      return 'http://localhost:5001/api';
-    }
-  }
-
-  // Default: use current hostname (works for custom domains)
-  if (typeof window !== 'undefined') {
-    return `${window.location.protocol}//${window.location.hostname}/api`;
-  }
-
-  // Fallback for server-side rendering
-  return process.env.REACT_APP_API_URL || '/api';
-};
+import { API_BASE_URL } from './apiConfig';
 
 // Helper function to get timeout dynamically
 const getApiTimeout = (): number => {
@@ -33,7 +11,6 @@ const getApiTimeout = (): number => {
   return 60000; // Default to production timeout
 };
 
-const API_BASE_URL = getApiBaseUrl();
 const API_TIMEOUT = getApiTimeout();
 
 // Log configuration (only in browser)
