@@ -29,8 +29,8 @@ app.use(helmet({
   contentSecurityPolicy: {
     directives: {
       defaultSrc: ["'self'"],
-      scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'", "https://*.sahalcard.com", "https://maandhise252.onrender.com"],
-      styleSrc: ["'self'", "'unsafe-inline'", "https://*.sahalcard.com", "https://fonts.googleapis.com"],
+      scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'", "https://*.sahalcard.com", "https://sahalcard.com", "https://www.sahalcard.com", "https://maandhise252.onrender.com"],
+      styleSrc: ["'self'", "'unsafe-inline'", "https://*.sahalcard.com", "https://sahalcard.com", "https://www.sahalcard.com", "https://fonts.googleapis.com"],
       fontSrc: ["'self'", "https://fonts.gstatic.com"],
       imgSrc: [
         "'self'",
@@ -41,9 +41,11 @@ app.use(helmet({
         "https://via.placeholder.com",
         "https://placeholder.com",
         "https://*.sahalcard.com",
+        "https://sahalcard.com",
+        "https://www.sahalcard.com",
         "https://maandhise252.onrender.com"
       ],
-      connectSrc: ["'self'", "https://*.sahalcard.com", "https://maandhise252.onrender.com"],
+      connectSrc: ["'self'", "https://*.sahalcard.com", "https://sahalcard.com", "https://www.sahalcard.com", "https://maandhise252.onrender.com"],
       frameSrc: ["'self'"],
       objectSrc: ["'none'"],
       upgradeInsecureRequests: [],
@@ -64,8 +66,22 @@ const limiter = rateLimit({
 app.use(limiter);
 
 // CORS configuration for production
+const allowedOrigins = [
+  'https://sahalcard.com',
+  'https://www.sahalcard.com',
+  'https://maandhise252.onrender.com',
+  'http://localhost:3000',
+  'http://localhost:5000'
+];
+
 const corsOptions = {
-  origin: 'https://sahalcard.com',
+  origin: function (origin, callback) {
+    if (!origin || allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin'],
