@@ -25,7 +25,30 @@ app.set('trust proxy', 1); // Trust first proxy
 
 // Security middleware
 app.use(helmet({
-  crossOriginResourcePolicy: { policy: "cross-origin" }
+  crossOriginResourcePolicy: { policy: "cross-origin" },
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'", "https://*.sahalcard.com", "https://maandhise252.onrender.com"],
+      styleSrc: ["'self'", "'unsafe-inline'", "https://*.sahalcard.com", "https://fonts.googleapis.com"],
+      fontSrc: ["'self'", "https://fonts.gstatic.com"],
+      imgSrc: [
+        "'self'",
+        "data:",
+        "blob:",
+        "https://*.r2.dev",
+        "https://pub-*.r2.dev",
+        "https://via.placeholder.com",
+        "https://placeholder.com",
+        "https://*.sahalcard.com",
+        "https://maandhise252.onrender.com"
+      ],
+      connectSrc: ["'self'", "https://*.sahalcard.com", "https://maandhise252.onrender.com"],
+      frameSrc: ["'self'"],
+      objectSrc: ["'none'"],
+      upgradeInsecureRequests: [],
+    },
+  },
 }));
 
 // Rate limiting
