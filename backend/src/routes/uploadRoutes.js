@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { uploadFile, generateUploadUrl, deleteFile, refreshImageUrl } = require('../controllers/uploadController');
+const { uploadFile, generateUploadUrl, deleteFile, refreshImageUrl, uploadMarketerIdImage, uploadMarketerProfileImage } = require('../controllers/uploadController');
 const R2Service = require('../services/r2Service');
 const { authenticateToken } = require('../middleware/auth');
 
@@ -13,6 +13,20 @@ router.use(authenticateToken);
  * @access  Private (Admin/Superadmin)
  */
 router.post('/file', R2Service.getUploadMiddleware('file'), uploadFile);
+
+/**
+ * @route   POST /api/upload/marketer-id
+ * @desc    Upload a marketer's government ID image to R2 storage
+ * @access  Private (Admin/Superadmin)
+ */
+router.post('/marketer-id', R2Service.getUploadMiddleware('file'), uploadMarketerIdImage);
+
+/**
+ * @route   POST /api/upload/marketer-profile
+ * @desc    Upload a marketer's profile picture to R2 storage
+ * @access  Private (Admin/Superadmin)
+ */
+router.post('/marketer-profile', R2Service.getUploadMiddleware('file'), uploadMarketerProfileImage);
 
 /**
  * @route   POST /api/upload/presigned-url
@@ -36,3 +50,4 @@ router.delete('/file', deleteFile);
 router.post('/refresh-url', refreshImageUrl);
 
 module.exports = router;
+

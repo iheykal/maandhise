@@ -208,12 +208,11 @@ export const uploadService = {
       };
     }
 
-    // Check file type
-    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
-    if (!allowedTypes.includes(file.type)) {
+    // Check file type - accept any image format
+    if (!file.type.startsWith('image/')) {
       return {
         isValid: false,
-        error: 'Only image files (JPEG, PNG, GIF, WebP) are allowed',
+        error: 'Only image files are allowed',
       };
     }
 

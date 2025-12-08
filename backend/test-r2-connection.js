@@ -1,65 +1,52 @@
-const R2Service = require('./src/services/r2Service');
+require('dotenv').config();
+const { S3Client, ListObjectsV2Command } = require('@aws-sdk/client-s3');
 
-async function testR2Connection() {
-  console.log('=== Testing Cloudflare R2 Connection ===');
-  
+const s3Client = new S3Client({
+  region: 'auto',
+  endpoint: process.env.CLOUDFLARE_ENDPOINT,
+  credentials: {
+    accessKeyId: process.env.CLOUDFLARE_ACCESS_KEY_ID,
+    secretAccessKey: process.env.CLOUDFLARE_SECRET_ACCESS_KEY,
+  },
+  forcePathStyle: true,
+});
+
+console.log('🧪 Testing R2 Connection with current credentials...\n');
+console.log('Configuration:');
+console.log(`  Endpoint: ${process.env.CLOUDFLARE_ENDPOINT}`);
+console.log(`  Bucket: ${process.env.CLOUDFLARE_BUCKET_NAME}`);
+console.log(`  Has Access Key: ${!!process.env.CLOUDFLARE_ACCESS_KEY_ID}`);
+console.log(`  Has Secret Key: ${!!process.env.CLOUDFLARE_SECRET_ACCESS_KEY}`);
+console.log('\nTesting connection...\n');
+
+async function testConnection() {
   try {
-    // Test with a small image buffer (1x1 pixel PNG)
-    const testImageBuffer = Buffer.from([
-      0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, 0x00, 0x00, 0x00, 0x0D,
-      0x49, 0x48, 0x44, 0x52, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01,
-      0x08, 0x02, 0x00, 0x00, 0x00, 0x90, 0x77, 0x53, 0xDE, 0x00, 0x00, 0x00,
-      0x0C, 0x49, 0x44, 0x41, 0x54, 0x08, 0xD7, 0x63, 0xF8, 0x0F, 0x00, 0x00,
-      0x01, 0x00, 0x01, 0x00, 0x18, 0xDD, 0x8D, 0xB4, 0x00, 0x00, 0x00, 0x00,
-      0x49, 0x45, 0x4E, 0x44, 0xAE, 0x42, 0x60, 0x82
-    ]);
-    
-    const fileName = 'test-image.png';
-    const contentType = 'image/png';
-    
-    console.log('Uploading test image...');
-    const publicUrl = await R2Service.uploadFile(testImageBuffer, fileName, contentType);
-    
-    console.log('✅ SUCCESS: R2 connection working!');
-    console.log('Public URL:', publicUrl);
-    
-    // Test if the URL is accessible
-    console.log('\nTesting URL accessibility...');
-    const https = require('https');
-    const url = require('url');
-    
-    const parsedUrl = url.parse(publicUrl);
-    const options = {
-      hostname: parsedUrl.hostname,
-      port: 443,
-      path: parsedUrl.path,
-      method: 'GET',
-      timeout: 10000
-    };
-    
-    const req = https.request(options, (res) => {
-      console.log(`✅ URL accessible: ${res.statusCode} ${res.statusMessage}`);
-      if (res.statusCode === 200) {
-        console.log('🎉 Cloudflare R2 is fully functional!');
-      }
+    const command = new ListObjectsV2Command({
+      Bucket: process.env.CLOUDFLARE_BUCKET_NAME,
+      MaxKeys: 1
     });
-    
-    req.on('error', (error) => {
-      console.log('❌ URL not accessible:', error.message);
-      console.log('This might be due to CORS or network issues, but upload worked.');
-    });
-    
-    req.on('timeout', () => {
-      console.log('⏰ Request timeout - URL might be accessible but slow');
-    });
-    
-    req.end();
-    
+
+    const response = await s3Client.send(command);
+    console.log('✅ SUCCESS! R2 connection works!');
+    console.log(`   Bucket is accessible`);
+    console.log(`   Objects in bucket: ${response.KeyCount || 0} (showing first 1)`);
+    console.log('\n✨ R2 credentials are VALID and working!');
+    console.log('\n🔄 If uploads are still failing with 500 error:');
+    console.log('   → Backend server needs to be RESTARTED');
+    console.log('   → Press Ctrl+C in backend terminal');
+    console.log('   → Run: npm start');
   } catch (error) {
-    console.error('❌ FAILED: R2 connection error');
-    console.error('Error:', error.message);
-    console.error('Stack:', error.stack);
+    console.log('❌ FAILED! R2 connection error:');
+    console.log(`   Error: ${error.message}`);
+    console.log('\n🔧 Possible issues:');
+    console.log('   1. Access keys are incorrect');
+    console.log('   2. Bucket name is wrong');
+    console.log('   3. Endpoint URL is incorrect');
+    console.log('\n💡 Check your Cloudflare R2 dashboard for correct:');
+    console.log('   - Access Key ID');
+    console.log('   - Secret Access Key');
+    console.log('   - Bucket name');
   }
 }
 
-testR2Connection();
+testConnection();

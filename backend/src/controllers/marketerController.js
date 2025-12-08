@@ -279,11 +279,55 @@ const getMarketerEarnings = async (req, res) => {
     }
 };
 
+// Get users registered by a specific marketer (Superadmin only)
+const getMarketerRegisteredUsers = async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        // Import User model
+        const User = require('../models/User');
+
+        // Find the marketer first
+        const marketer = await Marketer.findById(id)
+            .select('fullName phone profilePicUrl governmentIdUrl totalEarnings approvedCustomers createdAt');
+
+        if (!marketer) {
+            return res.status(404).json({
+                success: false,
+                message: 'Marketer not found'
+            });
+        }
+
+        // Find all users registered by this marketer
+        const registeredUsers = await User.find({ registeredBy: id })
+            .select('fullName phone location profilePicUrl validUntil createdAt membershipMonths')
+            .sort({ createdAt: -1 });
+
+        res.json({
+            success: true,
+            data: {
+                marketer,
+                registeredUsers,
+                totalRegistered: registeredUsers.length
+            }
+        });
+
+    } catch (error) {
+        console.error('Get marketer registered users error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to get marketer registered users',
+            error: error.message
+        });
+    }
+};
+
 module.exports = {
     createMarketer,
     getAllMarketers,
     getMarketer,
     updateMarketer,
     deleteMarketer,
-    getMarketerEarnings
+    getMarketerEarnings,
+    getMarketerRegisteredUsers
 };

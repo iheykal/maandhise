@@ -107,5 +107,29 @@ export const marketerService = {
             console.error('Get marketer earnings error:', error.response?.data || error.message);
             throw error;
         }
+    },
+
+    // Get users registered by a specific marketer
+    getMarketerRegisteredUsers: async (id: string): Promise<{
+        marketer: Marketer;
+        registeredUsers: Array<{
+            _id: string;
+            fullName: string;
+            phone: string;
+            location?: string;
+            profilePicUrl?: string;
+            validUntil?: string;
+            createdAt: string;
+            membershipMonths: number;
+        }>;
+        totalRegistered: number;
+    }> => {
+        try {
+            const response = await api.get(`/marketers/${id}/registered-users`);
+            return response.data.data;
+        } catch (error: any) {
+            console.error('Get marketer registered users error:', error.response?.data || error.message);
+            throw error;
+        }
     }
 };

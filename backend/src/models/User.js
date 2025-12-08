@@ -70,7 +70,13 @@ const userSchema = new mongoose.Schema({
       default: Date.now,
       expires: 2592000 // 30 days
     }
-  }]
+  }],
+  // Track which marketer registered this user (if any)
+  registeredBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Marketer',
+    default: null
+  }
 }, {
   timestamps: true,
   toJSON: { virtuals: true },
@@ -82,7 +88,7 @@ userSchema.index({ phone: 1 }, { unique: true });
 userSchema.index({ role: 1 });
 
 // Virtual for user's full profile
-userSchema.virtual('profile').get(function() {
+userSchema.virtual('profile').get(function () {
   return {
     _id: this._id,
     fullName: this.fullName,
@@ -100,9 +106,9 @@ userSchema.virtual('profile').get(function() {
 });
 
 // Hash password before saving
-userSchema.pre('save', async function(next) {
+userSchema.pre('save', async function (next) {
   if (!this.isModified('password')) return next();
-  
+
   try {
     const salt = await bcrypt.genSalt(12);
     this.password = await bcrypt.hash(this.password, salt);
@@ -113,30 +119,30 @@ userSchema.pre('save', async function(next) {
 });
 
 // Compare password method
-userSchema.methods.comparePassword = async function(candidatePassword) {
+userSchema.methods.comparePassword = async function (candidatePassword) {
   return await bcrypt.compare(candidatePassword, this.password);
 };
 
 // Update last login
-userSchema.methods.updateLastLogin = function() {
+userSchema.methods.updateLastLogin = function () {
   this.lastLogin = new Date();
   return this.save({ validateBeforeSave: false });
 };
 
 // Add refresh token
-userSchema.methods.addRefreshToken = function(token) {
+userSchema.methods.addRefreshToken = function (token) {
   this.refreshTokens.push({ token });
   return this.save({ validateBeforeSave: false });
 };
 
 // Remove refresh token
-userSchema.methods.removeRefreshToken = function(token) {
+userSchema.methods.removeRefreshToken = function (token) {
   this.refreshTokens = this.refreshTokens.filter(rt => rt.token !== token);
   return this.save({ validateBeforeSave: false });
 };
 
 // Static method to find by phone
-userSchema.statics.findByPhone = function(phone) {
+userSchema.statics.findByPhone = function (phone) {
   return this.findOne({ phone });
 };
 

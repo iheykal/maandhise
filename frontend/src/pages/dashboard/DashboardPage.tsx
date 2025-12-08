@@ -32,6 +32,7 @@ import { marketerService, type Marketer, type CreateMarketerData } from '../../s
 import { useNavigate } from 'react-router-dom';
 import CountdownTimer from '../../components/common/CountdownTimer.tsx';
 import PendingCustomersTab from './PendingCustomersTab.tsx';
+import MarketerTab from './MarketerTab.tsx';
 
 // const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://192.168.100.32:5000/api';
 
@@ -489,6 +490,14 @@ const DashboardPage: React.FC = () => {
   const handleImageClick = useCallback(async (user: any) => {
     const refreshUrl = async (fileUrl: string) => {
       if (!fileUrl || fileUrl.trim() === '') return null;
+
+      // Public r2.dev URLs don't need refreshing - they work directly
+      // Only signed URLs (r2.cloudflarestorage.com with X-Amz-* params) need refresh
+      if (fileUrl.includes('.r2.dev/')) {
+        console.log('Using public r2.dev URL directly:', fileUrl);
+        return fileUrl;
+      }
+
       try {
         const response = await fetch('/api/upload/refresh-url', {
           method: 'POST',
@@ -517,7 +526,7 @@ const DashboardPage: React.FC = () => {
       return;
     }
 
-    // Refresh profile picture URL
+    // Refresh profile picture URL (skips refresh for public r2.dev URLs)
     const refreshedProfileUrl = await refreshUrl(profileUrl);
 
     setSelectedUserImage({
@@ -1202,7 +1211,7 @@ const DashboardPage: React.FC = () => {
                             className="w-28 h-28 rounded-full object-cover ring-4 ring-white shadow-2xl transition-all duration-300 group-hover/avatar:scale-110 group-hover/avatar:shadow-3xl"
                             onError={(e) => {
                               console.log('Profile picture failed to load:', user.profilePicUrl);
-                              e.currentTarget.src = '/icons/founder.jpeg';
+                              e.currentTarget.src = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMjgiIGhlaWdodD0iMTI4IiB2aWV3Qm94PSIwIDAgMTI4IDEyOCI+PHJlY3Qgd2lkdGg9IjEyOCIgaGVpZ2h0PSIxMjgiIGZpbGw9IiNlMmU4ZjAiLz48Y2lyY2xlIGN4PSI2NCIgY3k9IjQ1IiByPSIyNSIgZmlsbD0iIzk0YTNiOCIvPjxwYXRoIGQ9Ik0xMDQgMTE1YzAtMjIuMS0xNy45LTQwLTQwLTQwcy00MCAxNy45LTQwIDQwaDE2YzAtMTMuMyAxMC43LTI0IDI0LTI0czI0IDEwLjcgMjQgMjRoMTZ6IiBmaWxsPSIjOTRhM2I4Ii8+PC9zdmc+';
                             }}
                           />
                           <div className={`absolute -bottom-1 -right-1 w-8 h-8 rounded-full border-4 border-white flex items-center justify-center ${user.validUntil && new Date() > new Date(user.validUntil)
@@ -1516,7 +1525,7 @@ const DashboardPage: React.FC = () => {
                             className="w-28 h-28 rounded-full object-cover ring-4 ring-white shadow-2xl transition-all duration-300 group-hover/avatar:scale-110 group-hover/avatar:shadow-3xl"
                             onError={(e) => {
                               console.log('Profile picture failed to load:', user.profilePicUrl);
-                              e.currentTarget.src = '/icons/founder.jpeg';
+                              e.currentTarget.src = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMjgiIGhlaWdodD0iMTI4IiB2aWV3Qm94PSIwIDAgMTI4IDEyOCI+PHJlY3Qgd2lkdGg9IjEyOCIgaGVpZ2h0PSIxMjgiIGZpbGw9IiNlMmU4ZjAiLz48Y2lyY2xlIGN4PSI2NCIgY3k9IjQ1IiByPSIyNSIgZmlsbD0iIzk0YTNiOCIvPjxwYXRoIGQ9Ik0xMDQgMTE1YzAtMjIuMS0xNy45LTQwLTQwLTQwcy00MCAxNy45LTQwIDQwaDE2YzAtMTMuMyAxMC43LTI0IDI0LTI0czI0IDEwLjcgMjQgMjRoMTZ6IiBmaWxsPSIjOTRhM2I4Ii8+PC9zdmc+';
                             }}
                           />
                           <div className={`absolute -bottom-1 -right-1 w-8 h-8 rounded-full border-4 border-white flex items-center justify-center ${user.validUntil && new Date() > new Date(user.validUntil)
@@ -1633,27 +1642,11 @@ const DashboardPage: React.FC = () => {
       case 'marketers':
         return (
           <motion.div className="space-y-6" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-            <div className="bg-white rounded-2xl shadow-lg p-6">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-3">
-                  <div className="p-2 bg-gradient-to-br from-purple-500 to-indigo-600 rounded-lg"><Briefcase className="w-6 h-6 text-white" /></div>
-                  <div><h2 className="text-2xl font-bold">{language === 'en' ? 'Marketers' : 'Suuq-geeyayaasha'}</h2></div>
-                </div>
-                <button onClick={() => setShowAddMarketerForm(true)} className="flex items-center space-x-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"><UserPlus className="w-5 h-5" /><span>{language === 'en' ? 'Add' : 'Ku Dar'}</span></button>
-              </div>
-            </div>
-            <div className="bg-white rounded-2xl shadow-lg p-4"><input type="text" placeholder={language === 'en' ? 'Search...' : 'Raadi...'} value={marketerSearchQuery} onChange={(e) => setMarketerSearchQuery(e.target.value)} className="w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500" /></div>
-            <div className="bg-white rounded-2xl shadow-lg p-6">
-              {marketers.filter(m => !marketerSearchQuery || m.fullName.toLowerCase().includes(marketerSearchQuery.toLowerCase()) || m.phone.includes(marketerSearchQuery)).length === 0 ? (
-                <div className="text-center py-12"><Briefcase className="w-16 h-16 mx-auto mb-4 text-gray-400" /><h3 className="text-xl font-bold mb-2">{language === 'en' ? 'No Marketers' : 'Ma Jiraan'}</h3><p className="text-gray-500">{language === 'en' ? 'Click Add to start' : 'Guji Ku Dar'}</p></div>
-              ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {marketers.filter(m => !marketerSearchQuery || m.fullName.toLowerCase().includes(marketerSearchQuery.toLowerCase()) || m.phone.includes(marketerSearchQuery)).map((m) => (
-                    <div key={m._id} className="rounded-2xl shadow-lg border overflow-hidden"><div className="h-20 bg-gradient-to-r from-purple-500 to-indigo-600" /><div className="relative -mt-12 flex justify-center mb-4">{m.profilePicUrl ? <img src={m.profilePicUrl} alt={m.fullName} className="w-24 h-24 rounded-full ring-4 ring-white" /> : <div className="w-24 h-24 bg-purple-500 rounded-full flex items-center justify-center ring-4 ring-white"><User className="w-12 h-12 text-white" /></div>}</div><div className="px-6 pb-6 text-center"><h3 className="font-bold text-lg mb-1">{m.fullName}</h3><p className="text-sm text-gray-600 mb-4">{m.phone}</p><div className="grid grid-cols-2 gap-3 mb-4"><div className="bg-green-50 rounded-lg p-3"><p className="text-xs text-green-600">Earnings</p><p className="text-lg font-bold text-green-700">${m.totalEarnings.toFixed(2)}</p></div><div className="bg-blue-50 rounded-lg p-3"><p className="text-xs text-blue-600">Customers</p><p className="text-lg font-bold text-blue-700">{m.approvedCustomers}</p></div></div><button onClick={() => handleDeleteMarketer(m)} className="w-full px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 flex items-center justify-center gap-2"><Trash2 className="w-4 h-4" /><span>{language === 'en' ? 'Delete' : 'Tirtir'}</span></button></div></div>
-                  ))}
-                </div>
-              )}
-            </div>
+            {/* Pending Customers Section */}
+            <PendingCustomersTab />
+
+            {/* Marketers Section - Using new MarketerTab component */}
+            <MarketerTab onShowAddForm={() => setShowAddMarketerForm(true)} />
           </motion.div>
         );
       case 'payments':
@@ -1693,7 +1686,6 @@ const DashboardPage: React.FC = () => {
             {[
               { id: 'overview', label: language === 'en' ? 'Overview' : 'Dulmar', icon: BarChart3 },
               { id: 'users', label: language === 'en' ? 'Users' : 'Isticmaalayaasha', icon: Users },
-              { id: 'pending', label: language === 'en' ? 'Pending' : 'Sugitaan', icon: Clock },
               { id: 'marketers', label: language === 'en' ? 'Marketers' : 'Suuq-geeyayaasha', icon: Briefcase },
               { id: 'payments', label: language === 'en' ? 'Payments' : 'Lacagaha', icon: DollarSign }
             ].map((tab) => (
@@ -2029,7 +2021,7 @@ const DashboardPage: React.FC = () => {
                       className="max-w-full max-h-[40vh] object-contain rounded-lg shadow-lg"
                       onError={(e) => {
                         console.log('Profile picture failed to load in modal:', selectedUserImage.imageUrl);
-                        e.currentTarget.src = '/icons/founder.jpeg';
+                        e.currentTarget.src = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMjgiIGhlaWdodD0iMTI4IiB2aWV3Qm94PSIwIDAgMTI4IDEyOCI+PHJlY3Qgd2lkdGg9IjEyOCIgaGVpZ2h0PSIxMjgiIGZpbGw9IiNlMmU4ZjAiLz48Y2lyY2xlIGN4PSI2NCIgY3k9IjQ1IiByPSIyNSIgZmlsbD0iIzk0YTNiOCIvPjxwYXRoIGQ9Ik0xMDQgMTE1YzAtMjIuMS0xNy45LTQwLTQwLTQwcy00MCAxNy45LTQwIDQwaDE2YzAtMTMuMyAxMC43LTI0IDI0LTI0czI0IDEwLjcgMjQgMjRoMTZ6IiBmaWxsPSIjOTRhM2I4Ii8+PC9zdmc+';
                       }}
                     />
                   </div>

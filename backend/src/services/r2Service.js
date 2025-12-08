@@ -34,7 +34,7 @@ const upload = multer({
     fileSize: 5 * 1024 * 1024, // 5MB limit
   },
   fileFilter: (req, file, cb) => {
-    // Check if file is an image
+    // Accept any image format
     if (file.mimetype.startsWith('image/')) {
       cb(null, true);
     } else {
@@ -45,7 +45,88 @@ const upload = multer({
 
 class R2Service {
   /**
-   * Upload a file to R2 storage
+   * Upload a file to R2 storage with a custom folder path
+   * @param {Buffer} fileBuffer - File buffer
+   * @param {string} fileName - File name
+   * @param {string} contentType - MIME type
+   * @param {string} folderPath - Folder path (e.g., 'marketer-ids', 'marketer-profiles', 'uploads')
+   * @returns {Promise<string>} - Public URL of uploaded file
+   */
+  static async uploadFileToPath(fileBuffer, fileName, contentType, folderPath = 'uploads') {
+    try {
+      const key = `${folderPath}/${Date.now()}-${fileName}`;
+
+      const command = new PutObjectCommand({
+        Bucket: BUCKET_NAME,
+        Key: key,
+        Body: fileBuffer,
+        ContentType: contentType,
+        // ACL removed for Cloudflare R2 compatibility
+      });
+
+      console.log('[R2Service] Uploading file to path:', {
+        key,
+        folderPath,
+        bucket: BUCKET_NAME,
+        size: fileBuffer.length,
+        contentType
+      });
+
+      const result = await s3Client.send(command);
+      console.log('[R2Service] Upload successful:', result);
+
+      // Generate public URL instead of signed URL for permanent access
+      const publicUrlBase = process.env.CLOUDFLARE_PUBLIC_URL;
+      let publicUrl;
+
+      if (publicUrlBase) {
+        // Check if publicUrlBase already includes bucket name
+        // r2.dev subdomain format: https://pub-{accountId}.r2.dev (bucket already mapped)
+        // Custom domain format might include bucket: https://cdn.domain.com/bucket
+        if (publicUrlBase.includes('r2.dev')) {
+          // r2.dev subdomain - bucket is already mapped, don't include in path
+          publicUrl = `${publicUrlBase}/${key}`;
+        } else {
+          // Custom domain - might need bucket in path
+          publicUrl = `${publicUrlBase}/${key}`;
+        }
+      } else {
+        // Fallback: construct r2.dev URL (bucket already mapped to subdomain)
+        const accountId = process.env.CLOUDFLARE_ACCOUNT_ID;
+        publicUrl = `https://pub-${accountId}.r2.dev/${key}`;
+      }
+
+      return publicUrl;
+    } catch (error) {
+      console.error('R2 upload error:', error);
+      throw new Error(`Failed to upload file: ${error.message}`);
+    }
+  }
+
+  /**
+   * Upload a marketer's government ID image
+   * @param {Buffer} fileBuffer - File buffer
+   * @param {string} fileName - File name
+   * @param {string} contentType - MIME type
+   * @returns {Promise<string>} - Public URL of uploaded file
+   */
+  static async uploadMarketerIdImage(fileBuffer, fileName, contentType) {
+    return this.uploadFileToPath(fileBuffer, fileName, contentType, 'marketer-ids');
+  }
+
+  /**
+   * Upload a marketer's profile picture
+   * @param {Buffer} fileBuffer - File buffer
+   * @param {string} fileName - File name
+   * @param {string} contentType - MIME type
+   * @returns {Promise<string>} - Public URL of uploaded file
+   */
+  static async uploadMarketerProfileImage(fileBuffer, fileName, contentType) {
+    return this.uploadFileToPath(fileBuffer, fileName, contentType, 'marketer-profiles');
+  }
+
+  /**
+   * Upload a file to R2 storage (default uploads folder)
    * @param {Buffer} fileBuffer - File buffer
    * @param {string} fileName - File name
    * @param {string} contentType - MIME type
@@ -78,13 +159,20 @@ class R2Service {
       let publicUrl;
 
       if (publicUrlBase) {
-        // Use the configured public URL base
-        publicUrl = `${publicUrlBase}/${key}`;
+        // Check if publicUrlBase already includes bucket name
+        // r2.dev subdomain format: https://pub-{accountId}.r2.dev (bucket already mapped)
+        // Custom domain format might include bucket: https://cdn.domain.com/bucket
+        if (publicUrlBase.includes('r2.dev')) {
+          // r2.dev subdomain - bucket is already mapped, don't include in path
+          publicUrl = `${publicUrlBase}/${key}`;
+        } else {
+          // Custom domain - might need bucket in path
+          publicUrl = `${publicUrlBase}/${key}`;
+        }
       } else {
-        // Fallback to constructing the URL (may not work for all R2 setups)
+        // Fallback: construct r2.dev URL (bucket already mapped to subdomain)
         const accountId = process.env.CLOUDFLARE_ACCOUNT_ID;
-        const bucketName = BUCKET_NAME;
-        publicUrl = `https://pub-${accountId}.r2.dev/${bucketName}/${key}`;
+        publicUrl = `https://pub-${accountId}.r2.dev/${key}`;
       }
 
       return publicUrl;
@@ -142,13 +230,17 @@ class R2Service {
       let publicUrl;
 
       if (publicUrlBase) {
-        // Use the configured public URL base
-        publicUrl = `${publicUrlBase}/${key}`;
+        // Check if using r2.dev subdomain (bucket already mapped)
+        if (publicUrlBase.includes('r2.dev')) {
+          publicUrl = `${publicUrlBase}/${key}`;
+        } else {
+          // Custom domain
+          publicUrl = `${publicUrlBase}/${key}`;
+        }
       } else {
-        // Fallback to constructing the URL (may not work for all R2 setups)
+        // Fallback: construct r2.dev URL (bucket already mapped to subdomain)
         const accountId = process.env.CLOUDFLARE_ACCOUNT_ID;
-        const bucketName = BUCKET_NAME;
-        publicUrl = `https://pub-${accountId}.r2.dev/${bucketName}/${key}`;
+        publicUrl = `https://pub-${accountId}.r2.dev/${key}`;
       }
 
       return { uploadUrl, publicUrl };
@@ -208,8 +300,8 @@ class R2Service {
    * @returns {boolean}
    */
   static isValidImageType(mimetype) {
-    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
-    return allowedTypes.includes(mimetype);
+    // Accept any image format (image/*)
+    return mimetype && mimetype.startsWith('image/');
   }
 
   /**

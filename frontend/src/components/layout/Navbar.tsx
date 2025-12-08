@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  Menu, 
-  X, 
-  User, 
-  LogOut, 
-  CreditCard, 
+import {
+  Menu,
+  X,
+  User,
+  LogOut,
+  CreditCard,
   Settings
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext.tsx';
@@ -85,14 +85,23 @@ const Navbar: React.FC = () => {
       initial={{ y: -100 }}
       animate={{ y: 0 }}
       transition={{ duration: 0.5 }}
-      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-        isScrolled
-          ? 'bg-white/80 backdrop-blur-lg shadow-lg border-b border-white/20'
-          : 'bg-transparent'
-      }`}
+      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${isScrolled
+        ? 'bg-white/80 backdrop-blur-lg shadow-lg border-b border-white/20'
+        : 'bg-transparent'
+        }`}
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="relative flex justify-between items-center h-20">
+          {/* Logo - Centered */}
+          <Link to="/" className="absolute left-1/2 transform -translate-x-1/2 flex items-center space-x-2">
+            <img
+              src="/icons/discount.png"
+              alt="SAHAL CARD Logo"
+              className="h-12 w-12 md:h-14 md:w-14 object-contain"
+            />
+            <span className="hidden md:block text-xl font-bold gradient-text">SAHAL CARD</span>
+          </Link>
+
           {/* Desktop Navigation - Left */}
           <div className="hidden md:flex items-center space-x-8">
             {navItems.map((item) => (
@@ -113,7 +122,7 @@ const Navbar: React.FC = () => {
             {isAuthenticated && (
               <div className="flex items-center space-x-2">
                 {/* User Menu */}
-                <div 
+                <div
                   className="relative"
                   onMouseEnter={() => {
                     if (userMenuTimeout) {
@@ -149,9 +158,8 @@ const Navbar: React.FC = () => {
                   </button>
 
                   {/* Dropdown Menu */}
-                  <div className={`absolute right-0 mt-2 w-48 bg-white/90 backdrop-blur-lg rounded-xl shadow-lg border border-white/20 transition-all duration-300 ${
-                    isUserMenuOpen ? 'opacity-100 visible' : 'opacity-0 invisible'
-                  }`}>
+                  <div className={`absolute right-0 mt-2 w-48 bg-white/90 backdrop-blur-lg rounded-xl shadow-lg border border-white/20 transition-all duration-300 ${isUserMenuOpen ? 'opacity-100 visible' : 'opacity-0 invisible'
+                    }`}>
                     <div className="py-2">
                       <Link
                         to="/dashboard"
@@ -220,7 +228,7 @@ const Navbar: React.FC = () => {
                   {item.name}
                 </button>
               ))}
-              
+
               {!isAuthenticated && (
                 <>
                   <hr className="my-2 border-gray-200" />

@@ -100,14 +100,14 @@ const createCompany = async (req, res) => {
 const getAllCompanies = async (req, res) => {
   try {
     const { page = 1, limit = 50, businessType, search } = req.query;
-    
+
     // Build query
     const query = {};
-    
+
     if (businessType) {
       query.businessType = businessType;
     }
-    
+
     if (search) {
       query.$or = [
         { businessName: { $regex: search, $options: 'i' } },
@@ -151,15 +151,15 @@ const getAllCompanies = async (req, res) => {
 const getPublicCompanies = async (req, res) => {
   try {
     const { page = 1, limit = 100, businessType, search } = req.query;
-    
+
     // Build query - temporarily show ALL companies for debugging
     // TODO: Restore filtering after debugging
     const query = {};
-    
+
     if (businessType) {
       query.businessType = businessType;
     }
-    
+
     if (search) {
       query.$or = [
         { businessName: { $regex: search, $options: 'i' } },
@@ -222,10 +222,10 @@ const getPublicCompanies = async (req, res) => {
 const getCompany = async (req, res) => {
   try {
     const { id } = req.params;
-    
+
     // No need to populate userId since companies no longer require user accounts
     const company = await Company.findById(id);
-    
+
     if (!company) {
       return res.status(404).json({
         success: false,
@@ -253,14 +253,14 @@ const updateCompany = async (req, res) => {
   try {
     const { id } = req.params;
     const updateData = req.body;
-    
+
     // No need to populate userId since companies no longer require user accounts
     const company = await Company.findByIdAndUpdate(
       id,
       updateData,
       { new: true, runValidators: true }
     );
-    
+
     if (!company) {
       return res.status(404).json({
         success: false,
@@ -288,9 +288,21 @@ const updateCompany = async (req, res) => {
 const deleteCompany = async (req, res) => {
   try {
     const { id } = req.params;
-    
+
+    // Validate ObjectId format
+    const mongoose = require('mongoose');
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      console.log('[deleteCompany] Invalid ObjectId format:', id);
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid company ID format'
+      });
+    }
+
+    console.log('[deleteCompany] Attempting to delete company with ID:', id);
+
     const company = await Company.findById(id);
-    
+
     if (!company) {
       return res.status(404).json({
         success: false,

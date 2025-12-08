@@ -187,9 +187,117 @@ const refreshImageUrl = async (req, res) => {
   }
 };
 
+/**
+ * Upload a marketer's government ID image to R2 storage
+ */
+const uploadMarketerIdImage = async (req, res) => {
+  try {
+    console.log('=== Marketer ID Upload Request ===');
+    console.log('req.file:', req.file);
+
+    if (!req.file) {
+      return res.status(400).json({
+        success: false,
+        message: 'No file uploaded'
+      });
+    }
+
+    const { buffer, originalname, mimetype } = req.file;
+
+    // Validate file type
+    if (!R2Service.isValidImageType(mimetype)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid file type. Only images are allowed.'
+      });
+    }
+
+    // Generate unique filename
+    const uniqueFileName = R2Service.generateUniqueFileName(originalname);
+
+    // Upload to R2 in marketer-ids folder
+    const publicUrl = await R2Service.uploadMarketerIdImage(buffer, uniqueFileName, mimetype);
+
+    res.status(200).json({
+      success: true,
+      message: 'Marketer ID image uploaded successfully',
+      data: {
+        url: publicUrl,
+        fileName: uniqueFileName,
+        originalName: originalname,
+        size: buffer.length,
+        type: mimetype
+      }
+    });
+
+  } catch (error) {
+    console.error('Upload marketer ID error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to upload marketer ID image',
+      error: error.message
+    });
+  }
+};
+
+/**
+ * Upload a marketer's profile picture to R2 storage
+ */
+const uploadMarketerProfileImage = async (req, res) => {
+  try {
+    console.log('=== Marketer Profile Upload Request ===');
+    console.log('req.file:', req.file);
+
+    if (!req.file) {
+      return res.status(400).json({
+        success: false,
+        message: 'No file uploaded'
+      });
+    }
+
+    const { buffer, originalname, mimetype } = req.file;
+
+    // Validate file type
+    if (!R2Service.isValidImageType(mimetype)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid file type. Only images are allowed.'
+      });
+    }
+
+    // Generate unique filename
+    const uniqueFileName = R2Service.generateUniqueFileName(originalname);
+
+    // Upload to R2 in marketer-profiles folder
+    const publicUrl = await R2Service.uploadMarketerProfileImage(buffer, uniqueFileName, mimetype);
+
+    res.status(200).json({
+      success: true,
+      message: 'Marketer profile image uploaded successfully',
+      data: {
+        url: publicUrl,
+        fileName: uniqueFileName,
+        originalName: originalname,
+        size: buffer.length,
+        type: mimetype
+      }
+    });
+
+  } catch (error) {
+    console.error('Upload marketer profile error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to upload marketer profile image',
+      error: error.message
+    });
+  }
+};
+
 module.exports = {
   uploadFile,
   generateUploadUrl,
   deleteFile,
-  refreshImageUrl
+  refreshImageUrl,
+  uploadMarketerIdImage,
+  uploadMarketerProfileImage
 };

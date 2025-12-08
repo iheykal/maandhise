@@ -16,4 +16,7 @@ router.delete('/:id', authorize('superadmin'), marketerController.deleteMarketer
 // Marketer or Superadmin can view earnings
 router.get('/:id/earnings', authorize('marketer', 'superadmin'), marketerController.getMarketerEarnings);
 
+// Get all users registered by a specific marketer (Superadmin only)
+router.get('/:id/registered-users', authorize('superadmin'), marketerController.getMarketerRegisteredUsers);
+
 module.exports = router;

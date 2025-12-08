@@ -304,7 +304,8 @@ const approvePendingCustomer = async (req, res) => {
             profilePicUrl: pendingCustomer.profilePicUrl,
             membershipMonths: pendingCustomer.amount,
             validUntil: pendingCustomer.validUntil,
-            canLogin: false
+            canLogin: false,
+            registeredBy: pendingCustomer.createdBy._id // Track who registered this user
         });
 
         await user.save();
