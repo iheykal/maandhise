@@ -19,6 +19,32 @@ const companyRoutes = require('./routes/company');
 const marketerRoutes = require('./routes/marketer');
 const pendingCustomerRoutes = require('./routes/pendingCustomer');
 
+// Debug: Unique Server ID to identify instances
+const SERVER_ID = Math.random().toString(36).substring(7);
+const Company = require('./models/Company');
+
+// Debug Route
+app.get('/api/health-check', async (req, res) => {
+  try {
+    const count = await Company.countDocuments();
+    const dbHost = mongoose.connection.host;
+    const dbName = mongoose.connection.name;
+    res.json({
+      success: true,
+      message: 'System Operational',
+      debug: {
+        serverInstance: SERVER_ID,
+        dbHost: dbHost,
+        dbName: dbName,
+        companyCount: count,
+        env: process.env.NODE_ENV
+      }
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
 const app = express();
 
 app.set('trust proxy', 1); // Trust first proxy
