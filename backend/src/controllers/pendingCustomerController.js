@@ -4,6 +4,7 @@ const Marketer = require('../models/Marketer');
 const User = require('../models/User');
 const SahalCard = require('../models/SahalCard');
 const Notification = require('../models/Notification');
+const Counter = require('../models/Counter');
 
 // Normalize phone number
 const normalizePhone = (phone) => {
@@ -26,7 +27,7 @@ const normalizePhone = (phone) => {
 // Create pending customer (Marketer only)
 const createPendingCustomer = async (req, res) => {
     try {
-        const { fullName, phone, idNumber, location, profilePicUrl, registrationDate, amount } = req.body;
+        const { fullName, phone, location, profilePicUrl, registrationDate, amount } = req.body;
 
         // Get marketer from request (set by auth middleware)
         const marketer = req.marketer;
@@ -69,6 +70,11 @@ const createPendingCustomer = async (req, res) => {
             });
         }
 
+        // Generate sequential ID
+        // Start from 7 as requested
+        const seqId = await Counter.getNextSequence('userId', 7);
+        const idNumber = seqId.toString().padStart(3, '0');
+
         // Calculate validity date
         const months = Math.max(1, parseInt(amount || 1, 10));
         const startDate = new Date(registrationDate || new Date());
@@ -90,12 +96,11 @@ const createPendingCustomer = async (req, res) => {
         const pendingCustomer = new PendingCustomer({
             fullName,
             phone: normalizedPhone,
-            idNumber,
+            idNumber, // Auto-generated
             location,
             profilePicUrl,
             registrationDate: startDate,
             amount: months,
-            validUntil: validUntilDate,
             validUntil: validUntilDate,
             createdBy: new mongoose.Types.ObjectId(marketer._id),
             status: 'pending'
@@ -105,11 +110,11 @@ const createPendingCustomer = async (req, res) => {
 
         console.log('[createPendingCustomer] ✅ Pending customer created successfully:', {
             id: pendingCustomer._id,
+            idNumber: pendingCustomer.idNumber,
             fullName: pendingCustomer.fullName,
             phone: pendingCustomer.phone,
             status: pendingCustomer.status,
-            createdBy: marketer.fullName,
-            createdByPhone: marketer.phone
+            createdBy: marketer.fullName
         });
 
         res.status(201).json({

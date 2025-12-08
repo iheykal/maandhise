@@ -30,6 +30,29 @@ const MarketerDashboardPage: React.FC = () => {
     const [pendingCustomers, setPendingCustomers] = useState<PendingCustomer[]>([]);
     const [stats, setStats] = useState({ pending: 0, approved: 0, rejected: 0 });
     const [showAddCustomerForm, setShowAddCustomerForm] = useState(false);
+
+    // Fetch next ID when form opens
+    useEffect(() => {
+        if (showAddCustomerForm) {
+            const fetchNextId = async () => {
+                try {
+                    const response = await fetch('/api/auth/next-id', {
+                        headers: {
+                            'Authorization': `Bearer ${localStorage.getItem('token')}`
+                        }
+                    });
+                    const data = await response.json();
+                    if (data.success) {
+                        setFormData(prev => ({ ...prev, idNumber: data.nextId }));
+                    }
+                } catch (error) {
+                    console.error('Failed to fetch next ID', error);
+                }
+            };
+            fetchNextId();
+        }
+    }, [showAddCustomerForm]);
+
     const [isLoading, setIsLoading] = useState(false);
     const [statusFilter, setStatusFilter] = useState('all');
     const [searchQuery, setSearchQuery] = useState('');
@@ -267,8 +290,8 @@ const MarketerDashboardPage: React.FC = () => {
                         <button
                             onClick={() => setStatusFilter('all')}
                             className={`px-4 py-2 rounded-xl text-sm font-medium transition-all whitespace-nowrap ${statusFilter === 'all'
-                                    ? 'bg-gray-900 text-white shadow-lg'
-                                    : 'bg-white text-gray-600 hover:bg-gray-50 border border-gray-200'
+                                ? 'bg-gray-900 text-white shadow-lg'
+                                : 'bg-white text-gray-600 hover:bg-gray-50 border border-gray-200'
                                 }`}
                         >
                             {language === 'en' ? 'All Customers' : 'Dhammaan'}
@@ -276,8 +299,8 @@ const MarketerDashboardPage: React.FC = () => {
                         <button
                             onClick={() => setStatusFilter('pending')}
                             className={`px-4 py-2 rounded-xl text-sm font-medium transition-all whitespace-nowrap ${statusFilter === 'pending'
-                                    ? 'bg-orange-500 text-white shadow-lg'
-                                    : 'bg-white text-gray-600 hover:bg-gray-50 border border-gray-200'
+                                ? 'bg-orange-500 text-white shadow-lg'
+                                : 'bg-white text-gray-600 hover:bg-gray-50 border border-gray-200'
                                 }`}
                         >
                             {language === 'en' ? 'Pending' : 'Sugayaan'}
@@ -285,8 +308,8 @@ const MarketerDashboardPage: React.FC = () => {
                         <button
                             onClick={() => setStatusFilter('approved')}
                             className={`px-4 py-2 rounded-xl text-sm font-medium transition-all whitespace-nowrap ${statusFilter === 'approved'
-                                    ? 'bg-green-600 text-white shadow-lg'
-                                    : 'bg-white text-gray-600 hover:bg-gray-50 border border-gray-200'
+                                ? 'bg-green-600 text-white shadow-lg'
+                                : 'bg-white text-gray-600 hover:bg-gray-50 border border-gray-200'
                                 }`}
                         >
                             {language === 'en' ? 'Approved' : 'La Ogolaaday'}
@@ -386,7 +409,9 @@ const MarketerDashboardPage: React.FC = () => {
                                                 name="idNumber"
                                                 value={formData.idNumber}
                                                 onChange={handleInputChange}
-                                                className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-purple-100 focus:border-purple-500 transition-all"
+                                                disabled
+                                                placeholder={language === 'en' ? 'Loading next ID...' : 'Dajinayaa aqoonsiga...'}
+                                                className="w-full px-4 py-3 bg-gray-100 border border-gray-200 rounded-xl text-gray-500 cursor-not-allowed font-mono font-bold"
                                             />
                                         </div>
 
@@ -566,8 +591,8 @@ const MarketerDashboardPage: React.FC = () => {
                                         <span className="text-lg font-bold text-gray-900">${customer.amount}</span>
                                     </div>
                                     <div className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide ${customer.status === 'pending' ? 'bg-orange-100 text-orange-700' :
-                                            customer.status === 'approved' ? 'bg-green-100 text-green-700' :
-                                                'bg-red-100 text-red-700'
+                                        customer.status === 'approved' ? 'bg-green-100 text-green-700' :
+                                            'bg-red-100 text-red-700'
                                         }`}>
                                         {customer.status}
                                     </div>

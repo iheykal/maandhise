@@ -3,6 +3,7 @@ const User = require('../models/User');
 const SahalCard = require('../models/SahalCard');
 // Company model no longer needed - companies are independent entities
 const Notification = require('../models/Notification');
+const Counter = require('../models/Counter');
 
 // Generate JWT tokens
 const generateTokens = (userId) => {
@@ -53,7 +54,7 @@ const normalizePhone = (phone) => {
 // Register new user
 const register = async (req, res) => {
   try {
-    const { fullName, phone, password, role = 'customer', idNumber } = req.body;
+    const { fullName, phone, password, role = 'customer' } = req.body;
 
     // Normalize phone number
     const normalizedPhone = normalizePhone(phone);
@@ -86,15 +87,10 @@ const register = async (req, res) => {
     }
 
     // Check if ID number is already in use
-    if (idNumber) {
-      const existingIdUser = await User.findOne({ idNumber });
-      if (existingIdUser) {
-        return res.status(400).json({
-          success: false,
-          message: 'User with this ID number already exists'
-        });
-      }
-    }
+    // Generate sequential ID
+    // Start from 7 as requested
+    const seqId = await Counter.getNextSequence('userId', 7);
+    const idNumber = seqId.toString().padStart(3, '0');
 
     // Create new user
     // All users can login by default (unless admin creates them)
@@ -105,6 +101,7 @@ const register = async (req, res) => {
       phone: normalizedPhone, // Use normalized phone number
       password,
       role,
+      idNumber,
       canLogin
     });
 
@@ -521,28 +518,8 @@ const updateProfile = async (req, res) => {
     if (phone) user.phone = phone;
     if (location) user.location = location;
 
-    // Update ID number if provided (check for uniqueness)
-    if (idNumber !== undefined) {
-      const trimmedIdNumber = idNumber.trim();
-
-      // Check if the new ID number is different from current
-      if (trimmedIdNumber !== user.idNumber) {
-        // Check if ID number already exists (excluding current user)
-        const existingUser = await User.findOne({
-          idNumber: trimmedIdNumber,
-          _id: { $ne: user._id }
-        });
-
-        if (existingUser) {
-          return res.status(400).json({
-            success: false,
-            message: 'ID number already exists'
-          });
-        }
-
-        user.idNumber = trimmedIdNumber;
-      }
-    }
+    // ID Number update disabled to enforce sequential IDs
+    // if (idNumber) ... removed
 
     await user.save();
 
@@ -722,7 +699,7 @@ const resetPassword = async (req, res) => {
 // Create user (Admin only)
 const createUser = async (req, res) => {
   try {
-    const { fullName, phone, role = 'customer', idNumber, profilePicUrl, idCardImageUrl, registrationDate, amount } = req.body;
+    const { fullName, phone, role = 'customer', profilePicUrl, idCardImageUrl, registrationDate, amount } = req.body;
 
     // Normalize phone number
     const normalizedPhone = normalizePhone(phone);
@@ -755,16 +732,10 @@ const createUser = async (req, res) => {
       });
     }
 
-    // Check if ID number is already in use
-    if (idNumber) {
-      const existingIdUser = await User.findOne({ idNumber });
-      if (existingIdUser) {
-        return res.status(400).json({
-          success: false,
-          message: 'User with this ID number already exists'
-        });
-      }
-    }
+    // Generate sequential ID
+    // Start from 7 as requested
+    const seqId = await Counter.getNextSequence('userId', 7);
+    const idNumber = seqId.toString().padStart(3, '0');
 
     // Generate a default password
     const defaultPassword = 'maandhise123';
@@ -1078,6 +1049,24 @@ const searchUserById = async (req, res) => {
   }
 };
 
+// Get next user ID (preview)
+const getNextUserId = async (req, res) => {
+  try {
+    const nextSeq = await Counter.peekNextSequence('userId', 7);
+    const nextId = nextSeq.toString().padStart(3, '0');
+    res.json({
+      success: true,
+      nextId
+    });
+  } catch (error) {
+    console.error('Error fetching next user ID:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch next user ID'
+    });
+  }
+};
+
 module.exports = {
   register,
   login,
@@ -1092,5 +1081,6 @@ module.exports = {
   createUser,
   getAllUsers,
   updateUser,
-  deleteUser
+  deleteUser,
+  getNextUserId
 };

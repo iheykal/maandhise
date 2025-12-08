@@ -81,6 +81,29 @@ const DashboardPage: React.FC = () => {
 
   const [activeTab, setActiveTab] = useState('overview');
   const [showAddUserForm, setShowAddUserForm] = useState(false);
+
+  // Fetch next ID when form opens
+  useEffect(() => {
+    if (showAddUserForm) {
+      const fetchNextId = async () => {
+        try {
+          const response = await fetch('/api/auth/next-id', {
+            headers: {
+              'Authorization': `Bearer ${localStorage.getItem('token')}`
+            }
+          });
+          const data = await response.json();
+          if (data.success) {
+            setFormState(prev => ({ ...prev, idNumber: data.nextId }));
+          }
+        } catch (error) {
+          console.error('Failed to fetch next ID', error);
+        }
+      };
+      fetchNextId();
+    }
+  }, [showAddUserForm]);
+
   const [selectedUserImage, setSelectedUserImage] = useState<{ user: any, imageUrl: string } | null>(null);
   const [deleteConfirmation, setDeleteConfirmation] = useState<{ user: any } | null>(null);
   const [paymentModal, setPaymentModal] = useState<{ user: any } | null>(null);
@@ -1819,9 +1842,9 @@ const DashboardPage: React.FC = () => {
                         name="idNumber"
                         value={formState.idNumber}
                         onChange={handleInputChange}
-                        required
-                        className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-4 focus:ring-purple-100 focus:border-purple-500 transition-all duration-300 bg-gray-50 focus:bg-white"
-                        placeholder={language === 'en' ? 'Enter ID number' : 'Geli lambarka aqoonsiga'}
+                        disabled
+                        className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl bg-gray-100 text-gray-500 cursor-not-allowed font-mono font-bold"
+                        placeholder={language === 'en' ? 'Loading next ID...' : 'Dajinayaa aqoonsiga...'}
                       />
                     </motion.div>
 

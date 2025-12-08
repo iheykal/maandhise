@@ -64,11 +64,7 @@ const validateAdminUserCreation = [
     .matches(/^\+252\d{9}$/)
     .withMessage('Please provide a valid Somali phone number (+252XXXXXXXXX)'),
 
-  body('idNumber')
-    .optional()
-    .trim()
-    .isLength({ min: 1, max: 20 })
-    .withMessage('ID number must be between 1 and 20 characters'),
+
 
   body('registrationDate')
     .optional()

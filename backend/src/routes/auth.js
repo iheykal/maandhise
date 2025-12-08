@@ -31,5 +31,6 @@ router.post('/create-user', authorize('admin', 'superadmin'), validateAdminUserC
 router.get('/users', authorize('admin', 'superadmin'), authController.getAllUsers);
 router.put('/users/:userId', authorize('admin', 'superadmin'), authController.updateUser);
 router.delete('/users/:userId', authorize('admin', 'superadmin'), authController.deleteUser);
+router.get('/next-id', authorize('admin', 'superadmin', 'marketer'), authController.getNextUserId);
 
 module.exports = router;
