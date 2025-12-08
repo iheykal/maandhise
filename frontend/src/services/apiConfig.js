@@ -1,4 +1,4 @@
-export const getApiBaseUrl = (): string => {
+export const getApiBaseUrl = () => {
     // 1. Check env var (highest priority)
     if (process.env.REACT_APP_API_URL) {
         return process.env.REACT_APP_API_URL;
