@@ -335,7 +335,7 @@ const approvePendingCustomer = async (req, res) => {
         // Update marketer earnings and stats
         const marketer = await Marketer.findById(pendingCustomer.createdBy._id);
         if (marketer) {
-            marketer.totalEarnings += 0.40;
+            marketer.totalEarnings += 0.50;
             marketer.approvedCustomers += 1;
             await marketer.save();
         }

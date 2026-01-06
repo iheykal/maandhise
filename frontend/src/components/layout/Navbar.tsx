@@ -92,23 +92,26 @@ const Navbar: React.FC = () => {
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="relative flex justify-between items-center h-20">
-          {/* Logo - Centered */}
-          <Link to="/" className="absolute left-1/2 transform -translate-x-1/2 flex items-center space-x-2">
+          {/* Logo - Far Left */}
+          <Link to="/" className="flex items-center space-x-3 shrink-0 z-10 hover:scale-105 transition-transform duration-300">
             <img
               src="/icons/lugo.jpg"
               alt="SAHAL CARD Logo"
-              className="h-12 w-12 md:h-14 md:w-14 object-contain rounded-full"
+              className="h-16 w-16 md:h-20 md:w-20 object-contain rounded-full shadow-lg border-2 border-white/20"
             />
-            <span className="hidden md:block text-xl font-bold gradient-text">SAHAL CARD</span>
+            <div className="flex flex-col">
+              <span className="text-xl md:text-2xl font-black gradient-text tracking-tighter">SAHAL CARD</span>
+              <span className="text-[10px] uppercase tracking-[0.2em] font-bold text-gray-500/80 -mt-1">Premium Platform</span>
+            </div>
           </Link>
 
-          {/* Desktop Navigation - Left */}
-          <div className="hidden md:flex items-center space-x-8">
+          {/* Desktop Navigation - Center-Right */}
+          <div className="hidden lg:flex items-center space-x-10 ml-12">
             {navItems.map((item) => (
               <button
                 key={item.href}
                 onClick={() => handleNavClick(item)}
-                className="nav-link"
+                className="nav-link font-bold text-sm tracking-wide"
               >
                 {item.name}
               </button>

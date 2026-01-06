@@ -274,7 +274,7 @@ const getMarketerEarnings = async (req, res) => {
                 fullName: marketer.fullName,
                 totalEarnings: marketer.totalEarnings,
                 approvedCustomers: marketer.approvedCustomers,
-                commissionRate: 0.40
+                commissionRate: 0.50
             }
         });
 
