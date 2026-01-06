@@ -167,7 +167,7 @@ const HomePage: React.FC = () => {
                     className="text-base md:text-lg text-gray-600 max-w-2xl mx-auto leading-relaxed"
                   >
                     {language === 'en'
-                      ? 'Uniting Education, Consulting & Savings for a better future in Somalia'
+                      ? 'Save more, Spend less'
                       : 'Waxbarasho, La Taliye & Keydin wada jirka ah si loo helo mustaqbal wanaagsan Soomaaliya'
                     }
                   </motion.p>
@@ -220,7 +220,7 @@ const HomePage: React.FC = () => {
           </div>
         </div>
 
-        {/* Gallery Section Below Hero */}
+        {/* Gallery Section Below Hero - Temporarily Hidden
         <div className="py-16 bg-white/50 backdrop-blur-sm">
           <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
             <motion.div
@@ -242,7 +242,6 @@ const HomePage: React.FC = () => {
 
             <div className="relative max-w-4xl mx-auto">
               <div className="relative overflow-hidden rounded-2xl bg-white/80 backdrop-blur-sm border border-white/50 shadow-xl">
-                {/* Gallery Container */}
                 <div className="relative h-80 md:h-96">
                   <AnimatePresence mode="popLayout">
                     <motion.div
@@ -258,17 +257,15 @@ const HomePage: React.FC = () => {
                         alt={`SAHAL CARD gallery ${currentImageIndex + 1} - showcasing our achievements and community events`}
                         className="w-full h-full object-cover"
                         onError={(e) => {
-                          // Fallback if image fails to load
                           const target = e.target as HTMLImageElement;
-                          target.src = `/icons/maandhise.jpg`; // Fallback image
-                          target.onerror = null; // Prevent infinite loop
+                          target.src = `/icons/maandhise.jpg`;
+                          target.onerror = null;
                         }}
                       />
                       <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent"></div>
                     </motion.div>
                   </AnimatePresence>
 
-                  {/* Progress Dots */}
                   <div className="absolute bottom-4 right-4 flex space-x-1.5">
                     {galleryImages.map((_, index) => (
                       <button
@@ -286,6 +283,7 @@ const HomePage: React.FC = () => {
             </div>
           </div>
         </div>
+        */}
 
 
       </div>

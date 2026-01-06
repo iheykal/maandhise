@@ -84,10 +84,11 @@ function App() {
                         <AboutPage />
                       </section>
 
-                      {/* Services Section */}
+                      {/* Services Section - Temporarily Hidden because it's empty
                       <section id="services" data-snap-section className="min-h-screen">
                         <ServicesPage />
                       </section>
+                      */}
 
                       {/* Sahal Card Section */}
                       <section id="sahal-card" data-snap-section className="min-h-screen">

@@ -13,10 +13,15 @@ const Footer: React.FC = () => {
           {/* Company Info */}
           <div className="flex flex-col items-center md:items-start space-y-4">
             <div className="flex items-center space-x-3">
-              <span className="text-xl font-bold">SAHAL CARD</span>
+              <img
+                src="/icons/lugo.jpg"
+                alt="SAHAL CARD Logo"
+                className="h-10 w-10 object-contain rounded-full border border-white/20"
+              />
+              <span className="text-xl font-bold text-white">SAHAL CARD</span>
             </div>
             <p className="text-blue-100 text-sm text-center md:text-left max-w-xs">
-              {language === 'en' 
+              {language === 'en'
                 ? 'Uniting Education, Consulting & Savings for a better future.'
                 : 'Waxbarasho, La Taliye & Keydin wada jirka ah si loo helo mustaqbal wanaagsan.'
               }

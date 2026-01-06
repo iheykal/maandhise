@@ -22,7 +22,8 @@ import {
   X,
   User,
   Clock,
-  Briefcase
+  Briefcase,
+  Edit
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext.tsx';
 import { uploadService } from '../../services/uploadService.ts';
@@ -81,6 +82,11 @@ const DashboardPage: React.FC = () => {
 
   const [activeTab, setActiveTab] = useState('overview');
   const [showAddUserForm, setShowAddUserForm] = useState(false);
+  const [showEditUserModal, setShowEditUserModal] = useState(false);
+  const [editingUser, setEditingUser] = useState<any>(null);
+  const [showUpdateSuccess, setShowUpdateSuccess] = useState(false);
+  const [editProfilePic, setEditProfilePic] = useState<File | null>(null);
+  const [editPreviewImage, setEditPreviewImage] = useState<string | null>(null);
 
   // Fetch next ID when form opens
   useEffect(() => {
@@ -561,6 +567,53 @@ const DashboardPage: React.FC = () => {
   const handleDeleteClick = useCallback((user: any) => {
     setDeleteConfirmation({ user });
   }, []);
+
+  const handleEditClick = useCallback((user: any) => {
+    setEditingUser(user);
+    setEditProfilePic(null);
+    setEditPreviewImage(user.profilePicUrl || null);
+    setShowEditUserModal(true);
+  }, []);
+
+  const handleEditSubmit = async (userId: string, updatedData: any) => {
+    try {
+      setIsLoading(true);
+
+      // Handle profile picture update if a new one was selected
+      let profilePicUrl = editingUser.profilePicUrl;
+      if (editProfilePic) {
+        const validation = uploadService.validateFile(editProfilePic);
+        if (!validation.isValid) {
+          throw new Error(validation.error || 'Invalid image file');
+        }
+        const uploadResp = await uploadService.uploadFile(editProfilePic);
+        if (!uploadResp?.success || !uploadResp?.data?.url) {
+          throw new Error('Failed to upload profile picture');
+        }
+        profilePicUrl = uploadResp.data.url;
+      }
+
+      const finalData = { ...updatedData, profilePicUrl };
+      const result = await updateUser(userId, finalData);
+
+      // Update local state
+      setAddedUsers(prev => prev.map(u => u._id === userId ? { ...u, ...result } : u));
+
+      setShowEditUserModal(false);
+      setEditingUser(null);
+      setEditProfilePic(null);
+      setEditPreviewImage(null);
+
+      // Show success message
+      setShowUpdateSuccess(true);
+      setTimeout(() => setShowUpdateSuccess(false), 3000);
+    } catch (error: any) {
+      console.error('Error updating user:', error);
+      alert(error.response?.data?.message || 'Failed to update user');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   // Handle payment click
   const handlePaymentClick = useCallback((user: any) => {
@@ -1329,6 +1382,13 @@ const DashboardPage: React.FC = () => {
                         <span>{language === 'en' ? 'View' : 'Fiiri'}</span>
                       </button>
                       <button
+                        onClick={() => handleEditClick(user)}
+                        className="inline-flex items-center justify-center gap-1 px-2 py-1 bg-amber-100 text-amber-700 rounded-md hover:bg-amber-200 transition-colors text-xs font-medium"
+                      >
+                        <Edit className="w-3 h-3" />
+                        <span>{language === 'en' ? 'Edit' : 'Bedel'}</span>
+                      </button>
+                      <button
                         onClick={() => handleDeleteClick(user)}
                         className="inline-flex items-center justify-center gap-1 px-2 py-1 bg-red-100 text-red-700 rounded-md hover:bg-red-200 transition-colors text-xs font-medium"
                       >
@@ -1648,6 +1708,13 @@ const DashboardPage: React.FC = () => {
                       >
                         <Eye className="w-3 h-3" />
                         <span>{language === 'en' ? 'View' : 'Fiiri'}</span>
+                      </button>
+                      <button
+                        onClick={() => handleEditClick(user)}
+                        className="inline-flex items-center justify-center gap-1 px-2 py-1 bg-amber-100 text-amber-700 rounded-md hover:bg-amber-200 transition-colors text-xs font-medium"
+                      >
+                        <Edit className="w-3 h-3" />
+                        <span>{language === 'en' ? 'Edit' : 'Bedel'}</span>
                       </button>
                     </div>
                   </div>
@@ -2005,6 +2072,298 @@ const DashboardPage: React.FC = () => {
                   </motion.form>
                 </div>
               </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Edit User Modal */}
+        <AnimatePresence>
+          {showEditUserModal && editingUser && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[9999] p-4"
+            >
+              <motion.div
+                initial={{ scale: 0.9, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.9, opacity: 0 }}
+                className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto"
+              >
+                <div className="p-6">
+                  <div className="flex items-center justify-between mb-6">
+                    <h2 className="text-2xl font-bold text-gray-800 flex items-center space-x-2">
+                      <Edit className="w-6 h-6 text-blue-600" />
+                      <span>{language === 'en' ? 'Edit User' : 'Bedel Isticmaalaha'}</span>
+                    </h2>
+                    <button
+                      onClick={() => {
+                        setShowEditUserModal(false);
+                        setEditingUser(null);
+                      }}
+                      className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+                    >
+                      <X className="w-5 h-5 text-gray-500" />
+                    </button>
+                  </div>
+
+                  <form
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      const formData = new FormData(e.currentTarget);
+                      const updatedData = {
+                        fullName: formData.get('fullName') as string,
+                        phone: formData.get('phone') as string,
+                        idNumber: formData.get('idNumber') as string,
+                        location: formData.get('location') as string,
+                      };
+                      handleEditSubmit(editingUser._id, updatedData);
+                    }}
+                    className="space-y-6"
+                  >
+                    {/* Full Name Field */}
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-2 flex items-center space-x-2">
+                        <User className="w-4 h-4 text-blue-600" />
+                        <span>{language === 'en' ? 'Full Name' : 'Magaca Buuxa'}</span>
+                      </label>
+                      <input
+                        type="text"
+                        name="fullName"
+                        defaultValue={editingUser.fullName}
+                        required
+                        className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-100 focus:border-blue-500 transition-all duration-300 bg-gray-50 focus:bg-white"
+                        placeholder={language === 'en' ? 'Enter full name' : 'Geli magaca buuxa'}
+                      />
+                    </div>
+
+                    {/* Phone Number Field */}
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-2 flex items-center space-x-2">
+                        <Phone className="w-4 h-4 text-green-600" />
+                        <span>{language === 'en' ? 'Phone Number' : 'Lambarka Telefoonka'}</span>
+                      </label>
+                      <input
+                        type="tel"
+                        name="phone"
+                        defaultValue={editingUser.phone}
+                        required
+                        className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-4 focus:ring-green-100 focus:border-green-500 transition-all duration-300 bg-gray-50 focus:bg-white"
+                        placeholder={language === 'en' ? 'Enter phone number' : 'Geli lambarka telefoonka'}
+                      />
+                    </div>
+
+                    {/* ID Number Field */}
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-2 flex items-center space-x-2">
+                        <Shield className="w-4 h-4 text-purple-600" />
+                        <span>{language === 'en' ? 'ID Number' : 'Lambarka Aqoonsiga'}</span>
+                      </label>
+                      <input
+                        type="text"
+                        name="idNumber"
+                        defaultValue={editingUser.idNumber}
+                        className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-4 focus:ring-purple-100 focus:border-purple-500 transition-all duration-300 bg-gray-50 focus:bg-white"
+                        placeholder={language === 'en' ? 'Enter ID number' : 'Geli lambarka aqoonsiga'}
+                      />
+                    </div>
+
+                    {/* Location Field */}
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-2 flex items-center space-x-2">
+                        <MapPin className="w-4 h-4 text-orange-600" />
+                        <span>{language === 'en' ? 'Location' : 'Goobta'}</span>
+                      </label>
+                      <input
+                        type="text"
+                        name="location"
+                        defaultValue={editingUser.location}
+                        required
+                        className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-4 focus:ring-orange-100 focus:border-orange-500 transition-all duration-300 bg-gray-50 focus:bg-white"
+                        placeholder={language === 'en' ? 'Enter location' : 'Geli goobta'}
+                      />
+                    </div>
+
+                    {/* Profile Picture Field */}
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-2 flex items-center space-x-2">
+                        <User className="w-4 h-4 text-purple-600" />
+                        <span>{language === 'en' ? 'Profile Picture' : 'Sawirka Isticmaalaha'}</span>
+                      </label>
+
+                      <div className="flex items-center space-x-6">
+                        {/* Current/Preview Image */}
+                        <div className="relative">
+                          {editPreviewImage ? (
+                            <img
+                              src={editPreviewImage}
+                              alt="Preview"
+                              className="w-24 h-24 rounded-full object-cover border-4 border-purple-200 shadow-xl"
+                            />
+                          ) : (
+                            <div className="w-24 h-24 bg-purple-100 rounded-full flex items-center justify-center border-4 border-purple-50 shadow-xl">
+                              <User className="w-10 h-10 text-purple-400" />
+                            </div>
+                          )}
+                          <label className="absolute -bottom-1 -right-1 bg-purple-600 text-white p-2 rounded-full cursor-pointer hover:bg-purple-700 transition-colors shadow-lg">
+                            <Plus className="w-4 h-4" />
+                            <input
+                              type="file"
+                              className="hidden"
+                              accept="image/*"
+                              onChange={(e) => {
+                                const file = e.target.files?.[0];
+                                if (file) {
+                                  setEditProfilePic(file);
+                                  const reader = new FileReader();
+                                  reader.onload = (e) => {
+                                    setEditPreviewImage(e.target?.result as string);
+                                  };
+                                  reader.readAsDataURL(file);
+                                }
+                              }}
+                            />
+                          </label>
+                        </div>
+
+                        <div className="flex-1">
+                          <p className="text-sm font-medium text-gray-900">
+                            {language === 'en' ? 'Update profile photo' : 'Bedel sawirka profile-ka'}
+                          </p>
+                          <p className="text-xs text-gray-500 mt-1">
+                            {language === 'en' ? 'Recommended: Square image, max 5MB' : 'Loo soo jeediyey: Sawir labajibbaaran, ugu badnaan 5MB'}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Form Buttons */}
+                    <div className="flex space-x-4 pt-6">
+                      <motion.button
+                        type="submit"
+                        disabled={isLoading}
+                        className="flex-1 bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-3 px-6 rounded-xl hover:from-blue-700 hover:to-indigo-700 transition-all duration-300 font-semibold shadow-lg hover:shadow-xl flex items-center justify-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                      >
+                        {isLoading ? (
+                          <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                        ) : (
+                          <>
+                            <CheckCircle className="w-5 h-5" />
+                            <span>{language === 'en' ? 'Update User' : 'Cusboonaysii'}</span>
+                          </>
+                        )}
+                      </motion.button>
+
+                      <motion.button
+                        type="button"
+                        onClick={() => {
+                          setShowEditUserModal(false);
+                          setEditingUser(null);
+                        }}
+                        className="flex-1 bg-gradient-to-r from-gray-400 to-gray-500 text-white py-3 px-6 rounded-xl hover:from-gray-500 hover:to-gray-600 transition-all duration-300 font-semibold shadow-lg hover:shadow-xl flex items-center justify-center space-x-2"
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                      >
+                        <X className="w-5 h-5" />
+                        <span>{language === 'en' ? 'Cancel' : 'Jooji'}</span>
+                      </motion.button>
+                    </div>
+                  </form>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Success Notification - Enhanced Premium Design */}
+        <AnimatePresence>
+          {showUpdateSuccess && (
+            <motion.div
+              initial={{ opacity: 0, x: 100, scale: 0.8 }}
+              animate={{
+                opacity: 1,
+                x: 0,
+                scale: 1,
+                transition: {
+                  type: "spring",
+                  stiffness: 300,
+                  damping: 25
+                }
+              }}
+              exit={{
+                opacity: 0,
+                scale: 0.8,
+                x: 20,
+                transition: { duration: 0.2 }
+              }}
+              className="fixed bottom-8 right-8 z-[10000]"
+            >
+              <div className="relative overflow-hidden bg-white/80 backdrop-blur-xl rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.15)] border border-white/40 p-5 flex items-center space-x-5 min-w-[320px]">
+                {/* Background Glow Effect */}
+                <div className="absolute top-0 right-0 -mr-16 -mt-16 w-32 h-32 bg-green-400/20 blur-3xl rounded-full" />
+                <div className="absolute bottom-0 left-0 -ml-16 -mb-16 w-32 h-32 bg-emerald-400/20 blur-3xl rounded-full" />
+
+                {/* Animated Checkmark Container */}
+                <motion.div
+                  initial={{ scale: 0, rotate: -45 }}
+                  animate={{ scale: 1, rotate: 0 }}
+                  transition={{
+                    delay: 0.2,
+                    type: "spring",
+                    stiffness: 400,
+                    damping: 15
+                  }}
+                  className="relative w-14 h-14 bg-gradient-to-br from-green-500 to-emerald-600 rounded-2xl flex items-center justify-center shadow-lg shadow-green-200"
+                >
+                  <motion.div
+                    initial={{ pathLength: 0, opacity: 0 }}
+                    animate={{ pathLength: 1, opacity: 1 }}
+                    transition={{ delay: 0.4, duration: 0.5 }}
+                  >
+                    <CheckCircle className="w-8 h-8 text-white stroke-[2.5px]" />
+                  </motion.div>
+                </motion.div>
+
+                <div className="flex-1 relative">
+                  <motion.h3
+                    initial={{ opacity: 0, y: 5 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.3 }}
+                    className="text-xl font-extrabold text-gray-900 tracking-tight"
+                  >
+                    {language === 'en' ? 'Brilliant!' : 'Waa Guul!'}
+                  </motion.h3>
+                  <motion.p
+                    initial={{ opacity: 0, y: 5 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.4 }}
+                    className="text-emerald-700 font-bold text-sm"
+                  >
+                    {language === 'en' ? 'Profile Updated Successfully' : 'Xogtawaa la bedelay'}
+                  </motion.p>
+                </div>
+
+                {/* Close Button */}
+                <button
+                  onClick={() => setShowUpdateSuccess(false)}
+                  className="relative p-2 hover:bg-black/5 rounded-full transition-colors group"
+                >
+                  <X className="w-5 h-5 text-gray-400 group-hover:text-gray-600 transition-colors" />
+                </button>
+
+                {/* Liquid Progress Bar */}
+                <div className="absolute bottom-0 left-0 right-0 h-1.5 bg-gray-100/50">
+                  <motion.div
+                    initial={{ width: "100%" }}
+                    animate={{ width: "0%" }}
+                    transition={{ duration: 3, ease: "linear" }}
+                    className="h-full bg-gradient-to-r from-green-400 to-emerald-500"
+                  />
+                </div>
+              </div>
             </motion.div>
           )}
         </AnimatePresence>

@@ -117,6 +117,13 @@ const LoginPage: React.FC = () => {
       >
         <div className="glass-card p-8">
           <div className="text-center mb-8">
+            <div className="flex justify-center mb-4">
+              <img
+                src="/icons/lugo.jpg"
+                alt="SAHAL CARD Logo"
+                className="h-20 w-20 object-contain rounded-2xl shadow-xl border-2 border-white/50"
+              />
+            </div>
             <h1 className="text-3xl font-bold gradient-text mb-2">
               {language === 'en' ? 'Welcome Back' : 'Ku Soo Dhawoow'}
             </h1>

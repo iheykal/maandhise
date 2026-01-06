@@ -95,9 +95,9 @@ const Navbar: React.FC = () => {
           {/* Logo - Centered */}
           <Link to="/" className="absolute left-1/2 transform -translate-x-1/2 flex items-center space-x-2">
             <img
-              src="/icons/discount.png"
+              src="/icons/lugo.jpg"
               alt="SAHAL CARD Logo"
-              className="h-12 w-12 md:h-14 md:w-14 object-contain"
+              className="h-12 w-12 md:h-14 md:w-14 object-contain rounded-full"
             />
             <span className="hidden md:block text-xl font-bold gradient-text">SAHAL CARD</span>
           </Link>
