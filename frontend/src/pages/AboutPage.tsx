@@ -1,11 +1,11 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { Helmet } from 'react-helmet-async';
-import { 
+import {
   // Target, 
   // Eye, 
-  Users, 
-  Award, 
+  Users,
+  Award,
   // Heart, 
   // Globe, 
   // Shield, 
@@ -86,7 +86,7 @@ const AboutPage: React.FC = () => {
         <meta name="description" content="Learn about SAHAL CARD's journey since 2021. Founded by Abdullahi Abdi Elmi, we unite education, consulting & savings for Somalia's future." />
         <meta name="keywords" content="about maandhise, company story, somalia business, abdullahi abdi elmi, founder, mission, vision, education somalia" />
         <meta name="author" content="SAHAL CARD" />
-        
+
         {/* Open Graph / Facebook */}
         <meta property="og:type" content="website" />
         <meta property="og:url" content="https://maandhise.com/about" />
@@ -94,21 +94,21 @@ const AboutPage: React.FC = () => {
         <meta property="og:description" content="Learn about SAHAL CARD's journey since 2021. Founded by Abdullahi Abdi Elmi, we unite education, consulting & savings for Somalia's future." />
         <meta property="og:image" content="https://maandhise.com/og-about.png" />
         <meta property="og:site_name" content="SAHAL CARD" />
-        
+
         {/* Twitter */}
         <meta property="twitter:card" content="summary_large_image" />
         <meta property="twitter:url" content="https://maandhise.com/about" />
         <meta property="twitter:title" content="About SAHAL CARD - Our Story, Mission & Vision" />
         <meta property="twitter:description" content="Learn about SAHAL CARD's journey since 2021. Founded by Abdullahi Abdi Elmi, we unite education, consulting & savings for Somalia's future." />
         <meta property="twitter:image" content="https://maandhise.com/og-about.png" />
-        
+
         {/* Canonical URL */}
         <link rel="canonical" href="https://maandhise.com/about" />
       </Helmet>
-      
+
       <div className="h-screen bg-gradient-to-br from-blue-50 via-blue-100 to-indigo-200 overflow-y-auto">
-      {/* Hero Section - HIDDEN */}
-      {/* <section className="relative py-20 overflow-hidden">
+        {/* Hero Section - HIDDEN */}
+        {/* <section className="relative py-20 overflow-hidden">
         <div className="absolute inset-0">
           <div className="absolute top-20 left-10 w-72 h-72 bg-blue-300 rounded-full mix-blend-multiply filter blur-xl opacity-70"></div>
           <div className="absolute top-40 right-10 w-72 h-72 bg-cyan-300 rounded-full mix-blend-multiply filter blur-xl opacity-70"></div>
@@ -151,8 +151,8 @@ const AboutPage: React.FC = () => {
         </div>
       </section> */}
 
-      {/* Mission & Vision Section - HIDDEN */}
-      {/* <section className="py-20">
+        {/* Mission & Vision Section - HIDDEN */}
+        {/* <section className="py-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
             <motion.div
@@ -204,180 +204,94 @@ const AboutPage: React.FC = () => {
         </div>
       </section> */}
 
-      {/* Founder & Story Section */}
-      <section className="py-20 bg-white/50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8 }}
-            viewport={{ once: true }}
-            className="text-center mb-16"
-          >
-            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
-              {language === 'en' ? 'Our Story' : 'Sheekadayada'}
-            </h2>
-            <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-              {language === 'en' 
-                ? 'From vision to reality - the journey of Sahal Card'
-                : 'Laga bilaabo aragti ilaa dhab - socodka Maandhise'
-              }
-            </p>
-          </motion.div>
-
-          <div className="max-w-4xl mx-auto">
+        {/* Founder & Story Section */}
+        <section className="py-20 bg-white/50">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <motion.div
-              initial={{ opacity: 0, y: 20 }}
+              initial={{ opacity: 0, y: 30 }}
               whileInView={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, ease: "easeOut" }}
+              transition={{ duration: 0.8 }}
               viewport={{ once: true }}
-              className="glass-card p-8 md:p-12"
+              className="text-center mb-16"
             >
-              <div className="flex items-center mb-6">
-                <div className="w-24 h-24 rounded-full overflow-hidden mr-6 border-4 border-blue-500">
-                  <img 
-                    src="/icons/founder.jpeg" 
-                    alt={language === 'en' ? 'Abdullahi Abdi Elmi - Founder & CEO of SAHAL CARD' : 'Abdullahi Abdi Elmi - Aasaasaha & CEO SAHAL CARD'}
-                    className="w-full h-full object-cover"
-                  />
-                </div>
-                <div>
-                  <h3 className="text-xl font-semibold text-gray-900">
-                    {language === 'en' ? 'Abdullahi Abdi Elmi' : 'Abdullahi Abdi Elmi'}
-                  </h3>
-                  <p className="text-blue-600 font-medium">
-                    {language === 'en' ? 'Founder & CEO' : 'Aasaasaha & CEO'}
-                  </p>
-                </div>
-              </div>
-              <div className="bg-gradient-to-r from-blue-50 to-cyan-50 p-8 rounded-xl border-l-4 border-blue-500">
-                <div className="space-y-6">
-                  <blockquote className="text-gray-700 italic leading-relaxed text-lg">
-                    {language === 'en' 
-                      ? '"It is a well-established fact that every business depends on its customers, and customers naturally choose businesses that offer high-quality services and excellent customer support.'
-                      : '"Waa run dhabta ah oo la aqoonsaday in dhammaan ganacsigu ay ku tiirsan yihiin macaamiishooda, macaamiishuna si dabiici ah ay doortaan ganacsiga bixinaya adeegyo tayo sare leh iyo taageero macaamiil oo fiican.'
-                    }
-                  </blockquote>
-                  
-                  <blockquote className="text-gray-700 italic leading-relaxed text-lg">
-                    {language === 'en' 
-                      ? 'At SAHAL CARD, we are honored to introduce one of the most in-demand services: Sahal Card.'
-                      : 'SAHAL CARD, waxaan sharaf u nahay in aan soo bandhigno mid ka mid ah adeegyada ugu baahida badan: Kaarka Sahal.'
-                    }
-                  </blockquote>
-                  
-                  <blockquote className="text-gray-700 italic leading-relaxed text-lg">
-                    {language === 'en' 
-                      ? 'Sahal Card is a discount card created to bridge the gap between companies and their customers."'
-                      : 'Kaarka Sahal waa kaar qiimo dhimis oo loo sameeyay si loo dhex maro farqiga u dhexeeya shirkadaha iyo macaamiishooda."'
-                    }
-                  </blockquote>
-                </div>
-                
-                <footer className="text-right mt-8">
-                  <cite className="text-blue-600 font-semibold not-italic text-lg">
-                    — Abdullahi Abdi Elmi
-                  </cite>
-                </footer>
-              </div>
+              <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
+                {language === 'en' ? 'Our Story' : 'Sheekadayada'}
+              </h2>
+              <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+                {language === 'en'
+                  ? 'From vision to reality - the journey of Sahal Card'
+                  : 'Laga bilaabo aragti ilaa dhab - socodka Maandhise'
+                }
+              </p>
             </motion.div>
 
-          </div>
-        </div>
-      </section>
-
-      {/* Why Choose Maandhise Section */}
-      <section className="py-20 bg-white/30">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-12">
-            {[
-              {
-                icon: TrendingUp,
-                title: language === 'en' ? '10,000+ Entrepreneurs Launched' : '10,000+ Ganacsade La Bilaabay',
-                description: language === 'en' 
-                  ? 'Successfully launched over 10,000 entrepreneurs operating in diverse industries nationwide.'
-                  : 'Si guul leh ayaa loo bilaabay in ka badan 10,000 ganacsade oo ka shaqeeya warshadaha kala duwan ee dalka oo dhan.'
-              },
-              {
-                icon: Users,
-                title: language === 'en' ? 'Thousands of Jobs Created' : 'Kunno Shaqooyin La Aburay',
-                description: language === 'en' 
-                  ? 'Created employment opportunities for thousands of youth across Somalia.'
-                  : 'Waxaa la abuuray fursadaha shaqo ee kunno dhallinyaro ah oo Soomaaliya oo dhan.'
-              },
-              {
-                icon: Award,
-                title: language === 'en' ? 'Reputable Partnerships' : 'Iskaashiga Amaan leh',
-                description: language === 'en' 
-                  ? 'Collaborated with the country\'s most reputable companies including hospitals, banks, and telecom firms.'
-                  : 'Waxaa la wada shaqeeyay shirkadaha ugu aaminka badan ee dalka oo ay ku jiraan isbitaallada, bangiyada, iyo shirkadaha isgaarsiinta.'
-              },
-              {
-                icon: Zap,
-                title: language === 'en' ? 'Viral Marketing Strategies' : 'Qorshaha Suuqgeynta Viral',
-                description: language === 'en' 
-                  ? 'Developed creative marketing strategies that made numerous businesses go viral and gain massive visibility.'
-                  : 'Waxaa la horumariyay qorshaha suuqgeynta hal-abuurka ah oo ay ku dhigteen ganacsiyo badan in ay noqdaan viral oo ay helaan muuqaal weyn.'
-              },
-              {
-                icon: Briefcase,
-                title: language === 'en' ? 'Business Consulting Excellence' : 'Hufnaanta La Taliye Ganacsi',
-                description: language === 'en' 
-                  ? 'Provided business consulting and strategic advisory services that help startups and SMEs grow sustainably.'
-                  : 'Waxaa la bixiyay adeegyo la taliye ganacsi iyo talooyin qorshe oo caawiya mashruucada cusub iyo ganacsiga yar in ay u koraan si joogtada ah.'
-              },
-              {
-                icon: CreditCard,
-                title: language === 'en' ? 'Sahal Discount Card' : 'Kaarka Sahal',
-                description: language === 'en' 
-                  ? 'Introduced the Sahal Discount Card — a smart savings solution connecting businesses and customers under "Save More, Spend Less."'
-                  : 'Waxaa la soo bandhigay Kaarka Sahal — xal keydin smart ah oo ku xidhiidha ganacsiga iyo macaamiisha hoos yimaada "Keydin Badan, Qaad Yar."'
-              }
-            ].map((achievement, index) => (
+            <div className="max-w-4xl mx-auto">
               <motion.div
-                key={index}
-                initial={{ opacity: 0, y: 30 }}
+                initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.8, delay: index * 0.1 }}
+                transition={{ duration: 0.6, ease: "easeOut" }}
                 viewport={{ once: true }}
-                className="glass-card p-6 hover-lift"
+                className="glass-card p-8 md:p-12"
               >
-                <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-emerald-500 rounded-xl flex items-center justify-center mb-4">
-                  <achievement.icon className="w-6 h-6 text-white" />
+                <div className="flex items-center mb-6">
+                  <div className="w-24 h-24 rounded-full overflow-hidden mr-6 border-4 border-blue-500">
+                    <img
+                      src="/icons/founder.jpeg"
+                      alt={language === 'en' ? 'Abdullahi Abdi Elmi - Founder & CEO of SAHAL CARD' : 'Abdullahi Abdi Elmi - Aasaasaha & CEO SAHAL CARD'}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-semibold text-gray-900">
+                      {language === 'en' ? 'Abdullahi Abdi Elmi' : 'Abdullahi Abdi Elmi'}
+                    </h3>
+                    <p className="text-blue-600 font-medium">
+                      {language === 'en' ? 'Founder & CEO' : 'Aasaasaha & CEO'}
+                    </p>
+                  </div>
                 </div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-3">
-                  {achievement.title}
-                </h3>
-                <p className="text-gray-600 leading-relaxed text-sm">
-                  {achievement.description}
-                </p>
+                <div className="bg-gradient-to-r from-blue-50 to-cyan-50 p-8 rounded-xl border-l-4 border-blue-500">
+                  <div className="space-y-6">
+                    <blockquote className="text-gray-700 italic leading-relaxed text-lg">
+                      {language === 'en'
+                        ? '"It is a well-established fact that every business depends on its customers, and customers naturally choose businesses that offer high-quality services and excellent customer support.'
+                        : '"Waa run dhabta ah oo la aqoonsaday in dhammaan ganacsigu ay ku tiirsan yihiin macaamiishooda, macaamiishuna si dabiici ah ay doortaan ganacsiga bixinaya adeegyo tayo sare leh iyo taageero macaamiil oo fiican.'
+                      }
+                    </blockquote>
+
+                    <blockquote className="text-gray-700 italic leading-relaxed text-lg">
+                      {language === 'en'
+                        ? 'At SAHAL CARD, we are honored to introduce one of the most in-demand services: Sahal Card.'
+                        : 'SAHAL CARD, waxaan sharaf u nahay in aan soo bandhigno mid ka mid ah adeegyada ugu baahida badan: Kaarka Sahal.'
+                      }
+                    </blockquote>
+
+                    <blockquote className="text-gray-700 italic leading-relaxed text-lg">
+                      {language === 'en'
+                        ? 'Sahal Card is a discount card created to bridge the gap between companies and their customers."'
+                        : 'Kaarka Sahal waa kaar qiimo dhimis oo loo sameeyay si loo dhex maro farqiga u dhexeeya shirkadaha iyo macaamiishooda."'
+                      }
+                    </blockquote>
+                  </div>
+
+                  <footer className="text-right mt-8">
+                    <cite className="text-blue-600 font-semibold not-italic text-lg">
+                      — Abdullahi Abdi Elmi
+                    </cite>
+                  </footer>
+                </div>
               </motion.div>
-            ))}
-          </div>
 
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8 }}
-            viewport={{ once: true }}
-            className="text-center"
-          >
-            <div className="glass-card p-8 max-w-4xl mx-auto">
-              <h3 className="text-2xl md:text-3xl font-bold gradient-text mb-4">
-              {language === 'en' 
-                  ? 'SAHAL CARD — Innovation, Opportunity, and Growth for All.'
-                  : 'SAHAL CARD — Cusboonaysi, Fursad, iyo Koritaan Dhammaan Dadka.'
-              }
-              </h3>
             </div>
-          </motion.div>
-        </div>
-      </section>
+          </div>
+        </section>
 
 
 
 
-    </div>
+
+
+      </div>
     </>
   );
 };

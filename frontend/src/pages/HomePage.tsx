@@ -128,7 +128,7 @@ const HomePage: React.FC = () => {
         </script>
       </Helmet>
 
-      <div className="h-screen bg-gradient-to-br from-blue-50 via-blue-100 to-indigo-200 overflow-y-auto">
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-blue-100 to-indigo-200">
         {/* Hero Section */}
         <div className="h-screen flex items-center justify-center">
           <div className="relative w-full h-full flex items-center justify-center">
@@ -275,8 +275,8 @@ const HomePage: React.FC = () => {
                         key={index}
                         onClick={() => setCurrentImageIndex(index)}
                         className={`w-1.5 h-1.5 rounded-full transition-all duration-300 ${index === currentImageIndex
-                            ? 'bg-white scale-125'
-                            : 'bg-white/50 hover:bg-white/70'
+                          ? 'bg-white scale-125'
+                          : 'bg-white/50 hover:bg-white/70'
                           }`}
                       />
                     ))}
